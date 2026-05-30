@@ -1,0 +1,8 @@
+{
+  "id": "count_vowels",
+  "title": "Count vowels",
+  "description": "Create a file `solution.py` containing a function `count_vowels(s)` that returns the number of vowels (a, e, i, o, u, case-insensitive) in the string.",
+  "category": "string_manipulation",
+  "difficulty": "easy",
+  "tags": ["strings"]
+}
