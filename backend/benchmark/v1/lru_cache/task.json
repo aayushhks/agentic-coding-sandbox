@@ -1,0 +1,8 @@
+{
+  "id": "lru_cache",
+  "title": "LRU cache",
+  "description": "Create a file `solution.py` with a class `LRUCache` constructed as `LRUCache(capacity)`. It supports `get(key)` (returns the value, or -1 if absent) and `put(key, value)`. When the number of items would exceed capacity, evict the least recently used entry. Both get and put count as uses of a key.",
+  "category": "data_structures",
+  "difficulty": "hard",
+  "tags": ["cache", "ordered-dict"]
+}
