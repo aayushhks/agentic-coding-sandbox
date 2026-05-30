@@ -1,0 +1,8 @@
+{
+  "id": "fibonacci_fast",
+  "title": "Efficient Fibonacci",
+  "description": "Create a file `solution.py` with a function `fib(n)` that returns the nth Fibonacci number, where fib(0) = 0 and fib(1) = 1. It must be efficient enough to compute fib(40) quickly (a naive exponential recursion will be too slow).",
+  "category": "algorithms",
+  "difficulty": "hard",
+  "tags": ["dynamic-programming", "performance"]
+}
