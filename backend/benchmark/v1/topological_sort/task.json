@@ -1,0 +1,8 @@
+{
+  "id": "topological_sort",
+  "title": "Topological sort",
+  "description": "Create a file `solution.py` with a function `topo_sort(graph)` where graph is a dict mapping each node to a list of nodes it points to. Return a list containing every node in a valid topological order: a node must appear before any node it points to. Assume the graph is a directed acyclic graph.",
+  "category": "algorithms",
+  "difficulty": "hard",
+  "tags": ["graphs"]
+}
