@@ -1,0 +1,8 @@
+{
+  "id": "merge_sorted",
+  "title": "Merge two sorted lists",
+  "description": "Create a file `solution.py` with a function `merge(a, b)` that merges two ascending-sorted lists into a single ascending-sorted list and returns it.",
+  "category": "algorithms",
+  "difficulty": "medium",
+  "tags": ["arrays", "two-pointers"]
+}
