@@ -1,0 +1,8 @@
+{
+  "id": "multi_file_shapes",
+  "title": "Add a shape to a package",
+  "description": "The `shapes` package currently provides only `Circle` (see shapes/circle.py and shapes/__init__.py). Add a `Rectangle` class in a new file `shapes/rectangle.py` with constructor `Rectangle(width, height)` and an `area()` method, then export it from `shapes/__init__.py` so that `from shapes import Rectangle` works.",
+  "category": "refactor",
+  "difficulty": "hard",
+  "tags": ["multi-file", "packages"]
+}
