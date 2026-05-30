@@ -16,6 +16,12 @@ build/
 .env
 .env.local
 
+# eval run artifacts (generated; findings are written up in docs/)
+*.db
+*.db-journal
+*.sqlite
+*.log
+
 # node (frontend, added later)
 node_modules/
 frontend/dist/
