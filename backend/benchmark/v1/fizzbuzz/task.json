@@ -1,0 +1,8 @@
+{
+  "id": "fizzbuzz",
+  "title": "FizzBuzz",
+  "description": "Create a file `solution.py` containing a function `fizzbuzz(n)` that returns a list of strings for the numbers 1 through n. Use \"Fizz\" for multiples of 3, \"Buzz\" for multiples of 5, \"FizzBuzz\" for multiples of both, otherwise the number as a string.",
+  "category": "algorithms",
+  "difficulty": "easy",
+  "tags": ["control-flow"]
+}
