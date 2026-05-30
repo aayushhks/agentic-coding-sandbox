@@ -15,7 +15,7 @@ Work in progress, built in milestones. **Current: M1 — scaffold.**
 
 - [x] M1 — scaffold: FastAPI skeleton, health endpoint, LLM provider abstraction (Groq + mock), CI
 - [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
-- [ ] M3 — agent loop
+- [x] M3 — agent loop: ReAct loop (JSON tool-call protocol, parsing, observation formatting, iteration + malformed caps), tested against the mock provider
 - [ ] M4 — task benchmark
 - [ ] M5 — eval runner + persistence
 - [ ] M6 — real agent run
@@ -66,6 +66,15 @@ The database is wired in from M5 onward.
 Copy `backend/.env.example` to `backend/.env` and fill in values. The default
 `LLM_PROVIDER=mock` runs without any API key. Set `LLM_PROVIDER=groq` and
 `GROQ_API_KEY=...` to use a real model.
+
+## Agent loop
+
+The agent (`backend/app/agent/`) runs a ReAct loop: each turn the LLM emits a single JSON tool
+call with its reasoning — `{"thought": ..., "tool": ..., "arguments": {...}}` — which is parsed,
+executed against the sandbox, and fed back as an observation. The loop terminates when the agent
+calls `finish`, hits the iteration cap, or emits too many unparseable responses in a row. Every
+step (reasoning, raw output, tool call, observation, tokens) is recorded in an `AgentRun` for the
+eval harness and the trace viewer. Malformed tool calls are a first-class, recorded outcome.
 
 ## Sandbox
 
