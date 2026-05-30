@@ -16,7 +16,7 @@ Work in progress, built in milestones. **Current: M1 — scaffold.**
 - [x] M1 — scaffold: FastAPI skeleton, health endpoint, LLM provider abstraction (Groq + mock), CI
 - [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
 - [x] M3 — agent loop: ReAct loop (JSON tool-call protocol, parsing, observation formatting, iteration + malformed caps), tested against the mock provider
-- [ ] M4 — task benchmark
+- [x] M4 — task benchmark: 15 versioned tasks across 5 categories with hidden pytest suites, a loader, a single-task runner, and reference-solution validation
 - [ ] M5 — eval runner + persistence
 - [ ] M6 — real agent run
 - [ ] M7 — analysis
@@ -66,6 +66,24 @@ The database is wired in from M5 onward.
 Copy `backend/.env.example` to `backend/.env` and fill in values. The default
 `LLM_PROVIDER=mock` runs without any API key. Set `LLM_PROVIDER=groq` and
 `GROQ_API_KEY=...` to use a real model.
+
+## Benchmark
+
+The task benchmark lives in `backend/benchmark/v1/` as one directory per task:
+
+```text
+benchmark/v1/<task_id>/
+  task.json     # metadata: id, title, description, category, difficulty, tags
+  workspace/    # starting files given to the agent (absent = empty workspace)
+  tests/        # hidden pytest suite that defines success (never shown to the agent)
+  reference/    # known-good solution, used only to validate the task is solvable
+```
+
+`v1` ships 15 tasks across `algorithms`, `bugfix`, `refactor`, `data_structures`, and
+`string_manipulation` at easy/medium/hard — including deliberately adversarial ones: a
+naive-recursion Fibonacci that times out, a binary search with an infinite-loop bug, and a
+multi-file package task. A parametrized test runs every reference solution against its hidden
+suite, so an unsolvable or broken task fails the build.
 
 ## Agent loop
 
