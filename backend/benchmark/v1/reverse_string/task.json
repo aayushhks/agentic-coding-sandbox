@@ -1,0 +1,8 @@
+{
+  "id": "reverse_string",
+  "title": "Reverse a string",
+  "description": "Create a file `solution.py` containing a function `reverse_string(s)` that returns the input string reversed.",
+  "category": "string_manipulation",
+  "difficulty": "easy",
+  "tags": ["strings"]
+}
