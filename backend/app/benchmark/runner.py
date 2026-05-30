@@ -16,6 +16,7 @@ class Evaluation:
     solved: bool
     exit_code: int | None
     output: str
+    timed_out: bool
 
 
 @dataclass(slots=True)
@@ -41,7 +42,12 @@ def grade(sandbox: Sandbox, task: Task) -> Evaluation:
     result = sandbox.execute(
         ToolCall(ToolName.RUN_COMMAND, {"command": f"python -m pytest -q {targets}"})
     )
-    return Evaluation(solved=result.ok, exit_code=result.exit_code, output=result.output)
+    return Evaluation(
+        solved=result.ok,
+        exit_code=result.exit_code,
+        output=result.output,
+        timed_out=result.timed_out,
+    )
 
 
 async def run_task(
