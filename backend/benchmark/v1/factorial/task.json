@@ -1,0 +1,8 @@
+{
+  "id": "factorial",
+  "title": "Factorial",
+  "description": "Create a file `solution.py` containing a function `factorial(n)` that returns n! (the product of all integers from 1 to n). factorial(0) must return 1.",
+  "category": "algorithms",
+  "difficulty": "easy",
+  "tags": ["math"]
+}
