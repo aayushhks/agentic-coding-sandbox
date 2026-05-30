@@ -17,7 +17,7 @@ Work in progress, built in milestones. **Current: M1 — scaffold.**
 - [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
 - [x] M3 — agent loop: ReAct loop (JSON tool-call protocol, parsing, observation formatting, iteration + malformed caps), tested against the mock provider
 - [x] M4 — task benchmark: 15 versioned tasks across 5 categories with hidden pytest suites, a loader, a single-task runner, and reference-solution validation
-- [ ] M5 — eval runner + persistence
+- [x] M5 — eval runner + persistence: full-benchmark harness, failure taxonomy, SQLAlchemy 2 async persistence + Alembic, results CLI
 - [ ] M6 — real agent run
 - [ ] M7 — analysis
 - [ ] M8 — dashboard
@@ -56,10 +56,9 @@ uv run pytest
 ## Local Postgres
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres      # from the repo root
+cd backend && uv run alembic upgrade head
 ```
-
-The database is wired in from M5 onward.
 
 ## Configuration
 
@@ -114,6 +113,25 @@ for running the benchmark's own task code, not genuinely hostile programs. The `
 interface lets a Docker-backed implementation drop in where a daemon is available (the preferred
 option on a normal machine; this cloud build environment has no usable daemon).
 
+## Eval harness
+
+`backend/app/eval/` runs the agent across the benchmark and records, per task: solved?,
+iterations, tool-call breakdown, wall-clock time, token usage, the full step-by-step trace, and
+— on failure — a failure mode (`timed_out`, `exhausted_iterations`, `wrong_solution`,
+`malformed_tool_call`, `provider_error`, `sandbox_error`). Per-run aggregates (overall solve
+rate, solve rate by category, average iterations, failure taxonomy) are computed and stored.
+
+Results persist via SQLAlchemy 2 (async): Postgres in production (Alembic migrations in
+`backend/migrations/`), SQLite for tests. Run an evaluation:
+
+```bash
+cd backend
+# self-contained run on SQLite:
+DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run python -m app.eval.cli --label smoke --create-tables
+# or against Postgres, after `uv run alembic upgrade head`:
+uv run python -m app.eval.cli --label my-run
+```
+
 ## Limitations
 
 Stated plainly, and expanded as the project grows:
@@ -124,3 +142,4 @@ Stated plainly, and expanded as the project grows:
   The harness is model-agnostic, so swapping in a stronger model is a config change.
 - The sandbox is process-level (subprocess + Linux namespaces), not a container — see
   [Sandbox](#sandbox) for the exact boundary. A Docker backend fits behind the same interface.
+- Single attempt per task — no best-of-N sampling or reflection beyond the core loop.
