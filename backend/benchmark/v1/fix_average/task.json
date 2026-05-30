@@ -1,0 +1,8 @@
+{
+  "id": "fix_average",
+  "title": "Fix the average bug",
+  "description": "The function `average(numbers)` in `solution.py` should return the arithmetic mean as a float, but it returns the wrong value. Find and fix the bug so the tests pass. Do not change the function name or signature.",
+  "category": "bugfix",
+  "difficulty": "medium",
+  "tags": ["arithmetic"]
+}
