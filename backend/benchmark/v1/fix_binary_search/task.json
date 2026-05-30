@@ -1,0 +1,8 @@
+{
+  "id": "fix_binary_search",
+  "title": "Fix the binary search bug",
+  "description": "The function `binary_search(arr, target)` in `solution.py` should return the index of target in the ascending-sorted list arr, or -1 if it is absent. It contains a bug that can cause an infinite loop on some inputs. Find and fix it without changing the name or signature.",
+  "category": "bugfix",
+  "difficulty": "hard",
+  "tags": ["search", "off-by-one"]
+}
