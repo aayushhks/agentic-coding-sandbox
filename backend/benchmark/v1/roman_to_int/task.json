@@ -1,0 +1,8 @@
+{
+  "id": "roman_to_int",
+  "title": "Roman numeral to integer",
+  "description": "Create a file `solution.py` with a function `roman_to_int(s)` that converts a Roman numeral string (I, V, X, L, C, D, M) to its integer value, handling subtractive forms like IV and IX.",
+  "category": "string_manipulation",
+  "difficulty": "medium",
+  "tags": ["parsing"]
+}
