@@ -1,0 +1,8 @@
+{
+  "id": "two_sum",
+  "title": "Two sum",
+  "description": "Create a file `solution.py` with a function `two_sum(nums, target)` that returns a tuple of two distinct indices (i, j) with i < j such that nums[i] + nums[j] == target. Assume exactly one solution exists.",
+  "category": "algorithms",
+  "difficulty": "medium",
+  "tags": ["arrays", "hashing"]
+}
