@@ -1,8 +1,11 @@
-"""Persist a benchmark report to the database."""
+"""Persist and load benchmark runs in the database."""
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.models import BenchmarkRun, TaskResult
+from app.eval.compare import TaskRow
 from app.eval.report import BenchmarkReport
 
 
@@ -41,3 +44,33 @@ async def persist_report(session: AsyncSession, report: BenchmarkReport) -> int:
     await session.commit()
     await session.refresh(run)
     return run.id
+
+
+async def load_run_rows(session: AsyncSession, label: str) -> tuple[str, list[TaskRow]]:
+    """Return the label and per-task rows of the most recent run with the given label.
+
+    Raises LookupError if no run with that label exists.
+    """
+    stmt = (
+        select(BenchmarkRun)
+        .options(selectinload(BenchmarkRun.results))
+        .where(BenchmarkRun.label == label)
+        .order_by(BenchmarkRun.id.desc())
+        .limit(1)
+    )
+    run = (await session.execute(stmt)).scalars().first()
+    if run is None:
+        raise LookupError(f"no benchmark run found with label {label!r}")
+    rows = [
+        TaskRow(
+            task_id=result.task_id,
+            category=result.category,
+            difficulty=result.difficulty,
+            solved=result.solved,
+            failure_mode=result.failure_mode,
+            iterations=result.iterations,
+            total_tokens=result.total_tokens,
+        )
+        for result in run.results
+    ]
+    return run.label, rows
