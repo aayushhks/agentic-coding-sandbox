@@ -13,6 +13,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0",
     "alembic>=1.13",
     "asyncpg>=0.30",
+    "matplotlib>=3.10.9",
 ]
 
 [dependency-groups]
