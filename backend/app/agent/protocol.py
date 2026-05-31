@@ -18,8 +18,12 @@ class ParsedStep:
     tool_call: ToolCall
 
 
-def build_system_prompt() -> str:
-    """Construct the system prompt describing the tools and required output format."""
+def build_system_prompt(require_verified_finish: bool = False) -> str:
+    """Construct the system prompt describing the tools and required output format.
+
+    When ``require_verified_finish`` is set, the prompt tells the agent it must author and pass
+    its own tests before finishing, matching the enforcement in the agent loop.
+    """
     lines = [
         "You are an autonomous coding agent working inside a sandboxed workspace.",
         "You solve the task by issuing one tool call at a time and observing the result.",
@@ -38,8 +42,16 @@ def build_system_prompt() -> str:
         "- Emit exactly one tool call per response.",
         "- Use paths relative to the workspace root.",
         "- Inspect files and run the tests before declaring success.",
-        "- When the task is complete and its tests pass, call the finish tool.",
     ]
+    if require_verified_finish:
+        lines += [
+            "- The workspace ships no tests: write your own test file covering the task, then run"
+            " it with the run_tests tool.",
+            '- Only call finish after run_tests reports passing tests. A result of "no tests ran"'
+            " does not count as verification.",
+        ]
+    else:
+        lines.append("- When the task is complete and its tests pass, call the finish tool.")
     return "\n".join(lines)
 
 

@@ -33,6 +33,7 @@ class Agent:
         prompt_tokens = 0
         completion_tokens = 0
         consecutive_malformed = 0
+        verified = False
         termination = TerminationReason.MAX_ITERATIONS
         final_answer = ""
 
@@ -71,6 +72,27 @@ class Agent:
             consecutive_malformed = 0
 
             if parsed.tool_call.name == ToolName.FINISH:
+                if self._config.require_verified_finish and not verified:
+                    observation = (
+                        "You cannot finish yet: write your own test file and run it with the "
+                        "run_tests tool until the tests pass. A result of 'no tests ran' "
+                        "(exit code 5) does not count as verification."
+                    )
+                    steps.append(
+                        AgentStep(
+                            index=index,
+                            thought=parsed.thought,
+                            raw_response=raw,
+                            tool_call=parsed.tool_call,
+                            tool_result=None,
+                            observation=observation,
+                            malformed=False,
+                            prompt_tokens=completion.prompt_tokens,
+                            completion_tokens=completion.completion_tokens,
+                        )
+                    )
+                    messages.append(Message(role=Role.USER, content=observation))
+                    continue
                 final_answer = str(parsed.tool_call.arguments.get("answer", ""))
                 steps.append(
                     AgentStep(
@@ -90,6 +112,8 @@ class Agent:
 
             result = await self._execute(parsed.tool_call)
             observation = format_observation(result)
+            if self._counts_as_verification(parsed.tool_call, result):
+                verified = True
             steps.append(
                 AgentStep(
                     index=index,
@@ -119,6 +143,22 @@ class Agent:
         except Exception as exc:  # sandbox failures are surfaced to the agent as observations
             return ToolResult(output=f"sandbox error: {exc}", ok=False)
 
+    @staticmethod
+    def _counts_as_verification(call: ToolCall, result: ToolResult) -> bool:
+        """True when a tool call actually ran tests and they passed.
+
+        A run_tests (or a run_command invoking pytest) with exit code 0 means at least one test
+        was collected and passed; pytest reports "no tests ran" as exit code 5, so that case is
+        correctly excluded.
+        """
+        if result.exit_code != 0 or result.timed_out:
+            return False
+        if call.name == ToolName.RUN_TESTS:
+            return True
+        if call.name == ToolName.RUN_COMMAND:
+            return "pytest" in str(call.arguments.get("command", ""))
+        return False
+
     def _initial_messages(self, task: str) -> list[Message]:
         parts = [f"Task:\n{task}"]
         if self._config.include_initial_listing:
@@ -126,7 +166,10 @@ class Agent:
             parts.append(f"\nWorkspace root contents:\n{listing.output}")
         parts.append("\nReason about the task, then issue your first tool call.")
         return [
-            Message(role=Role.SYSTEM, content=build_system_prompt()),
+            Message(
+                role=Role.SYSTEM,
+                content=build_system_prompt(self._config.require_verified_finish),
+            ),
             Message(role=Role.USER, content="\n".join(parts)),
         ]
 

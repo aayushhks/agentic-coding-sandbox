@@ -20,6 +20,9 @@ class AgentConfig:
     temperature: float = 0.0
     max_tokens: int = 1024
     include_initial_listing: bool = True
+    # when set, the agent may only finish after a test run has actually passed (exit 0);
+    # "no tests ran" (pytest exit 5) does not count as verification
+    require_verified_finish: bool = False
 
 
 @dataclass(slots=True)

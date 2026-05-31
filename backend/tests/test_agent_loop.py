@@ -88,3 +88,51 @@ async def test_agent_records_provider_error(sandbox: SubprocessSandbox) -> None:
     )
     run = await agent.run("needs more steps than the provider can supply")
     assert run.termination_reason == TerminationReason.PROVIDER_ERROR
+
+
+async def test_finish_blocked_until_tests_pass(sandbox: SubprocessSandbox) -> None:
+    responses = [
+        _call("finish", answer="too early"),  # rejected: nothing has been verified yet
+        _call("write_file", path="solution.py", content="def add(a, b):\n    return a + b\n"),
+        _call(
+            "write_file",
+            path="test_solution.py",
+            content="from solution import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n",
+        ),
+        _call("run_tests"),  # passes -> now verified
+        _call("finish", answer="done"),  # honored
+    ]
+    agent = Agent(
+        MockProvider(responses=responses),
+        sandbox,
+        AgentConfig(max_iterations=10, require_verified_finish=True),
+    )
+    run = await agent.run("implement add with a passing test")
+
+    assert run.termination_reason == TerminationReason.FINISHED
+    assert run.final_answer == "done"
+    assert run.iterations == 5
+    first = run.steps[0]
+    assert first.tool_call is not None and first.tool_call.name == ToolName.FINISH
+    assert first.tool_result is None
+    assert "cannot finish yet" in first.observation
+
+
+async def test_no_tests_ran_does_not_verify(sandbox: SubprocessSandbox) -> None:
+    responses = [
+        _call("write_file", path="solution.py", content="def add(a, b):\n    return a + b\n"),
+        _call("run_tests"),  # no test file present -> "no tests ran" (exit 5), not verification
+        _call("finish", answer="done"),  # rejected, so the loop runs out of iterations
+    ]
+    agent = Agent(
+        MockProvider(responses=responses),
+        sandbox,
+        AgentConfig(max_iterations=3, require_verified_finish=True),
+    )
+    run = await agent.run("an empty suite must not count as verified")
+
+    assert run.termination_reason == TerminationReason.MAX_ITERATIONS
+    test_step = next(s for s in run.steps if s.tool_call and s.tool_call.name == ToolName.RUN_TESTS)
+    assert test_step.tool_result is not None
+    assert test_step.tool_result.exit_code == 5
+    assert "cannot finish yet" in run.steps[-1].observation
