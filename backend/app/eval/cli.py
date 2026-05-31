@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 
+from app.agent.types import AgentConfig
 from app.benchmark.loader import load_benchmark
 from app.benchmark.schema import Task
 from app.core.config import get_settings
@@ -21,6 +22,7 @@ async def run_eval(
     limit: int | None = None,
     database_url: str | None = None,
     provider: LLMProvider | None = None,
+    agent_config: AgentConfig | None = None,
     create_tables: bool = False,
 ) -> int:
     """Run the benchmark with the configured (or supplied) provider and persist the report."""
@@ -40,6 +42,7 @@ async def run_eval(
         label=label,
         provider_name=active_provider.name,
         model=active_provider.model,
+        agent_config=agent_config,
     )
 
     engine = create_engine(database_url)
@@ -74,8 +77,23 @@ def main() -> None:
         action="store_true",
         help="create tables via metadata (instead of relying on alembic migrations)",
     )
+    parser.add_argument(
+        "--require-verified-finish",
+        action="store_true",
+        help="only let the agent finish after it has authored and passed its own tests",
+    )
     args = parser.parse_args()
-    asyncio.run(run_eval(label=args.label, limit=args.limit, create_tables=args.create_tables))
+    agent_config = (
+        AgentConfig(require_verified_finish=True) if args.require_verified_finish else None
+    )
+    asyncio.run(
+        run_eval(
+            label=args.label,
+            limit=args.limit,
+            create_tables=args.create_tables,
+            agent_config=agent_config,
+        )
+    )
 
 
 if __name__ == "__main__":
