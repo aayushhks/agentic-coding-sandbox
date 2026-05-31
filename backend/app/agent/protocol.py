@@ -64,18 +64,37 @@ def parse_tool_call(text: str) -> ParsedStep:
 
 
 def _extract_json(text: str) -> str:
-    """Pull the JSON object out of a response that may be fenced or wrapped in prose."""
-    stripped = text.strip()
-    if "```" in stripped:
-        for block in stripped.split("```"):
-            candidate = block[4:] if block.startswith("json") else block
-            candidate = candidate.strip()
-            if candidate.startswith("{") and candidate.endswith("}"):
-                return candidate
-    start, end = stripped.find("{"), stripped.rfind("}")
-    if start != -1 and end > start:
-        return stripped[start : end + 1]
-    return stripped
+    """Return the first complete JSON object from a response that may be fenced or wrapped in prose.
+
+    Scans from the first ``{`` tracking brace depth (ignoring braces inside strings) and returns
+    the slice that closes the first balanced object. Unlike a slice to the last ``}``, this is
+    robust to trailing junk — a stray closing brace, a second object, or explanatory prose — which
+    is a real failure mode of weaker models emitting large tool calls.
+    """
+    start = text.find("{")
+    if start == -1:
+        return text.strip()
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+        elif char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return text[start:]
 
 
 def format_observation(result: ToolResult) -> str:

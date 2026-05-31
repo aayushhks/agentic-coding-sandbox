@@ -56,6 +56,30 @@ def test_parse_defaults_missing_arguments() -> None:
     assert parsed.tool_call.arguments == {}
 
 
+def test_parse_ignores_trailing_stray_brace() -> None:
+    # the real m6 lru_cache failure: a complete tool call followed by one extra '}'
+    valid = json.dumps(
+        {"thought": "t", "tool": "write_file", "arguments": {"path": "a.py", "content": "x = 1"}}
+    )
+    parsed = parse_tool_call(valid + "}")
+    assert parsed.tool_call.name == ToolName.WRITE_FILE
+    assert parsed.tool_call.arguments == {"path": "a.py", "content": "x = 1"}
+
+
+def test_parse_handles_braces_inside_strings() -> None:
+    code = "def f():\n    return {}\n"
+    text = json.dumps({"tool": "write_file", "arguments": {"path": "a.py", "content": code}})
+    parsed = parse_tool_call(text)
+    assert parsed.tool_call.arguments == {"path": "a.py", "content": code}
+
+
+def test_parse_takes_first_of_two_objects() -> None:
+    first = json.dumps({"tool": "finish", "arguments": {"answer": "done"}})
+    second = json.dumps({"tool": "list_dir", "arguments": {}})
+    parsed = parse_tool_call(f"{first} {second}")
+    assert parsed.tool_call.name == ToolName.FINISH
+
+
 def test_system_prompt_lists_all_tools() -> None:
     prompt = build_system_prompt()
     for tool in ToolName:
