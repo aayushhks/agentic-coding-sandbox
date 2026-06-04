@@ -11,7 +11,7 @@ project evaluates LLMs; this one builds and evaluates an autonomous agent.
 
 ## Status
 
-Work in progress, built in milestones. **Current: M6 — real agent run.**
+Work in progress, built in milestones. **Current: M7 — hardening analysis.**
 
 - [x] M1 — scaffold: FastAPI skeleton, health endpoint, LLM provider abstraction (Groq + mock), CI
 - [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
@@ -19,7 +19,7 @@ Work in progress, built in milestones. **Current: M6 — real agent run.**
 - [x] M4 — task benchmark: 15 versioned tasks across 5 categories with hidden pytest suites, a loader, a single-task runner, and reference-solution validation
 - [x] M5 — eval runner + persistence: full-benchmark harness, failure taxonomy, SQLAlchemy 2 async persistence + Alembic, results CLI
 - [x] M6 — real agent run: first full benchmark on Llama 3.3 70B (Groq) — **86.7% solve rate (13/15)**, both failures on hard tasks; write-up + failure analysis in [docs/m6-real-agent-run.md](docs/m6-real-agent-run.md)
-- [ ] M7 — analysis
+- [x] M7 — hardening analysis: two targeted fixes (balanced-brace tool-call parser + verified-finish gate) lift the `v1` benchmark from 86.7% to **100% (15/15)** with zero regressions; v1→v2 diff, figures, and trace-level evidence in [docs/m7-analysis.md](docs/m7-analysis.md)
 - [ ] M8 — dashboard
 - [ ] M9 — CI eval gate
 - [ ] M10 — README, docs, deploy
