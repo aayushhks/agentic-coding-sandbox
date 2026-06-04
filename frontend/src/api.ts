@@ -1,7 +1,11 @@
 import type { CompareResponse, RunDetail, RunSummary, TaskDetail } from "./types";
 
+// Same-origin by default (dev proxy / single-process deploy). When the dashboard is hosted
+// apart from the API (e.g. Vercel -> Railway), set VITE_API_BASE_URL to the API's origin.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
 async function getJSON<T>(path: string): Promise<T> {
-  const response = await fetch(`/api${path}`);
+  const response = await fetch(`${API_BASE}/api${path}`);
   if (!response.ok) {
     throw new Error(`request to ${path} failed: ${response.status} ${response.statusText}`);
   }
