@@ -21,6 +21,4 @@ frontend/dist/
 .env
 .env.local
 
-# docs are not needed at runtime
-docs/
-*.md
+# docs/results/*.json are needed at build time to seed the baked SQLite database
