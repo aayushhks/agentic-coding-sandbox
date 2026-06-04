@@ -1,0 +1,66 @@
+name: eval-gate
+
+# Runs the agent across the v1 benchmark with a real model and fails if it regresses
+# against the committed baseline (docs/results/groq-llama-3.3-70b-v2.json). Real-model runs
+# cost tokens and are mildly non-deterministic, so this is not a per-push gate: it runs on a
+# weekly schedule and on demand. Per-push correctness is covered by the unit tests in ci.yml,
+# including the gate logic itself (tests/test_eval_gate.py).
+
+on:
+  workflow_dispatch:
+    inputs:
+      min_solve_rate:
+        description: "minimum acceptable candidate solve rate (0..1)"
+        default: "1.0"
+        required: false
+  schedule:
+    - cron: "0 6 * * 1" # 06:00 UTC every Monday
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      LLM_PROVIDER: groq
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      DATABASE_URL: "sqlite+aiosqlite:///eval.db"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: check for api key
+        id: secret
+        run: |
+          if [ -n "$GROQ_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GROQ_API_KEY is not set; skipping the real-model eval gate"
+          fi
+
+      - name: install uv
+        if: steps.secret.outputs.present == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: install python 3.13
+        if: steps.secret.outputs.present == 'true'
+        run: uv python install 3.13
+
+      - name: install dependencies
+        if: steps.secret.outputs.present == 'true'
+        run: uv sync
+
+      - name: run the benchmark (candidate)
+        if: steps.secret.outputs.present == 'true'
+        run: uv run python -m app.eval.cli --label ci-gate --create-tables --require-verified-finish
+
+      - name: gate against the committed v2 baseline
+        if: steps.secret.outputs.present == 'true'
+        run: >
+          uv run python -m app.eval.gate_cli
+          --baseline ../docs/results/groq-llama-3.3-70b-v2.json
+          --candidate ci-gate
+          --min-solve-rate ${{ github.event.inputs.min_solve_rate || '1.0' }}
