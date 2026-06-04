@@ -5,7 +5,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.core.config import get_settings
+from app.core.config import get_settings, normalize_database_url
 from app.db import models  # noqa: F401  (import registers the models on Base.metadata)
 from app.db.base import Base
 
@@ -17,7 +17,8 @@ target_metadata = Base.metadata
 
 
 def _database_url() -> str:
-    return os.environ.get("DATABASE_URL") or get_settings().database_url
+    # normalize so a host-provided sync Postgres URL (Railway etc.) uses the async driver
+    return normalize_database_url(os.environ.get("DATABASE_URL") or get_settings().database_url)
 
 
 def run_migrations_offline() -> None:
