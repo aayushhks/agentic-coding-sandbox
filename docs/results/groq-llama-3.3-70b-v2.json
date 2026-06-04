@@ -1,0 +1,333 @@
+{
+  "label": "groq-llama-3.3-70b-v2-hardened",
+  "provider": "groq",
+  "model": "llama-3.3-70b-versatile",
+  "benchmark_version": "v1",
+  "run_at_utc": "2026-06-04 00:24:49.723853",
+  "config": {
+    "temperature": 0.0,
+    "max_iterations": 15,
+    "max_consecutive_malformed": 3,
+    "max_tokens": 1024,
+    "single_attempt": true,
+    "require_verified_finish": true,
+    "tool_call_parser": "balanced-brace scan (replaces naive json extraction)",
+    "sandbox": "subprocess + unshare --net (network-isolated)",
+    "persistence": "sqlite (self-contained run)"
+  },
+  "totals": {
+    "tasks": 15,
+    "solved": 15,
+    "solve_rate": 1.0,
+    "prompt_tokens": 67413,
+    "completion_tokens": 9232,
+    "total_tokens": 76645,
+    "avg_iterations": 5.2,
+    "wall_clock_seconds": 352.7
+  },
+  "solve_rate_by_category": {
+    "algorithms": {
+      "solved": 7,
+      "total": 7
+    },
+    "bugfix": {
+      "solved": 2,
+      "total": 2
+    },
+    "data_structures": {
+      "solved": 2,
+      "total": 2
+    },
+    "refactor": {
+      "solved": 1,
+      "total": 1
+    },
+    "string_manipulation": {
+      "solved": 3,
+      "total": 3
+    }
+  },
+  "solve_rate_by_difficulty": {
+    "easy": {
+      "solved": 5,
+      "total": 5
+    },
+    "hard": {
+      "solved": 5,
+      "total": 5
+    },
+    "medium": {
+      "solved": 5,
+      "total": 5
+    }
+  },
+  "failure_taxonomy": {},
+  "tool_counts": {
+    "write_file": 41,
+    "run_tests": 18,
+    "finish": 15,
+    "list_dir": 2,
+    "read_file": 2
+  },
+  "tasks": [
+    {
+      "task_id": "add_numbers",
+      "category": "algorithms",
+      "difficulty": "easy",
+      "solved": true,
+      "iterations": 4,
+      "prompt_tokens": 2376,
+      "completion_tokens": 345,
+      "total_tokens": 2721,
+      "wall_clock_seconds": 3.8,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 2,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "count_vowels",
+      "category": "string_manipulation",
+      "difficulty": "easy",
+      "solved": true,
+      "iterations": 4,
+      "prompt_tokens": 2772,
+      "completion_tokens": 500,
+      "total_tokens": 3272,
+      "wall_clock_seconds": 2.7,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 2,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "factorial",
+      "category": "algorithms",
+      "difficulty": "easy",
+      "solved": true,
+      "iterations": 4,
+      "prompt_tokens": 2522,
+      "completion_tokens": 373,
+      "total_tokens": 2895,
+      "wall_clock_seconds": 6.5,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 2,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "fizzbuzz",
+      "category": "algorithms",
+      "difficulty": "easy",
+      "solved": true,
+      "iterations": 4,
+      "prompt_tokens": 3060,
+      "completion_tokens": 567,
+      "total_tokens": 3627,
+      "wall_clock_seconds": 18.3,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 2,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "reverse_string",
+      "category": "string_manipulation",
+      "difficulty": "easy",
+      "solved": true,
+      "iterations": 7,
+      "prompt_tokens": 6406,
+      "completion_tokens": 563,
+      "total_tokens": 6969,
+      "wall_clock_seconds": 35.4,
+      "failure_mode": null,
+      "tool_counts": {
+        "list_dir": 1,
+        "write_file": 3,
+        "run_tests": 2,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "fibonacci_fast",
+      "category": "algorithms",
+      "difficulty": "hard",
+      "solved": true,
+      "iterations": 5,
+      "prompt_tokens": 3756,
+      "completion_tokens": 546,
+      "total_tokens": 4302,
+      "wall_clock_seconds": 21.4,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 3,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "multi_file_shapes",
+      "category": "refactor",
+      "difficulty": "hard",
+      "solved": true,
+      "iterations": 6,
+      "prompt_tokens": 4304,
+      "completion_tokens": 452,
+      "total_tokens": 4756,
+      "wall_clock_seconds": 23.3,
+      "failure_mode": null,
+      "tool_counts": {
+        "list_dir": 1,
+        "write_file": 3,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "topological_sort",
+      "category": "algorithms",
+      "difficulty": "hard",
+      "solved": true,
+      "iterations": 6,
+      "prompt_tokens": 5464,
+      "completion_tokens": 866,
+      "total_tokens": 6330,
+      "wall_clock_seconds": 32.0,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 4,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "fix_average",
+      "category": "bugfix",
+      "difficulty": "medium",
+      "solved": true,
+      "iterations": 5,
+      "prompt_tokens": 3609,
+      "completion_tokens": 496,
+      "total_tokens": 4105,
+      "wall_clock_seconds": 20.2,
+      "failure_mode": null,
+      "tool_counts": {
+        "read_file": 1,
+        "write_file": 2,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "merge_sorted",
+      "category": "algorithms",
+      "difficulty": "medium",
+      "solved": true,
+      "iterations": 5,
+      "prompt_tokens": 3644,
+      "completion_tokens": 579,
+      "total_tokens": 4223,
+      "wall_clock_seconds": 21.4,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 3,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "roman_to_int",
+      "category": "string_manipulation",
+      "difficulty": "medium",
+      "solved": true,
+      "iterations": 5,
+      "prompt_tokens": 4174,
+      "completion_tokens": 761,
+      "total_tokens": 4935,
+      "wall_clock_seconds": 24.8,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 3,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "two_sum",
+      "category": "algorithms",
+      "difficulty": "medium",
+      "solved": true,
+      "iterations": 5,
+      "prompt_tokens": 3754,
+      "completion_tokens": 590,
+      "total_tokens": 4344,
+      "wall_clock_seconds": 21.6,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 3,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "valid_parentheses",
+      "category": "data_structures",
+      "difficulty": "medium",
+      "solved": true,
+      "iterations": 5,
+      "prompt_tokens": 3896,
+      "completion_tokens": 647,
+      "total_tokens": 4543,
+      "wall_clock_seconds": 22.7,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 3,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "fix_binary_search",
+      "category": "bugfix",
+      "difficulty": "hard",
+      "solved": true,
+      "iterations": 5,
+      "prompt_tokens": 4261,
+      "completion_tokens": 650,
+      "total_tokens": 4911,
+      "wall_clock_seconds": 24.7,
+      "failure_mode": null,
+      "tool_counts": {
+        "read_file": 1,
+        "write_file": 2,
+        "run_tests": 1,
+        "finish": 1
+      }
+    },
+    {
+      "task_id": "lru_cache",
+      "category": "data_structures",
+      "difficulty": "hard",
+      "solved": true,
+      "iterations": 8,
+      "prompt_tokens": 13415,
+      "completion_tokens": 1297,
+      "total_tokens": 14712,
+      "wall_clock_seconds": 73.9,
+      "failure_mode": null,
+      "tool_counts": {
+        "write_file": 4,
+        "run_tests": 3,
+        "finish": 1
+      }
+    }
+  ]
+}
