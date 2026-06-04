@@ -46,6 +46,28 @@ async def persist_report(session: AsyncSession, report: BenchmarkReport) -> int:
     return run.id
 
 
+async def load_runs(session: AsyncSession) -> list[BenchmarkRun]:
+    """Return all runs, most recent first, without their per-task results."""
+    stmt = select(BenchmarkRun).order_by(BenchmarkRun.id.desc())
+    return list((await session.execute(stmt)).scalars().all())
+
+
+async def load_run_detail(session: AsyncSession, run_id: int) -> BenchmarkRun | None:
+    """Return one run with its per-task results eagerly loaded, or None if absent."""
+    stmt = (
+        select(BenchmarkRun)
+        .options(selectinload(BenchmarkRun.results))
+        .where(BenchmarkRun.id == run_id)
+    )
+    return (await session.execute(stmt)).scalars().first()
+
+
+async def load_task_result(session: AsyncSession, run_id: int, task_id: str) -> TaskResult | None:
+    """Return one task's full record (including its trace) within a run, or None."""
+    stmt = select(TaskResult).where(TaskResult.run_id == run_id, TaskResult.task_id == task_id)
+    return (await session.execute(stmt)).scalars().first()
+
+
 async def load_run_rows(session: AsyncSession, label: str) -> tuple[str, list[TaskRow]]:
     """Return the label and per-task rows of the most recent run with the given label.
 
