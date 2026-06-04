@@ -11,7 +11,7 @@ project evaluates LLMs; this one builds and evaluates an autonomous agent.
 
 ## Status
 
-Work in progress, built in milestones. **Current: M8 — eval dashboard.**
+Work in progress, built in milestones. **Current: M9 — CI eval gate.**
 
 - [x] M1 — scaffold: FastAPI skeleton, health endpoint, LLM provider abstraction (Groq + mock), CI
 - [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
@@ -21,7 +21,7 @@ Work in progress, built in milestones. **Current: M8 — eval dashboard.**
 - [x] M6 — real agent run: first full benchmark on Llama 3.3 70B (Groq) — **86.7% solve rate (13/15)**, both failures on hard tasks; write-up + failure analysis in [docs/m6-real-agent-run.md](docs/m6-real-agent-run.md)
 - [x] M7 — hardening analysis: two targeted fixes (balanced-brace tool-call parser + verified-finish gate) lift the `v1` benchmark from 86.7% to **100% (15/15)** with zero regressions; v1→v2 diff, figures, and trace-level evidence in [docs/m7-analysis.md](docs/m7-analysis.md)
 - [x] M8 — eval dashboard: FastAPI read API + React 19 / Vite / Tailwind v4 SPA over the persisted runs — solve rates, per-task agent traces, and an interactive v1↔v2 regression diff; details in [docs/m8-dashboard.md](docs/m8-dashboard.md)
-- [ ] M9 — CI eval gate
+- [x] M9 — CI eval gate: a regression gate (`app.eval.gate_cli`) that fails when a candidate run regresses against the committed baseline or drops below a solve-rate floor — per-push unit coverage in `ci.yml`, a real-model run on schedule/dispatch in `eval-gate.yml`; details in [docs/m9-ci-eval-gate.md](docs/m9-ci-eval-gate.md)
 - [ ] M10 — README, docs, deploy
 
 ## Tech stack
