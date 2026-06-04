@@ -9,9 +9,13 @@ the control loop, the tool interface, the sandboxing, the failure modes, and how
 whether the agent is actually any good. It is the companion to `llm-eval-with-probes` — that
 project evaluates LLMs; this one builds and evaluates an autonomous agent.
 
+**Result:** on the 15-task `v1` benchmark the agent (Llama 3.3 70B via Groq) goes from
+**86.7% → 100%** after two targeted hardening fixes, with the full story — runs, traces,
+figures, and a regression gate — written up under [`docs/`](docs/).
+
 ## Status
 
-Work in progress, built in milestones. **Current: M9 — CI eval gate.**
+Built in ten milestones, **all complete** — from scaffold to a deployable dashboard guarded by a CI eval gate.
 
 - [x] M1 — scaffold: FastAPI skeleton, health endpoint, LLM provider abstraction (Groq + mock), CI
 - [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
@@ -22,7 +26,24 @@ Work in progress, built in milestones. **Current: M9 — CI eval gate.**
 - [x] M7 — hardening analysis: two targeted fixes (balanced-brace tool-call parser + verified-finish gate) lift the `v1` benchmark from 86.7% to **100% (15/15)** with zero regressions; v1→v2 diff, figures, and trace-level evidence in [docs/m7-analysis.md](docs/m7-analysis.md)
 - [x] M8 — eval dashboard: FastAPI read API + React 19 / Vite / Tailwind v4 SPA over the persisted runs — solve rates, per-task agent traces, and an interactive v1↔v2 regression diff; details in [docs/m8-dashboard.md](docs/m8-dashboard.md)
 - [x] M9 — CI eval gate: a regression gate (`app.eval.gate_cli`) that fails when a candidate run regresses against the committed baseline or drops below a solve-rate floor — per-push unit coverage in `ci.yml`, a real-model run on schedule/dispatch in `eval-gate.yml`; details in [docs/m9-ci-eval-gate.md](docs/m9-ci-eval-gate.md)
-- [ ] M10 — README, docs, deploy
+- [x] M10 — docs & deploy: multi-stage Docker image (one FastAPI process serves the API **and** the built SPA) + a compose stack with Postgres; architecture overview and deploy notes in [docs/m10-deploy.md](docs/m10-deploy.md)
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Agent["agent runtime"]
+    LLM["LLM provider<br/>(Groq · mock)"] --> Loop["ReAct loop"]
+    Loop -- "tool calls" --> Sandbox["subprocess sandbox<br/>(network-isolated)"]
+    Sandbox -- "observations" --> Loop
+  end
+  Bench["v1 benchmark<br/>(15 tasks)"] --> Harness["eval harness"]
+  Loop --> Harness
+  Harness -- "runs · traces" --> DB[("database")]
+  DB --> API["FastAPI read API"]
+  API --> UI["React dashboard"]
+  DB --> Cmp["regression compare"] --> Gate["CI eval gate"]
+```
 
 ## Tech stack
 
@@ -68,6 +89,20 @@ cd ../backend && DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run uvicorn app.m
 
 Frontend checks (also run in CI): `npm run typecheck`, `npm test`, `npm run build`. See
 [docs/m8-dashboard.md](docs/m8-dashboard.md) for the API and architecture.
+
+## Deploy (Docker)
+
+The whole app ships as one image: a multi-stage `Dockerfile` builds the dashboard and then
+serves it together with the API from a single FastAPI process. `docker compose up` brings up
+Postgres and the app, applies migrations, and serves on port 8000:
+
+```bash
+docker compose up --build           # from the repo root → http://localhost:8000
+```
+
+A fresh database starts empty (the dashboard shows an empty state); populate it by running an
+evaluation against the same `DATABASE_URL`. See [docs/m10-deploy.md](docs/m10-deploy.md) for the
+image layout, environment, and deploying elsewhere.
 
 ## Development checks
 
