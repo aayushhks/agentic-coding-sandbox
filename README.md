@@ -92,22 +92,25 @@ Frontend checks (also run in CI): `npm run typecheck`, `npm test`, `npm run buil
 
 ## Deploy (Docker)
 
-The whole app ships as one image: a multi-stage `Dockerfile` builds the dashboard and then
-serves it together with the API from a single FastAPI process. `docker compose up` brings up
-Postgres and the app, applies migrations, and serves on port 8000:
+The whole app ships as one **self-contained image**: a multi-stage `Dockerfile` builds the
+dashboard, bakes the committed v1/v2 runs into a read-only SQLite database, and serves the API +
+dashboard from a single FastAPI process. So a bare run has data and needs no database:
 
 ```bash
-docker compose up --build           # from the repo root → http://localhost:8000
+docker build -t agentic-coding-sandbox .
+docker run -p 8000:8000 agentic-coding-sandbox        # → http://localhost:8000 (with data)
 ```
 
-A fresh database starts empty (the dashboard shows an empty state); populate it by running an
-evaluation against the same `DATABASE_URL`, or seed it from a committed results file with
-`python -m app.eval.import_results --results docs/results/groq-llama-3.3-70b-v2.json`.
+For a writable Postgres setup instead, `docker compose up --build` brings up Postgres + the app
+and applies migrations (the DB starts empty — seed it with
+`python -m app.eval.import_results --results docs/results/groq-llama-3.3-70b-v2.json`).
 
-To host the pieces separately — dashboard on Vercel, API + Postgres on Railway — the repo is
-ready for it (configurable API base URL, CORS, `$PORT`, async-URL coercion, `railway.json`,
-`frontend/vercel.json`). See [docs/m10-deploy.md](docs/m10-deploy.md) for the image layout, the
-single-process and split-deploy walkthroughs, and how to seed data.
+Because the image is self-contained it deploys to any container host with no database:
+**AWS App Runner** (`scripts/push-to-ecr.sh` → point App Runner at the image) or a free-tier
+EC2; or free, no-card hosts like Render/Koyeb. The repo is also ready to split the dashboard
+onto Vercel with the API + Postgres elsewhere (configurable API base URL, CORS, `$PORT`,
+async-URL coercion, `railway.json`, `frontend/vercel.json`). See
+[docs/m10-deploy.md](docs/m10-deploy.md) for the image layout and per-platform walkthroughs.
 
 ## Development checks
 
