@@ -101,8 +101,13 @@ docker compose up --build           # from the repo root → http://localhost:80
 ```
 
 A fresh database starts empty (the dashboard shows an empty state); populate it by running an
-evaluation against the same `DATABASE_URL`. See [docs/m10-deploy.md](docs/m10-deploy.md) for the
-image layout, environment, and deploying elsewhere.
+evaluation against the same `DATABASE_URL`, or seed it from a committed results file with
+`python -m app.eval.import_results --results docs/results/groq-llama-3.3-70b-v2.json`.
+
+To host the pieces separately — dashboard on Vercel, API + Postgres on Railway — the repo is
+ready for it (configurable API base URL, CORS, `$PORT`, async-URL coercion, `railway.json`,
+`frontend/vercel.json`). See [docs/m10-deploy.md](docs/m10-deploy.md) for the image layout, the
+single-process and split-deploy walkthroughs, and how to seed data.
 
 ## Development checks
 

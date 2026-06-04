@@ -61,6 +61,44 @@ provide:
 - **`LLM_PROVIDER` / `GROQ_API_KEY`** — only needed to *run* evaluations; serving the dashboard
   over existing runs needs neither (`LLM_PROVIDER=mock` is the default).
 
+## Split deploy: Vercel (dashboard) + Railway (API + Postgres)
+
+The dashboard is static and fits Vercel; the API is a persistent process with a database and
+fits a container host. The repo supports this split with no code edits at deploy time:
+
+- the frontend reads `VITE_API_BASE_URL` (build-time) and falls back to same-origin `/api`;
+- the API enables CORS from `CORS_ORIGINS` (default `*`);
+- `config.normalize_database_url` coerces Railway's `postgresql://` URL to `+asyncpg`;
+- the image honors Railway's injected `$PORT`; [`railway.json`](../railway.json) migrates then serves.
+
+**1. Railway — API + database.** Create a project, add a **PostgreSQL** plugin (it exposes
+`DATABASE_URL`), and deploy this repo. Railway reads [`railway.json`](../railway.json), builds the
+[`Dockerfile`](../Dockerfile), runs `alembic upgrade head`, and serves on `$PORT`. Set
+`CORS_ORIGINS` to the Vercel URL (or leave `*`). Note the public API URL, e.g.
+`https://acs-api.up.railway.app`.
+
+**2. Seed data.** A deployed instance can't *produce* runs — the agent's sandbox needs
+`unshare --net` privileges managed hosts don't grant — so import the committed results into the
+Railway database (run from a machine that can reach it, with `DATABASE_URL` set to the Railway
+Postgres URL):
+
+```bash
+cd backend
+DATABASE_URL="<railway-postgres-url>" uv run python -m app.eval.import_results \
+  --results ../docs/results/groq-llama-3.3-70b-v1.json
+DATABASE_URL="<railway-postgres-url>" uv run python -m app.eval.import_results \
+  --results ../docs/results/groq-llama-3.3-70b-v2.json
+```
+
+That gives the dashboard the real v1 (86.7%) and v2 (100%) runs and a working compare view.
+Imported runs have empty traces (the results JSON doesn't carry per-step traces); a full run
+with traces would need to be copied from a database produced by an actual eval run.
+
+**3. Vercel — dashboard.** Import the repo, set **Root Directory** to `frontend` (Vercel
+auto-detects Vite via [`vercel.json`](../../frontend/vercel.json)), and add an environment
+variable `VITE_API_BASE_URL` = the Railway API URL from step 1. Deploy. The SPA now calls the
+Railway API cross-origin, which CORS permits.
+
 ## Honest notes
 
 - **Not built in this environment.** This cloud build sandbox has no usable Docker daemon, so the
