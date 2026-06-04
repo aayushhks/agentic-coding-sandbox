@@ -16,5 +16,21 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentic-sandbox-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      LLM_PROVIDER: mock
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/agentic_sandbox
+    ports:
+      - "8000:8000"
+    # apply migrations, then serve the API + dashboard
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
 volumes:
   postgres_data:
