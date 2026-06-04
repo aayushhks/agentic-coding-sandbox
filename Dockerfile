@@ -31,9 +31,10 @@ COPY backend/ ./
 COPY --from=frontend /frontend/dist /app/frontend/dist
 
 EXPOSE 8000
+# honor an injected $PORT (Railway etc.), defaulting to 8000 for local/compose use
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status == 200 else 1)"]
+    CMD ["python", "-c", "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\", \"8000\")}/health').status == 200 else 1)"]
 
 # the image serves the API + dashboard; migrations are run by the orchestrator
-# (see docker-compose.yml) since they depend on a reachable database
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# (docker-compose.yml / railway.json) since they depend on a reachable database
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
