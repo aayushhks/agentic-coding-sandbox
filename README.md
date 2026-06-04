@@ -11,7 +11,7 @@ project evaluates LLMs; this one builds and evaluates an autonomous agent.
 
 ## Status
 
-Work in progress, built in milestones. **Current: M7 — hardening analysis.**
+Work in progress, built in milestones. **Current: M8 — eval dashboard.**
 
 - [x] M1 — scaffold: FastAPI skeleton, health endpoint, LLM provider abstraction (Groq + mock), CI
 - [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
@@ -20,7 +20,7 @@ Work in progress, built in milestones. **Current: M7 — hardening analysis.**
 - [x] M5 — eval runner + persistence: full-benchmark harness, failure taxonomy, SQLAlchemy 2 async persistence + Alembic, results CLI
 - [x] M6 — real agent run: first full benchmark on Llama 3.3 70B (Groq) — **86.7% solve rate (13/15)**, both failures on hard tasks; write-up + failure analysis in [docs/m6-real-agent-run.md](docs/m6-real-agent-run.md)
 - [x] M7 — hardening analysis: two targeted fixes (balanced-brace tool-call parser + verified-finish gate) lift the `v1` benchmark from 86.7% to **100% (15/15)** with zero regressions; v1→v2 diff, figures, and trace-level evidence in [docs/m7-analysis.md](docs/m7-analysis.md)
-- [ ] M8 — dashboard
+- [x] M8 — eval dashboard: FastAPI read API + React 19 / Vite / Tailwind v4 SPA over the persisted runs — solve rates, per-task agent traces, and an interactive v1↔v2 regression diff; details in [docs/m8-dashboard.md](docs/m8-dashboard.md)
 - [ ] M9 — CI eval gate
 - [ ] M10 — README, docs, deploy
 
@@ -28,7 +28,7 @@ Work in progress, built in milestones. **Current: M7 — hardening analysis.**
 
 - **Backend:** Python 3.13, FastAPI, SQLAlchemy 2 (async), Pydantic v2, Alembic, structlog, Groq SDK, `uv`
 - **Sandbox:** subprocess + Linux namespaces — network-isolated via `unshare --net`, rlimit CPU/memory/file-size caps, wall-clock timeout, output cap; built behind a `Sandbox` interface so a Docker backend can drop in
-- **Frontend (later):** React 19, Vite, Tailwind v4
+- **Frontend:** React 19, Vite, Tailwind v4, TypeScript — a read-only dashboard over the eval runs
 - **Database:** Postgres 16
 
 ## Running the backend (M1)
@@ -42,6 +42,32 @@ uv run uvicorn app.main:app --reload
 # in another shell:
 curl http://localhost:8000/health
 ```
+
+## Running the dashboard (M8)
+
+The dashboard reads persisted runs and shows solve rates, per-task agent traces, and the M7
+regression diff. In development, run the backend and the Vite dev server side by side:
+
+```bash
+# terminal 1 — backend, pointed at a database that has runs
+cd backend
+DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run uvicorn app.main:app --reload
+
+# terminal 2 — frontend dev server (proxies /api to :8000)
+cd frontend
+npm install
+npm run dev            # http://localhost:5173
+```
+
+For a single-process serve, build the SPA and let FastAPI serve it at `/`:
+
+```bash
+cd frontend && npm run build
+cd ../backend && DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run uvicorn app.main:app
+```
+
+Frontend checks (also run in CI): `npm run typecheck`, `npm test`, `npm run build`. See
+[docs/m8-dashboard.md](docs/m8-dashboard.md) for the API and architecture.
 
 ## Development checks
 
