@@ -127,15 +127,28 @@ Then in the App Runner console: **Create service → Container registry → ECR*
 image, set **port 8000** and **health check path `/health`**, create. App Runner returns an HTTPS
 URL. No environment variables are required — the image serves its baked data.
 
-### Option B — EC2 free tier (free for 12 months, manual, HTTP only)
+### Option B — EC2 free tier (free for 12 months, HTTP only)
+
+The easiest path needs no SSH: paste [`scripts/ec2-user-data.sh`](../scripts/ec2-user-data.sh)
+into the instance's **User data** at launch. On first boot it adds a swapfile (so the build
+doesn't OOM on the 1 GiB box), installs Docker, builds the self-contained image from the public
+repo, and serves it on port 80.
+
+1. **Launch instance** → Amazon Linux 2023, `t3.micro` (free-tier eligible), a key pair.
+2. **Network** → security group inbound: allow **TCP 80** from anywhere (and 22 if you want SSH).
+3. **Advanced details → User data** → paste `scripts/ec2-user-data.sh`.
+4. Launch. After ~3–5 min the dashboard is live at **`http://<instance-public-ip>`** (build logs
+   are in `/var/log/cloud-init-output.log`).
+
+To do it by hand instead (or to redeploy after a push):
 
 ```bash
-# t3.micro (Amazon Linux 2023), security group allowing :80 and :22
-sudo dnf install -y docker && sudo systemctl enable --now docker
-# after pushing to ECR (Option A) authenticate the box to ECR, or build on it, then:
-sudo docker run -d -p 80:8000 --restart unless-stopped <ecr-image-uri>
-# dashboard at http://<ec2-public-ip>   (HTTPS needs a domain + reverse proxy / ACM)
+sudo dnf install -y docker git && sudo systemctl enable --now docker
+git clone https://github.com/aayushhks/agentic-coding-sandbox.git && cd agentic-coding-sandbox
+sudo docker build -t agentic-coding-sandbox . && sudo docker run -d -p 80:8000 --restart unless-stopped agentic-coding-sandbox
 ```
+
+HTTPS needs a domain + a reverse proxy (Caddy/Nginx) or an ALB with ACM — out of scope here.
 
 ### Cost honesty
 
