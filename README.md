@@ -15,21 +15,6 @@ project evaluates LLMs; this one builds and evaluates an autonomous agent.
 **86.7% → 100%** after two targeted hardening fixes, with the full story — runs, traces,
 figures, and a regression gate — written up under [`docs/`](docs/).
 
-## Status
-
-Built in ten milestones, **all complete** — from scaffold to a deployable dashboard guarded by a CI eval gate.
-
-- [x] M1 — scaffold: FastAPI skeleton, health endpoint, LLM provider abstraction (Groq + mock), CI
-- [x] M2 — tool interface + sandbox: tool schema + subprocess sandbox (namespace network isolation, rlimits, timeout, output cap)
-- [x] M3 — agent loop: ReAct loop (JSON tool-call protocol, parsing, observation formatting, iteration + malformed caps), tested against the mock provider
-- [x] M4 — task benchmark: 15 versioned tasks across 5 categories with hidden pytest suites, a loader, a single-task runner, and reference-solution validation
-- [x] M5 — eval runner + persistence: full-benchmark harness, failure taxonomy, SQLAlchemy 2 async persistence + Alembic, results CLI
-- [x] M6 — real agent run: first full benchmark on Llama 3.3 70B (Groq) — **86.7% solve rate (13/15)**, both failures on hard tasks; write-up + failure analysis in [docs/m6-real-agent-run.md](docs/m6-real-agent-run.md)
-- [x] M7 — hardening analysis: two targeted fixes (balanced-brace tool-call parser + verified-finish gate) lift the `v1` benchmark from 86.7% to **100% (15/15)** with zero regressions; v1→v2 diff, figures, and trace-level evidence in [docs/m7-analysis.md](docs/m7-analysis.md)
-- [x] M8 — eval dashboard: FastAPI read API + React 19 / Vite / Tailwind v4 SPA over the persisted runs — solve rates, per-task agent traces, and an interactive v1↔v2 regression diff; details in [docs/m8-dashboard.md](docs/m8-dashboard.md)
-- [x] M9 — CI eval gate: a regression gate (`app.eval.gate_cli`) that fails when a candidate run regresses against the committed baseline or drops below a solve-rate floor — per-push unit coverage in `ci.yml`, a real-model run on schedule/dispatch in `eval-gate.yml`; details in [docs/m9-ci-eval-gate.md](docs/m9-ci-eval-gate.md)
-- [x] M10 — docs & deploy: multi-stage Docker image (one FastAPI process serves the API **and** the built SPA) + a compose stack with Postgres; architecture overview and deploy notes in [docs/m10-deploy.md](docs/m10-deploy.md)
-
 ## Architecture
 
 ```mermaid
@@ -54,7 +39,7 @@ flowchart LR
 - **Frontend:** React 19, Vite, Tailwind v4, TypeScript — a read-only dashboard over the eval runs
 - **Database:** Postgres 16
 
-## Running the backend (M1)
+## Running the backend
 
 Requires [`uv`](https://docs.astral.sh/uv/). `uv` provisions Python 3.13 for you.
 
@@ -66,9 +51,9 @@ uv run uvicorn app.main:app --reload
 curl http://localhost:8000/health
 ```
 
-## Running the dashboard (M8)
+## Running the dashboard
 
-The dashboard reads persisted runs and shows solve rates, per-task agent traces, and the M7
+The dashboard reads persisted runs and shows solve rates, per-task agent traces, and the v1→v2
 regression diff. In development, run the backend and the Vite dev server side by side:
 
 ```bash
@@ -107,12 +92,12 @@ For a writable Postgres setup instead, `docker compose up --build` brings up Pos
 and applies migrations (the DB starts empty — seed it with
 `python -m app.eval.import_results --results docs/results/groq-llama-3.3-70b-v2.json`).
 
-Because the image is self-contained it deploys to any container host with no database:
-**AWS App Runner** (`scripts/push-to-ecr.sh` → point App Runner at the image) or a free-tier
-EC2; or free, no-card hosts like Render/Koyeb. The repo is also ready to split the dashboard
-onto Vercel with the API + Postgres elsewhere (configurable API base URL, CORS, `$PORT`,
-async-URL coercion, `railway.json`, `frontend/vercel.json`). See
-[docs/m10-deploy.md](docs/m10-deploy.md) for the image layout and per-platform walkthroughs.
+Because the image is self-contained it deploys to any container host with no database. It runs
+live on **AWS** — a CloudFront distribution serving HTTPS in front of an EC2 instance running the
+container (the live demo link above). The same image runs on **AWS App Runner**
+(`scripts/push-to-ecr.sh` → point App Runner at the image) or free, no-card hosts like
+Render/Koyeb. See [docs/m10-deploy.md](docs/m10-deploy.md) for the image layout and per-platform
+walkthroughs.
 
 ## Development checks
 
@@ -202,15 +187,3 @@ DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run python -m app.eval.cli --label
 # or against Postgres, after `uv run alembic upgrade head`:
 uv run python -m app.eval.cli --label my-run
 ```
-
-## Limitations
-
-Stated plainly, and expanded as the project grows:
-
-- The benchmark will be small (15–25 tasks) — enough to characterize behavior and failure
-  modes, not a statistical claim about agent capability in general.
-- The agent uses a free-tier model (Llama 3.3 70B via Groq), weaker than frontier models.
-  The harness is model-agnostic, so swapping in a stronger model is a config change.
-- The sandbox is process-level (subprocess + Linux namespaces), not a container — see
-  [Sandbox](#sandbox) for the exact boundary. A Docker backend fits behind the same interface.
-- Single attempt per task — no best-of-N sampling or reflection beyond the core loop.
