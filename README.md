@@ -167,7 +167,7 @@ default `SubprocessSandbox` enforces, per command:
 the filesystem or PID namespace, so it protects the host far less than Docker would. It is sized
 for running the benchmark's own task code, not genuinely hostile programs. The `Sandbox`
 interface lets a Docker-backed implementation drop in where a daemon is available (the preferred
-option on a normal machine; this cloud build environment has no usable daemon).
+option on a normal machine).
 
 ## Eval harness
 

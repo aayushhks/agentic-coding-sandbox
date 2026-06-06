@@ -44,10 +44,9 @@ LLM_PROVIDER=groq DATABASE_URL="sqlite+aiosqlite:///eval.db" \
 - **Agent:** ReAct loop, `max_iterations=15`, `max_consecutive_malformed=3`, **single
   attempt per task** (no best-of-N, no reflection beyond the core loop).
 - **Sandbox:** the `SubprocessSandbox` with network isolation **active** — `unshare --net`
-  was available in this environment, verified before the run.
-- **Persistence:** SQLite, the self-contained path documented in the README (this cloud
-  build environment has no usable Postgres/Docker daemon; the harness is storage-agnostic,
-  so the same run persists to Postgres unchanged where a daemon exists).
+  was available and verified before the run.
+- **Persistence:** SQLite, the self-contained path documented in the README (the harness is
+  storage-agnostic, so the same run persists to Postgres unchanged where a daemon exists).
 - **Rate limits:** none hit. Zero `429`s and zero `provider_error`s across all 15 tasks;
   the Groq SDK's default retry was never even exercised into failure, so no extra
   backoff/pacing was needed for a sequential run of this size.

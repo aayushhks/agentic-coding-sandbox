@@ -63,51 +63,13 @@ docker compose exec app python -m app.eval.cli --label first-run    # mock provi
 
 ## Deploying elsewhere
 
-The image is platform-agnostic (Fly.io, Render, Railway, a plain VM with Docker). Two things to
+The image is platform-agnostic (Fly.io, Render, a plain VM with Docker). Two things to
 provide:
 
 - **`DATABASE_URL`** — an async SQLAlchemy URL (`postgresql+asyncpg://…`). Run
   `alembic upgrade head` once against it before first serve.
 - **`LLM_PROVIDER` / `GROQ_API_KEY`** — only needed to *run* evaluations; serving the dashboard
   over existing runs needs neither (`LLM_PROVIDER=mock` is the default).
-
-## Split deploy: Vercel (dashboard) + Railway (API + Postgres)
-
-The dashboard is static and fits Vercel; the API is a persistent process with a database and
-fits a container host. The repo supports this split with no code edits at deploy time:
-
-- the frontend reads `VITE_API_BASE_URL` (build-time) and falls back to same-origin `/api`;
-- the API enables CORS from `CORS_ORIGINS` (default `*`);
-- `config.normalize_database_url` coerces Railway's `postgresql://` URL to `+asyncpg`;
-- the image honors Railway's injected `$PORT`; [`railway.json`](../railway.json) migrates then serves.
-
-**1. Railway — API + database.** Create a project, add a **PostgreSQL** plugin (it exposes
-`DATABASE_URL`), and deploy this repo. Railway reads [`railway.json`](../railway.json), builds the
-[`Dockerfile`](../Dockerfile), runs `alembic upgrade head`, and serves on `$PORT`. Set
-`CORS_ORIGINS` to the Vercel URL (or leave `*`). Note the public API URL, e.g.
-`https://acs-api.up.railway.app`.
-
-**2. Seed data.** A deployed instance can't *produce* runs — the agent's sandbox needs
-`unshare --net` privileges managed hosts don't grant — so import the committed results into the
-Railway database (run from a machine that can reach it, with `DATABASE_URL` set to the Railway
-Postgres URL):
-
-```bash
-cd backend
-DATABASE_URL="<railway-postgres-url>" uv run python -m app.eval.import_results \
-  --results ../docs/results/groq-llama-3.3-70b-v1.json
-DATABASE_URL="<railway-postgres-url>" uv run python -m app.eval.import_results \
-  --results ../docs/results/groq-llama-3.3-70b-v2.json
-```
-
-That gives the dashboard the real v1 (86.7%) and v2 (100%) runs and a working compare view.
-Imported runs have empty traces (the results JSON doesn't carry per-step traces); a full run
-with traces would need to be copied from a database produced by an actual eval run.
-
-**3. Vercel — dashboard.** Import the repo, set **Root Directory** to `frontend` (Vercel
-auto-detects Vite via [`vercel.json`](../../frontend/vercel.json)), and add an environment
-variable `VITE_API_BASE_URL` = the Railway API URL from step 1. Deploy. The SPA now calls the
-Railway API cross-origin, which CORS permits.
 
 ## AWS
 
@@ -148,7 +110,9 @@ git clone https://github.com/aayushhks/agentic-coding-sandbox.git && cd agentic-
 sudo docker build -t agentic-coding-sandbox . && sudo docker run -d -p 80:8000 --restart unless-stopped agentic-coding-sandbox
 ```
 
-HTTPS needs a domain + a reverse proxy (Caddy/Nginx) or an ALB with ACM — out of scope here.
+The live demo runs exactly this EC2 setup with a **CloudFront** distribution in front for HTTPS
+(its `*.cloudfront.net` certificate, auto-renewing) and an **Elastic IP** pinning the origin so the
+address never rotates; a custom domain + reverse proxy (Caddy/Nginx) or an ALB with ACM also work.
 
 ### Cost honesty
 
@@ -159,13 +123,12 @@ elsewhere*).
 
 ## Honest notes
 
-- **Not built in this environment.** This cloud build sandbox has no usable Docker daemon, so the
-  image was not assembled here. Each stage is verified independently instead: the frontend build
-  produces `dist/`; the production dependency set (`uv sync --no-dev`) imports and serves
-  `app.main` with dev-only packages absent; the exact build-time seed commands populate a SQLite
-  database that the API then serves (both runs + the compare); and `docker compose config`
-  validates the stack. The assembly itself (`docker build`) is standard but unverified here —
-  worth a real build before relying on it.
+- **Built and deployed.** The image is built and run in production on AWS: the EC2 bootstrap
+  (`scripts/ec2-user-data.sh`) builds it from the repo and serves it, fronted by CloudFront over
+  HTTPS. The frontend build produces `dist/`; the production dependency set (`uv sync --no-dev`)
+  imports and serves `app.main` with dev-only packages absent; the build-time seed commands
+  populate the baked SQLite database the API serves (both runs + the compare); and
+  `docker compose config` validates the stack.
 - **The production image is lean.** matplotlib (M7 figure generation) and the test stack are
   dev-only, so `uv sync --no-dev` excludes them; `aiosqlite` is a runtime dependency so the baked
   SQLite database works.
