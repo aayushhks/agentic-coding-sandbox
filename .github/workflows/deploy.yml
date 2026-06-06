@@ -1,0 +1,46 @@
+name: deploy
+
+# Surfaces the live AWS deployment on GitHub the way the Vercel/Railway integrations do.
+# On every push to main (and on demand) this records a deployment to the `aws-production`
+# environment and smoke-tests the public dashboard, so the repo's Deployments/Environments
+# panel shows an entry linking straight to the live site — backed by a real health check, so
+# it only goes green when the site genuinely responds.
+#
+# Infra: CloudFront (HTTPS) -> EC2 (Docker, pinned Elastic IP) serving the self-contained
+# image. The instance serves itself, so this is a deployment marker + smoke test, not a build.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: aws-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment:
+      name: aws-production
+      url: https://d3co9fcex8s4iu.cloudfront.net
+    env:
+      BASE_URL: https://d3co9fcex8s4iu.cloudfront.net
+    steps:
+      - name: smoke-test the live dashboard
+        run: |
+          set -euo pipefail
+
+          echo "GET $BASE_URL/health"
+          code=$(curl -sS -o /tmp/health.json -w '%{http_code}' \
+            --retry 5 --retry-all-errors --retry-delay 10 --max-time 30 "$BASE_URL/health")
+          cat /tmp/health.json; echo
+          test "$code" = "200" || { echo "::error::/health returned HTTP $code"; exit 1; }
+
+          echo "GET $BASE_URL/api/runs"
+          rcode=$(curl -sS -o /tmp/runs.json -w '%{http_code}' --max-time 30 "$BASE_URL/api/runs")
+          head -c 300 /tmp/runs.json; echo
+          test "$rcode" = "200" || { echo "::error::/api/runs returned HTTP $rcode"; exit 1; }
+          grep -q '"solve_rate"' /tmp/runs.json || { echo "::error::/api/runs returned no run data"; exit 1; }
+
+          echo "live and healthy at $BASE_URL"

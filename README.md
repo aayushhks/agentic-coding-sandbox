@@ -1,5 +1,7 @@
 # Agentic Coding Sandbox + Eval Harness
 
+> **Live demo → https://d3co9fcex8s4iu.cloudfront.net** — the interactive dashboard, served over HTTPS from AWS (CloudFront → EC2 / Docker).
+
 An autonomous coding agent that, given a programming task, writes code, runs it in an
 isolated sandbox, observes the result, and iterates until the task's tests pass — paired
 with an eval harness that measures how well the agent performs across a benchmark of tasks.
