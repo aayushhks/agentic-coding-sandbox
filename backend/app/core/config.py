@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     groq_model: str = "llama-3.3-70b-versatile"
 
+    # how the agent reaches its sandbox tools: "in_process" executes them directly (the default,
+    # used by the benchmark and every test); "mcp" routes them through the sandbox MCP server over
+    # stdio. Both paths go through the same Sandbox interface, so agent behavior is identical.
+    tool_transport: str = "in_process"
+
     # database connection string, used from m5 onward
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_sandbox"
 
