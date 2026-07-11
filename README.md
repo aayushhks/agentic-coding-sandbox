@@ -1,5 +1,7 @@
 # Agentic Coding Sandbox + Eval Harness
 
+[![CI](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml)
+
 > **Live demo → https://d3co9fcex8s4iu.cloudfront.net** — the interactive dashboard, served over HTTPS from AWS (CloudFront → EC2 / Docker).
 
 An autonomous coding agent that, given a programming task, writes code, runs it in an
@@ -168,6 +170,56 @@ the filesystem or PID namespace, so it protects the host far less than Docker wo
 for running the benchmark's own task code, not genuinely hostile programs. The `Sandbox`
 interface lets a Docker-backed implementation drop in where a daemon is available (the preferred
 option on a normal machine).
+
+## MCP servers (Model Context Protocol)
+
+The agent's tools are also exposed over the [Model Context Protocol](https://modelcontextprotocol.io)
+with the official Python SDK (FastMCP), so any MCP client — including Claude Desktop — can discover
+and drive them. Two stdio servers live in `app/mcp/`:
+
+- **`app.mcp.sandbox_server`** — the file and command tools (`read_file`, `write_file`, `list_dir`,
+  `run_command`, `run_tests`), jailed to a `--workspace` root and running under the same sandbox
+  isolation as the in-process path. Paths are workspace-relative; absolute paths and escapes are
+  rejected at the boundary.
+- **`app.mcp.tracker_server`** — a custom MCP wrapper around an issue tracker (`list_tickets`,
+  `get_ticket`, `update_ticket_status`, `add_comment`). It is a local JSON stand-in for a real
+  Jira / Linear / GitHub Issues API; swapping in the real API is confined to one module
+  (`app/tracker/store.py`).
+
+The agent reaches its sandbox tools in-process (the default) or over MCP, selected by
+`TOOL_TRANSPORT` (`in_process` | `mcp`). Both go through the same `Sandbox` interface, so the agent
+and the benchmark behave identically either way. Each server has a conformance test that drives it
+with the real MCP client over stdio.
+
+### Connect this to Claude Desktop (or any MCP client)
+
+Add the servers to your client's MCP config. For Claude Desktop, edit `claude_desktop_config.json`
+(replace the path with your checkout):
+
+```json
+{
+  "mcpServers": {
+    "acs-sandbox": {
+      "command": "uv",
+      "args": [
+        "run", "--directory", "/ABS/PATH/agentic-coding-sandbox/backend",
+        "python", "-m", "app.mcp.sandbox_server", "--workspace", "/tmp/acs-workspace"
+      ]
+    },
+    "acs-issue-tracker": {
+      "command": "uv",
+      "args": [
+        "run", "--directory", "/ABS/PATH/agentic-coding-sandbox/backend",
+        "python", "-m", "app.mcp.tracker_server"
+      ]
+    }
+  }
+}
+```
+
+Restart the client and it will discover the tools — you can then ask it to list tickets, read a
+file, or make an edit in the workspace and watch it call the tools directly, the same tools the
+agent uses.
 
 ## Eval harness
 
