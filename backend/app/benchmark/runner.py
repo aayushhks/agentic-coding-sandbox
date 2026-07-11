@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from app.agent.loop import Agent
 from app.agent.types import AgentConfig, AgentRun
 from app.benchmark.schema import Task
+from app.core.config import get_settings
 from app.llm.base import LLMProvider
 from app.sandbox.base import Sandbox, SandboxConfig
-from app.sandbox.subprocess_sandbox import SubprocessSandbox
+from app.sandbox.factory import make_sandbox
 from app.sandbox.tools import ToolCall, ToolName
 
 
@@ -56,9 +57,10 @@ async def run_task(
     *,
     agent_config: AgentConfig | None = None,
     sandbox_config: SandboxConfig | None = None,
+    transport: str | None = None,
 ) -> TaskResult:
     """Set up the task workspace, let the agent solve it, then grade against hidden tests."""
-    sandbox = SubprocessSandbox(sandbox_config)
+    sandbox = make_sandbox(transport or get_settings().tool_transport, sandbox_config)
     try:
         setup_workspace(sandbox, task.workspace_files)
         agent = Agent(provider, sandbox, agent_config)
