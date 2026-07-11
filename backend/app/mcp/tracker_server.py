@@ -29,7 +29,7 @@ _INSTRUCTIONS = (
 
 def build_server(store: TicketStore) -> FastMCP:
     """Build the tracker MCP server over a store (the swap point for a real API)."""
-    server = FastMCP("acs-issue-tracker", instructions=_INSTRUCTIONS)
+    server = FastMCP("acs-issue-tracker", instructions=_INSTRUCTIONS, log_level="WARNING")
 
     @server.tool()
     def list_tickets(status: TicketStatus | None = None) -> list[Ticket]:

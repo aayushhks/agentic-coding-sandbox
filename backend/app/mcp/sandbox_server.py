@@ -58,7 +58,7 @@ def _reject_absolute(path: str) -> None:
 
 def build_server(sandbox: Sandbox) -> FastMCP:
     """Build the sandbox MCP server over a given Sandbox instance."""
-    server = FastMCP("acs-sandbox", instructions=_INSTRUCTIONS)
+    server = FastMCP("acs-sandbox", instructions=_INSTRUCTIONS, log_level="WARNING")
 
     @server.tool()
     def read_file(path: str) -> SandboxToolResult:
