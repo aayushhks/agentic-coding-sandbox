@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 def normalize_database_url(url: str) -> str:
     """Coerce a sync Postgres URL to the async (asyncpg) driver.
 
-    Managed hosts (Railway, Heroku, …) hand out ``postgresql://`` / ``postgres://`` URLs, but
+    Managed hosts (Heroku, Render, …) hand out ``postgresql://`` / ``postgres://`` URLs, but
     the app uses SQLAlchemy's async engine, which needs the ``+asyncpg`` driver. SQLite and
     already-async URLs are left untouched.
     """
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_sandbox"
 
     # comma-separated CORS origins allowed to call the API ("*" allows any); needed when the
-    # dashboard is served from a different origin than the API (e.g. Vercel -> Railway).
+    # dashboard is served from a different origin than the API (e.g. a separately hosted frontend).
     cors_origins: str = "*"
 
     @field_validator("database_url")
