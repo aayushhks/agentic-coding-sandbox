@@ -36,6 +36,13 @@ jobs:
       - name: pytest
         run: uv run pytest
 
+      - name: mcp eval smoke (one benchmark task, mock provider, mcp transport)
+        env:
+          LLM_PROVIDER: mock
+          TOOL_TRANSPORT: mcp
+          DATABASE_URL: "sqlite+aiosqlite:///mcp-smoke.db"
+        run: uv run python -m app.eval.cli --label ci-mcp-smoke --create-tables --limit 1
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
