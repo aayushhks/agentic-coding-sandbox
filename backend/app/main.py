@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from app.api.deployment import router as deployment_router
 from app.api.runs import router as runs_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
         )
 
     app.include_router(runs_router)
+    app.include_router(deployment_router)
 
     # Serve the compiled single-page dashboard at the root, if it has been built.
     if _FRONTEND_DIST.is_dir():

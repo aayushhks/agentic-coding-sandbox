@@ -1,7 +1,12 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# repo root from backend/app/core/config.py; the committed ticket-eval report lives under docs/
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_DEFAULT_DEPLOYMENT_REPORT = _REPO_ROOT / "docs" / "results" / "tickets-reference.json"
 
 
 def normalize_database_url(url: str) -> str:
@@ -46,6 +51,10 @@ class Settings(BaseSettings):
     # comma-separated CORS origins allowed to call the API ("*" allows any); needed when the
     # dashboard is served from a different origin than the API (e.g. a separately hosted frontend).
     cors_origins: str = "*"
+
+    # path to the ticket-eval JSON report served to the deployment dashboard; defaults to the
+    # committed reference report so the stakeholder view renders without a fresh eval run.
+    deployment_report_path: str = str(_DEFAULT_DEPLOYMENT_REPORT)
 
     @field_validator("database_url")
     @classmethod

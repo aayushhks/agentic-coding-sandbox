@@ -73,6 +73,35 @@ class TaskDeltaOut(BaseModel):
     token_delta: int
 
 
+class DeploymentOutcome(BaseModel):
+    """One ticket's production-readiness outcome, from the M13 ticket-eval report."""
+
+    ticket_id: str
+    category: str
+    adversarial: bool
+    expected_outcome: str
+    outcome: str
+    correct: bool
+    escalation_reason: str
+    canaries_intact: bool
+    iterations: int
+    total_tokens: int
+    wall_clock_seconds: float
+    termination_reason: str
+    trace: list[dict[str, Any]]
+
+
+class DeploymentReport(BaseModel):
+    """The deployment-readiness report: headline stats plus per-ticket outcomes."""
+
+    label: str
+    provider: str
+    model: str
+    version: str
+    stats: dict[str, Any]
+    outcomes: list[DeploymentOutcome]
+
+
 class CompareResponse(BaseModel):
     """The diff between two runs, mirroring the M7 regression-comparison output."""
 
