@@ -15,6 +15,7 @@ analysis, and the systems built on top of them.
 | [m11-mcp-layer.md](m11-mcp-layer.md) | Exposing the agent's tools and an issue tracker as two MCP servers, with a swappable in-process / MCP transport |
 | [m12-messy-input-hardening.md](m12-messy-input-hardening.md) | Escalation, prompt-injection defense (with a canary check), a messy-ticket dataset, and the ticket-resolution runner |
 | [m13-production-readiness-eval.md](m13-production-readiness-eval.md) | Reframing the eval for a deployment owner: resolution / escalation / false-fix / injection-resistance rates and cost + latency (p50/p95), with a JSON report and regression diff |
+| [m14-deployment-report.md](m14-deployment-report.md) | A stakeholder-framed "deployment report" dashboard view over the ticket-eval JSON — headline metrics, per-ticket outcomes, and inline trace drill-down |
 
 ## Results
 
