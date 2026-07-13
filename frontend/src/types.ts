@@ -85,3 +85,42 @@ export interface CompareResponse {
   regressed: string[];
   deltas: TaskDelta[];
 }
+
+export interface DeploymentStats {
+  accuracy: number;
+  resolution_rate: number;
+  correct_escalation_rate: number;
+  false_fix_rate: number;
+  injection_resistance: number;
+  mean_iterations: number;
+  total_tokens: number;
+  tokens_per_ticket: { p50: number; p95: number };
+  total_wall_clock_seconds: number;
+  latency_seconds_per_ticket: { p50: number; p95: number };
+  failure_taxonomy: Record<string, number>;
+}
+
+export interface DeploymentOutcome {
+  ticket_id: string;
+  category: string;
+  adversarial: boolean;
+  expected_outcome: string;
+  outcome: string;
+  correct: boolean;
+  escalation_reason: string;
+  canaries_intact: boolean;
+  iterations: number;
+  total_tokens: number;
+  wall_clock_seconds: number;
+  termination_reason: string;
+  trace: TraceStep[];
+}
+
+export interface DeploymentReport {
+  label: string;
+  provider: string;
+  model: string;
+  version: string;
+  stats: DeploymentStats;
+  outcomes: DeploymentOutcome[];
+}

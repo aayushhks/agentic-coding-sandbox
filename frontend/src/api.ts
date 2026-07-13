@@ -1,4 +1,10 @@
-import type { CompareResponse, RunDetail, RunSummary, TaskDetail } from "./types";
+import type {
+  CompareResponse,
+  DeploymentReport,
+  RunDetail,
+  RunSummary,
+  TaskDetail,
+} from "./types";
 
 // Same-origin by default (dev proxy / single-process deploy). When the dashboard is hosted
 // apart from the API (e.g. Vercel -> Railway), set VITE_API_BASE_URL to the API's origin.
@@ -27,4 +33,8 @@ export function getTask(runId: number, taskId: string): Promise<TaskDetail> {
 export function compareRuns(baseline: string, candidate: string): Promise<CompareResponse> {
   const query = new URLSearchParams({ baseline, candidate });
   return getJSON<CompareResponse>(`/compare?${query.toString()}`);
+}
+
+export function getDeploymentReport(): Promise<DeploymentReport> {
+  return getJSON<DeploymentReport>("/deployment-report");
 }
