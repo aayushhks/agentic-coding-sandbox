@@ -36,6 +36,7 @@ class Agent:
         verified = False
         termination = TerminationReason.MAX_ITERATIONS
         final_answer = ""
+        escalation_reason = ""
 
         for index in range(self._config.max_iterations):
             try:
@@ -70,6 +71,24 @@ class Agent:
                 continue
 
             consecutive_malformed = 0
+
+            if parsed.tool_call.name == ToolName.ESCALATE:
+                escalation_reason = str(parsed.tool_call.arguments.get("reason", ""))
+                steps.append(
+                    AgentStep(
+                        index=index,
+                        thought=parsed.thought,
+                        raw_response=raw,
+                        tool_call=parsed.tool_call,
+                        tool_result=None,
+                        observation="ticket escalated to a human by the agent",
+                        malformed=False,
+                        prompt_tokens=completion.prompt_tokens,
+                        completion_tokens=completion.completion_tokens,
+                    )
+                )
+                termination = TerminationReason.ESCALATED
+                break
 
             if parsed.tool_call.name == ToolName.FINISH:
                 if self._config.require_verified_finish and not verified:
@@ -135,6 +154,7 @@ class Agent:
             final_answer=final_answer,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
+            escalation_reason=escalation_reason,
         )
 
     async def _execute(self, call: ToolCall) -> ToolResult:
@@ -168,7 +188,9 @@ class Agent:
         return [
             Message(
                 role=Role.SYSTEM,
-                content=build_system_prompt(self._config.require_verified_finish),
+                content=build_system_prompt(
+                    self._config.require_verified_finish, self._config.allow_escalation
+                ),
             ),
             Message(role=Role.USER, content="\n".join(parts)),
         ]

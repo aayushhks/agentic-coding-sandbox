@@ -11,6 +11,7 @@ class TerminationReason(StrEnum):
     MAX_ITERATIONS = "max_iterations"
     MALFORMED_LIMIT = "malformed_limit"
     PROVIDER_ERROR = "provider_error"
+    ESCALATED = "escalated"
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +24,9 @@ class AgentConfig:
     # when set, the agent may only finish after a test run has actually passed (exit 0);
     # "no tests ran" (pytest exit 5) does not count as verification
     require_verified_finish: bool = False
+    # when set, the agent is offered an escalate tool and told to escalate rather than guess or
+    # comply on tickets it cannot or should not resolve; off for the benchmark
+    allow_escalation: bool = False
 
 
 @dataclass(slots=True)
@@ -49,6 +53,7 @@ class AgentRun:
     final_answer: str
     prompt_tokens: int
     completion_tokens: int
+    escalation_reason: str = ""
 
     @property
     def iterations(self) -> int:
@@ -61,6 +66,10 @@ class AgentRun:
     @property
     def finished_cleanly(self) -> bool:
         return self.termination_reason == TerminationReason.FINISHED
+
+    @property
+    def escalated(self) -> bool:
+        return self.termination_reason == TerminationReason.ESCALATED
 
     def tool_counts(self) -> dict[str, int]:
         counts: dict[str, int] = {}

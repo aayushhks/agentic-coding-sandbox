@@ -136,3 +136,17 @@ async def test_no_tests_ran_does_not_verify(sandbox: SubprocessSandbox) -> None:
     assert test_step.tool_result is not None
     assert test_step.tool_result.exit_code == 5
     assert "cannot finish yet" in run.steps[-1].observation
+
+
+async def test_agent_escalates_when_allowed(sandbox: SubprocessSandbox) -> None:
+    responses = [_call("escalate", reason="ticket is underspecified")]
+    agent = Agent(
+        MockProvider(responses=responses),
+        sandbox,
+        AgentConfig(max_iterations=10, allow_escalation=True),
+    )
+    run = await agent.run("do something impossibly vague")
+    assert run.termination_reason == TerminationReason.ESCALATED
+    assert run.escalated
+    assert run.escalation_reason == "ticket is underspecified"
+    assert run.iterations == 1

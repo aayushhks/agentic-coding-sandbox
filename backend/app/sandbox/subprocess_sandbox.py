@@ -86,6 +86,8 @@ class SubprocessSandbox(Sandbox):
                 return self._run_tests(str(target) if target is not None else None)
             case ToolName.FINISH:
                 return ToolResult(output=str(call.arguments.get("answer", "")), ok=True)
+            case ToolName.ESCALATE:
+                return ToolResult(output=str(call.arguments.get("reason", "")), ok=True)
         assert_never(call.name)
 
     @staticmethod

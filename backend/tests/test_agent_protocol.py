@@ -80,10 +80,17 @@ def test_parse_takes_first_of_two_objects() -> None:
     assert parsed.tool_call.name == ToolName.FINISH
 
 
-def test_system_prompt_lists_all_tools() -> None:
+def test_system_prompt_lists_core_tools() -> None:
     prompt = build_system_prompt()
     for tool in ToolName:
-        assert tool.value in prompt
+        if tool == ToolName.ESCALATE:
+            assert tool.value not in prompt  # escalate is opt-in, off by default
+        else:
+            assert tool.value in prompt
+
+
+def test_system_prompt_offers_escalate_when_enabled() -> None:
+    assert "escalate" in build_system_prompt(allow_escalation=True)
 
 
 def test_format_observation_ok() -> None:

@@ -12,6 +12,7 @@ class ToolName(StrEnum):
     RUN_COMMAND = "run_command"
     RUN_TESTS = "run_tests"
     FINISH = "finish"
+    ESCALATE = "escalate"
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,5 +76,11 @@ TOOL_SPECS: tuple[ToolSpec, ...] = (
         ToolName.FINISH,
         "Declare the task complete and stop the loop.",
         {"answer": "optional summary of what was accomplished"},
+    ),
+    ToolSpec(
+        ToolName.ESCALATE,
+        "Escalate to a human instead of attempting the task, when it cannot or should not be "
+        "resolved automatically.",
+        {"reason": "why you are escalating instead of proceeding"},
     ),
 )

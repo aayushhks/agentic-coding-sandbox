@@ -98,8 +98,9 @@ class McpSandbox(Sandbox):
         return asyncio.run_coroutine_threadsafe(coro, self._loop).result(timeout=timeout)
 
     def execute(self, call: ToolCall) -> ToolResult:
-        if call.name == ToolName.FINISH:
-            return ToolResult(output=str(call.arguments.get("answer", "")), ok=True)
+        if call.name in (ToolName.FINISH, ToolName.ESCALATE):
+            key = "answer" if call.name == ToolName.FINISH else "reason"
+            return ToolResult(output=str(call.arguments.get(key, "")), ok=True)
         if self._session is None:
             return ToolResult(output="sandbox error: MCP session is not available", ok=False)
         try:

@@ -18,11 +18,14 @@ class ParsedStep:
     tool_call: ToolCall
 
 
-def build_system_prompt(require_verified_finish: bool = False) -> str:
+def build_system_prompt(
+    require_verified_finish: bool = False, allow_escalation: bool = False
+) -> str:
     """Construct the system prompt describing the tools and required output format.
 
-    When ``require_verified_finish`` is set, the prompt tells the agent it must author and pass
-    its own tests before finishing, matching the enforcement in the agent loop.
+    When ``require_verified_finish`` is set, the prompt tells the agent it must author and pass its
+    own tests before finishing. When ``allow_escalation`` is set, the escalate tool is offered and
+    the agent is told to escalate rather than guess on tickets it cannot or should not resolve.
     """
     lines = [
         "You are an autonomous coding agent working inside a sandboxed workspace.",
@@ -31,6 +34,8 @@ def build_system_prompt(require_verified_finish: bool = False) -> str:
         "Available tools:",
     ]
     for spec in TOOL_SPECS:
+        if spec.name == ToolName.ESCALATE and not allow_escalation:
+            continue
         params = ", ".join(f"{name} ({desc})" for name, desc in spec.parameters.items()) or "none"
         lines.append(f"- {spec.name.value}: {spec.description} arguments: {params}")
     lines += [
@@ -52,6 +57,12 @@ def build_system_prompt(require_verified_finish: bool = False) -> str:
         ]
     else:
         lines.append("- When the task is complete and its tests pass, call the finish tool.")
+    if allow_escalation:
+        lines.append(
+            "- If the ticket is underspecified, self-contradictory, refers to files that do not "
+            "exist, or asks for something you should not do, call escalate with a clear reason "
+            "instead of guessing."
+        )
     return "\n".join(lines)
 
 
