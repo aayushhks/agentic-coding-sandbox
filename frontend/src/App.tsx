@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 
 import { listRuns } from "./api";
 import { CompareView } from "./components/CompareView";
+import { DeploymentReport } from "./components/DeploymentReport";
 import { RunDetail } from "./components/RunDetail";
 import { RunsList } from "./components/RunsList";
 import type { RunSummary } from "./types";
 
-type Tab = "runs" | "compare";
+type Tab = "runs" | "compare" | "report";
 
 function TabButton({
   active,
@@ -62,31 +63,42 @@ export default function App(): ReactNode {
           <TabButton active={tab === "compare"} onClick={() => setTab("compare")}>
             compare
           </TabButton>
+          <TabButton active={tab === "report"} onClick={() => setTab("report")}>
+            report
+          </TabButton>
         </nav>
       </header>
 
       <main className="flex-1">
-        {error && (
-          <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-            could not load runs: {error}. is the backend running?
-          </p>
-        )}
+        {/* The deployment report reads its own endpoint, so it renders regardless of whether any
+            benchmark runs exist or the /api/runs fetch failed. */}
+        {tab === "report" ? (
+          <DeploymentReport />
+        ) : (
+          <>
+            {error && (
+              <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+                could not load runs: {error}. is the backend running?
+              </p>
+            )}
 
-        {!error && runs && runs.length === 0 && (
-          <p className="text-sm text-slate-500">
-            no benchmark runs yet — run <code className="text-slate-300">app.eval.cli</code> to
-            produce one.
-          </p>
-        )}
+            {!error && runs && runs.length === 0 && (
+              <p className="text-sm text-slate-500">
+                no benchmark runs yet — run <code className="text-slate-300">app.eval.cli</code> to
+                produce one.
+              </p>
+            )}
 
-        {!error && runs && runs.length > 0 && tab === "runs" && (
-          <div className="grid gap-6 md:grid-cols-[18rem_1fr]">
-            <RunsList runs={runs} selectedId={selectedId} onSelect={setSelectedId} />
-            {selectedId !== null && <RunDetail runId={selectedId} />}
-          </div>
-        )}
+            {!error && runs && runs.length > 0 && tab === "runs" && (
+              <div className="grid gap-6 md:grid-cols-[18rem_1fr]">
+                <RunsList runs={runs} selectedId={selectedId} onSelect={setSelectedId} />
+                {selectedId !== null && <RunDetail runId={selectedId} />}
+              </div>
+            )}
 
-        {!error && runs && runs.length > 0 && tab === "compare" && <CompareView runs={runs} />}
+            {!error && runs && runs.length > 0 && tab === "compare" && <CompareView runs={runs} />}
+          </>
+        )}
       </main>
     </div>
   );
