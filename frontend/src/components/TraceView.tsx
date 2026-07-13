@@ -4,6 +4,17 @@ import type { ReactNode } from "react";
 import { getTask } from "../api";
 import type { TaskDetail, TraceStep } from "../types";
 
+/** The step-by-step agent trace as a list of cards; reused wherever a trace is shown. */
+export function TraceSteps({ steps }: { steps: TraceStep[] }): ReactNode {
+  return (
+    <ol className="flex flex-col gap-2">
+      {steps.map((step, i) => (
+        <StepCard key={i} step={step} />
+      ))}
+    </ol>
+  );
+}
+
 function StepCard({ step }: { step: TraceStep }): ReactNode {
   return (
     <li className="rounded-md border border-slate-800 bg-slate-900/60 p-3">
@@ -97,11 +108,7 @@ export function TraceView({
           {!task && !error && <p className="text-sm text-slate-500">loading trace…</p>}
           {task && (
             <>
-              <ol className="flex flex-col gap-2">
-                {task.trace.map((step, i) => (
-                  <StepCard key={i} step={step} />
-                ))}
-              </ol>
+              <TraceSteps steps={task.trace} />
               {task.eval_output && (
                 <div className="mt-4">
                   <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
