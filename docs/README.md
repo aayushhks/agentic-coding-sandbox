@@ -13,6 +13,7 @@ analysis, and the systems built on top of them.
 | [m9-ci-eval-gate.md](m9-ci-eval-gate.md) | The regression gate that fails CI when a run regresses against the committed baseline |
 | [m10-deploy.md](m10-deploy.md) | Packaging the API + dashboard as one Docker image and the compose stack |
 | [m11-mcp-layer.md](m11-mcp-layer.md) | Exposing the agent's tools and an issue tracker as two MCP servers, with a swappable in-process / MCP transport |
+| [m12-messy-input-hardening.md](m12-messy-input-hardening.md) | Escalation, prompt-injection defense (with a canary check), a messy-ticket dataset, and the ticket-resolution runner |
 
 ## Results
 
