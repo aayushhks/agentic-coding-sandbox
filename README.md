@@ -1,38 +1,54 @@
-# Agentic Coding Sandbox + Eval Harness
+# Agentic Coding Sandbox — an AI agent deployed into a real engineering workflow
 
 [![CI](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml)
 
-> **Live demo → https://d3co9fcex8s4iu.cloudfront.net** — the interactive dashboard, served over HTTPS from AWS (CloudFront → EC2 / Docker).
+> **Live demo → https://d3co9fcex8s4iu.cloudfront.net** — the stakeholder **deployment report** and the benchmark dashboard, over HTTPS from AWS.
 
-An autonomous coding agent that, given a programming task, writes code, runs it in an
-isolated sandbox, observes the result, and iterates until the task's tests pass — paired
-with an eval harness that measures how well the agent performs across a benchmark of tasks.
+**The problem, in a stakeholder's words.** An engineering team is buried in maintenance tickets —
+small bugs, refactors, "the CSV export drops the last row." They want an AI agent embedded in that
+workflow to work the queue: read the repo and the issue tracker through their own tools, fix what it
+safely can, and **escalate what it shouldn't touch — instead of guessing, or getting hijacked.**
 
-This is a portfolio project built to demonstrate the engineering behind agentic systems:
-the control loop, the tool interface, the sandboxing, the failure modes, and how to measure
-whether the agent is actually any good. It is the companion to `llm-eval-with-probes` — that
-project evaluates LLMs; this one builds and evaluates an autonomous agent.
+This repo is that deployment: the agent, the **MCP integration layer** wiring it to the codebase and
+issue tracker, the **security boundary** it operates inside, its handling of **messy real-world
+tickets** — including a **prompt-injection attempt** — and the **eval that proves it works on that
+data**, including knowing when to escalate rather than act. It reads two ways on purpose: as a
+forward-deployed-engineering deployment story, and as the systems engineering underneath it (a ReAct
+loop, a namespace-isolated sandbox, real MCP protocol conformance, a production-readiness eval).
 
-**Result:** on the 15-task `v1` benchmark the agent (Llama 3.3 70B via Groq) goes from
-**86.7% → 100%** after two targeted hardening fixes, with the full story — runs, traces,
-figures, and a regression gate — written up under [`docs/`](docs/).
+It stands on a foundation worth stating plainly: an autonomous coding agent + eval harness that, on
+a 15-task benchmark, goes **86.7% → 100%** after two targeted hardening fixes — the loop, sandbox,
+and measurement the deployment layer sits on. Full story under [`docs/`](docs/).
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-  subgraph Agent["agent runtime"]
-    LLM["LLM provider<br/>(Groq · mock)"] --> Loop["ReAct loop"]
-    Loop -- "tool calls" --> Sandbox["subprocess sandbox<br/>(network-isolated)"]
-    Sandbox -- "observations" --> Loop
+flowchart TB
+  Client["any MCP client<br/>(Claude Desktop · the ReAct agent)"]
+  subgraph MCP["MCP integration layer — stdio, official SDK"]
+    Sandbox["sandbox server<br/>read · write · list · run · tests"]
+    Tracker["issue-tracker server<br/>list · get · update · comment"]
   end
-  Bench["v1 benchmark<br/>(15 tasks)"] --> Harness["eval harness"]
-  Loop --> Harness
-  Harness -- "runs · traces" --> DB[("database")]
-  DB --> API["FastAPI read API"]
-  API --> UI["React dashboard"]
-  DB --> Cmp["regression compare"] --> Gate["CI eval gate"]
+  Boundary["trust boundary:<br/>workspace jail + namespace-isolated sandbox"]
+  Client -- "sandbox tools" --> Sandbox --> Boundary
+  Client -- "tickets" --> Tracker
+  Tickets["messy-ticket dataset<br/>(+ prompt-injection)"] --> Runner["resolve or escalate"]
+  Client --> Runner
+  Runner --> Eval["production-readiness eval<br/>resolution · escalation · injection-resistance · cost/latency"]
+  Eval --> Report[("JSON report")]
+  Report --> Dash["deployment-report dashboard"]
 ```
+
+## The deployment, end to end
+
+| Layer | What it is | Deep dive |
+|---|---|---|
+| **Integration** | two real MCP servers — sandbox tools + a Jira/Linear-shaped issue tracker — driven by any MCP client | [m11](docs/m11-mcp-layer.md) · [live transcript](docs/mcp-session.md) |
+| **Safety** | a workspace jail + namespace-isolated sandbox; ticket text treated as data, never instructions; a canary-checked injection ticket | [m12](docs/m12-messy-input-hardening.md) |
+| **Judgment** | escalate the underspecified / conflicting / missing-file / duplicate / hijack tickets instead of guessing | [m12](docs/m12-messy-input-hardening.md) |
+| **Proof** | a deployment-owner eval — resolution / correct-escalation / false-fix / **injection-resistance** rates + cost & latency (p50/p95) | [m13](docs/m13-production-readiness-eval.md) |
+| **Report** | a stakeholder dashboard over that eval — headline metrics, per-ticket outcomes, inline trace drill-down | [m14](docs/m14-deployment-report.md) |
+| **Foundation** | the coding agent + benchmark it's built on, hardened 86.7% → 100% | [m6](docs/m6-real-agent-run.md) · [m7](docs/m7-analysis.md) |
 
 ## Tech stack
 
@@ -100,6 +116,12 @@ container (the live demo link above). The same image runs on **AWS App Runner**
 (`scripts/push-to-ecr.sh` → point App Runner at the image) or free, no-card hosts like
 Render/Koyeb. See [docs/m10-deploy.md](docs/m10-deploy.md) for the image layout and per-platform
 walkthroughs.
+
+The image also bakes the ticket-eval report, so the **deployment-report** tab and
+`/api/deployment-report` work in production; the report is additionally static-exported into the
+SPA (`/deployment-report.json`), so a pure-static host (S3 + CloudFront) can serve the stakeholder
+view with no backend at all. After a push, rebuild the container on the EC2 box to pick up new
+results — see [docs/m15-deployment-and-framing.md](docs/m15-deployment-and-framing.md).
 
 ## Development checks
 
@@ -221,6 +243,10 @@ Restart the client and it will discover the tools — you can then ask it to lis
 file, or make an edit in the workspace and watch it call the tools directly, the same tools the
 agent uses.
 
+Prefer a terminal? [`docs/mcp-session.md`](docs/mcp-session.md) is a **real recorded session** — an
+SDK client connecting over stdio, listing the tools, and calling them (including the sandbox
+rejecting an absolute path). It's the reproducible, screenshot-free version of the demo.
+
 ## Eval harness
 
 `backend/app/eval/` runs the agent across the benchmark and records, per task: solved?,
@@ -239,3 +265,20 @@ DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run python -m app.eval.cli --label
 # or against Postgres, after `uv run alembic upgrade head`:
 uv run python -m app.eval.cli --label my-run
 ```
+
+## Honest limitations
+
+- **The issue tracker is a local stand-in.** Tickets live in a JSON file; swapping in a real
+  Jira / Linear / GitHub Issues API is confined to `app/tracker/store.py`. The "customer" is
+  fictional.
+- **The rendered deployment report is a scripted reference** (an oracle at 100%), so the dashboard
+  has data without a live model. Real numbers come from `app.tickets.eval_cli` with a model and a
+  namespace-capable host; the harness is model-agnostic.
+- **Single attempt per ticket**, temperature 0 — no best-of-N or reflection beyond the loop.
+- **Small dataset.** Ten tickets — and injection resistance over one adversarial case — characterize
+  behavior and cost, not a statistical capability claim.
+- **The sandbox is process-level** (subprocess + Linux namespaces), not a container — see
+  [Sandbox](#sandbox) for the exact boundary. Production concerns are demonstrated, not
+  enterprise-hardened.
+- **The MCP servers run locally, not on the public internet.** The deployed demo shows their
+  recorded results (the report), not a live tool endpoint.
