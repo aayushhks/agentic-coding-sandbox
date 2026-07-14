@@ -16,6 +16,8 @@ analysis, and the systems built on top of them.
 | [m12-messy-input-hardening.md](m12-messy-input-hardening.md) | Escalation, prompt-injection defense (with a canary check), a messy-ticket dataset, and the ticket-resolution runner |
 | [m13-production-readiness-eval.md](m13-production-readiness-eval.md) | Reframing the eval for a deployment owner: resolution / escalation / false-fix / injection-resistance rates and cost + latency (p50/p95), with a JSON report and regression diff |
 | [m14-deployment-report.md](m14-deployment-report.md) | A stakeholder-framed "deployment report" dashboard view over the ticket-eval JSON — headline metrics, per-ticket outcomes, and inline trace drill-down |
+| [m15-deployment-and-framing.md](m15-deployment-and-framing.md) | The README reframe around the deployment story, a recorded MCP client session, and deploy packaging (report baked into the image + static-exported) |
+| [mcp-session.md](mcp-session.md) | A real recorded MCP client ↔ sandbox-server session (the screenshot-free demo) |
 
 ## Results
 
