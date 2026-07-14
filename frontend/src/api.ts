@@ -35,6 +35,16 @@ export function compareRuns(baseline: string, candidate: string): Promise<Compar
   return getJSON<CompareResponse>(`/compare?${query.toString()}`);
 }
 
-export function getDeploymentReport(): Promise<DeploymentReport> {
-  return getJSON<DeploymentReport>("/deployment-report");
+export async function getDeploymentReport(): Promise<DeploymentReport> {
+  try {
+    return await getJSON<DeploymentReport>("/deployment-report");
+  } catch {
+    // Static-export fallback: a backend-free deploy (e.g. S3 + CloudFront) serves the report as a
+    // static asset next to the SPA, so the deployment-report view works with no API behind it.
+    const response = await fetch("/deployment-report.json");
+    if (!response.ok) {
+      throw new Error(`deployment report unavailable (${response.status})`);
+    }
+    return (await response.json()) as DeploymentReport;
+  }
 }
