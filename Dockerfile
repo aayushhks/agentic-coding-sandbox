@@ -30,7 +30,7 @@ COPY backend/ ./
 # Bake a read-only SQLite database seeded from the committed results, so the image is
 # self-contained: `docker run` shows the real v1/v2 runs with no external database. Override
 # DATABASE_URL (compose / RDS / Neon) to point at Postgres instead.
-COPY docs/results/groq-llama-3.3-70b-v1.json docs/results/groq-llama-3.3-70b-v2.json /app/docs/results/
+COPY docs/results/groq-llama-3.3-70b-v1.json docs/results/groq-llama-3.3-70b-v2.json docs/results/tickets-reference.json /app/docs/results/
 ENV DATABASE_URL="sqlite+aiosqlite:////app/backend/eval.db"
 RUN python -m app.eval.import_results --results /app/docs/results/groq-llama-3.3-70b-v1.json --create-tables \
     && python -m app.eval.import_results --results /app/docs/results/groq-llama-3.3-70b-v2.json
