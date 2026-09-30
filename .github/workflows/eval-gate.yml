@@ -2,9 +2,13 @@ name: eval-gate
 
 # Runs the agent across the v1 benchmark with a real model and fails if it regresses
 # against the committed baseline (docs/results/groq-llama-3.3-70b-v2.json). Real-model runs
-# cost tokens and are mildly non-deterministic, so this is not a per-push gate: it runs on a
-# weekly schedule and on demand. Per-push correctness is covered by the unit tests in ci.yml,
-# including the gate logic itself (tests/test_eval_gate.py).
+# cost tokens and are mildly non-deterministic, so this is not a per-push gate: it runs on
+# demand. Per-push correctness is covered by the unit tests in ci.yml, including the gate
+# logic itself (tests/test_eval_gate.py).
+#
+# The weekly schedule is off: groq no longer serves the baseline model
+# (llama-3.3-70b-versatile), so every scheduled run would fail until the gate is
+# re-baselined on a model that is still served.
 
 on:
   workflow_dispatch:
@@ -13,8 +17,6 @@ on:
         description: "minimum acceptable candidate solve rate (0..1)"
         default: "1.0"
         required: false
-  schedule:
-    - cron: "0 6 * * 1" # 06:00 UTC every Monday
 
 jobs:
   gate:
