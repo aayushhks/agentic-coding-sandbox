@@ -47,6 +47,11 @@ def test_groq_provider_exposes_name_and_model() -> None:
     assert provider.model == "llama-3.3-70b-versatile"
 
 
+def test_groq_provider_passes_max_retries_to_the_sdk() -> None:
+    assert GroqProvider(api_key="test-key")._client.max_retries == 2
+    assert GroqProvider(api_key="test-key", max_retries=0)._client.max_retries == 0
+
+
 def test_factory_builds_groq_when_configured() -> None:
     settings = Settings(llm_provider="groq", groq_api_key="test-key")
     assert isinstance(build_provider(settings), GroqProvider)

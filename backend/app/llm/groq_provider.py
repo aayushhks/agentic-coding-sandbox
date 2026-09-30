@@ -10,10 +10,13 @@ from app.llm.base import CompletionResult, LLMProvider, Message
 class GroqProvider(LLMProvider):
     """LLM provider backed by Groq's OpenAI-compatible chat completions API."""
 
-    def __init__(self, api_key: str, *, model: str = "llama-3.3-70b-versatile") -> None:
+    def __init__(
+        self, api_key: str, *, model: str = "llama-3.3-70b-versatile", max_retries: int = 2
+    ) -> None:
         if not api_key:
             raise ValueError("groq api key must not be empty")
-        self._client = AsyncGroq(api_key=api_key)
+        # the sdk retries 429s and 5xx itself; a caller that times each call passes 0 and retries
+        self._client = AsyncGroq(api_key=api_key, max_retries=max_retries)
         self._model = model
 
     @property
