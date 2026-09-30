@@ -1,18 +1,21 @@
+import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from bench.fleet_executor import FleetExecutor
+from bench.fleet_executor import FleetExecutor, pool_topology
 from bench.replay import LatencyProfile
 from bench.runner import replay_payload
 from bench.taskset import plan_jobs
 from tests.bench_helpers import MINI_TASKSET, record_mini_batch
 
 
+@pytest.mark.parametrize("workers", [1, 2])
 async def test_the_fleet_path_reproduces_the_recorded_outcomes(
-    fleet_engine: AsyncEngine, fleet_database_url: str
+    fleet_engine: AsyncEngine, fleet_database_url: str, workers: int
 ) -> None:
     recordings = await record_mini_batch()
     jobs = plan_jobs(MINI_TASKSET, 3, seed=1)
-    batch = await FleetExecutor(fleet_database_url, lease_seconds=60).run(
+    fleet = FleetExecutor(fleet_database_url, workers=workers, lease_seconds=60)
+    batch = await fleet.run(
         MINI_TASKSET,
         jobs,
         lambda task: replay_payload(task, recordings[task.id], LatencyProfile.ZERO),
@@ -22,7 +25,16 @@ async def test_the_fleet_path_reproduces_the_recorded_outcomes(
     assert {result.task_id: result.outcome.value for result in batch.results} == {
         task_id: recording.outcome for task_id, recording in recordings.items()
     }
+    pool = {f"w{index}" for index in range(workers)}
     for result in batch.results:
-        assert (result.worker, result.attempts, result.divergence) == ("w0", 1, None)
+        assert result.worker in pool
+        assert (result.attempts, result.divergence) == (1, None)
         # every timestamp is Postgres's, measured from the moment the batch was inserted
         assert 0.0 == result.submitted_at <= result.claimed_at <= result.finished_at
+
+
+def test_a_fleet_needs_a_worker_and_describes_its_pool() -> None:
+    with pytest.raises(ValueError, match="at least one worker"):
+        FleetExecutor("postgresql+asyncpg://unused", workers=0)
+    assert FleetExecutor("postgresql+asyncpg://unused", workers=4).topology == pool_topology(4)
+    assert pool_topology(1).startswith("single host: one fleet worker process, ")

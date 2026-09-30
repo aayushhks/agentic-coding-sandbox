@@ -1,6 +1,7 @@
-"""Run a bench batch through the fleet: an api process, a worker process, Postgres between."""
+"""Run a bench batch through the fleet: an api process, worker processes, Postgres between."""
 
 import asyncio
+import contextlib
 import os
 import signal
 import socket
@@ -50,8 +51,13 @@ def _tail(log: IO[bytes]) -> str:
     return log.read().decode(errors="replace")[-2000:]
 
 
+def pool_topology(workers: int, database: str = "Postgres") -> str:
+    processes = "one fleet worker process" if workers == 1 else f"{workers} fleet worker processes"
+    return f"single host: {processes}, the fleet api and {database}, all on this machine"
+
+
 class FleetExecutor:
-    """Submits through the fleet api; one worker process claims, runs and publishes every job."""
+    """Submits through the fleet api; a pool of worker processes claims, runs and publishes."""
 
     name = "fleet"
 
@@ -59,13 +65,16 @@ class FleetExecutor:
         self,
         database_url: str,
         *,
-        lease_seconds: float = 600.0,
-        topology: str = "single host: one fleet worker process, the fleet api and Postgres",
+        workers: int = 1,
+        lease_seconds: float | None = None,
+        topology: str | None = None,
     ) -> None:
-        # one worker until heartbeats and fencing make several safe
-        self.workers = 1
-        self.topology = topology
+        if workers < 1:
+            raise ValueError("the fleet needs at least one worker")
+        self.workers = workers
+        self.topology = topology or pool_topology(workers)
         self._url = database_url
+        # unset, the workers take the fleet's configured lease
         self._lease = lease_seconds
 
     async def run(
@@ -73,7 +82,12 @@ class FleetExecutor:
     ) -> BatchResult:
         port = _free_port()
         env = {"FLEET_DATABASE_URL": self._url}
-        with tempfile.TemporaryFile() as api_log, tempfile.TemporaryFile() as worker_log:
+        lease = [] if self._lease is None else ["--lease-seconds", str(self._lease)]
+        with contextlib.ExitStack() as logs:
+            api_log = logs.enter_context(tempfile.TemporaryFile())
+            worker_logs = [
+                logs.enter_context(tempfile.TemporaryFile()) for _ in range(self.workers)
+            ]
             # no access log: the status polling below would otherwise write a line per request
             api = _spawn(
                 [
@@ -83,22 +97,18 @@ class FleetExecutor:
                 env,
                 api_log,
             )
-            # the worker starts before the submit, so its start-up isn't charged to any job
-            worker = _spawn(
-                [
-                    *(
-                        "-m",
-                        "fleet.worker",
-                        "--runner",
-                        "bench.runner:run_job",
-                        "--worker-id",
-                        "w0",
-                    ),
-                    *("--lease-seconds", str(self._lease), "--database-url", self._url),
-                ],
-                env,
-                worker_log,
-            )
+            # the workers start before the submit, so their start-up isn't charged to any job
+            workers = [
+                _spawn(
+                    [
+                        *("-m", "fleet.worker", "--runner", "bench.runner:run_job"),
+                        *("--worker-id", f"w{index}", "--database-url", self._url, *lease),
+                    ],
+                    env,
+                    log,
+                )
+                for index, log in enumerate(worker_logs)
+            ]
             client = FleetClient(f"http://127.0.0.1:{port}")
             try:
                 deadline = time.monotonic() + 60
@@ -115,14 +125,15 @@ class FleetExecutor:
                     idempotency_key=uuid.uuid4().hex,
                 )
                 while not (await client.batch(submission.batch_id)).done:
-                    if worker.poll() is not None:
-                        raise RuntimeError(f"the fleet worker exited early:\n{_tail(worker_log)}")
+                    for worker, log in zip(workers, worker_logs, strict=True):
+                        if worker.poll() is not None:
+                            raise RuntimeError(f"a fleet worker exited early:\n{_tail(log)}")
                     await asyncio.sleep(0.1)
             finally:
                 await client.aclose()
-                for process in (worker, api):
+                for process in (*workers, api):
                     process.send_signal(signal.SIGTERM)
-                for process in (worker, api):
+                for process in (*workers, api):
                     try:
                         await asyncio.to_thread(process.wait, 30)
                     except subprocess.TimeoutExpired:
@@ -144,6 +155,12 @@ class FleetExecutor:
         results = []
         for row in rows:
             result = published[row.id]
+            if row.state == "dead_lettered":
+                # a bench record needs the task's execution, and a dead letter never produced one
+                raise RuntimeError(
+                    f"job {row.name} was dead-lettered after {row.attempt} attempts: "
+                    f"{row.last_error}"
+                )
             if result is None or row.claimed_at is None or row.finished_at is None:
                 raise RuntimeError(f"job {row.name} finished without a complete record")
             job = by_name[row.name]
