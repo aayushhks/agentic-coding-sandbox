@@ -34,14 +34,65 @@ async def test_the_worker_runs_every_job_and_publishes_its_result(
     assert [result.body["doubled"] for result in results if result is not None] == [2, 4, 8]
 
 
-async def test_a_runner_crash_is_recorded_as_that_jobs_failure(fleet_engine: AsyncEngine) -> None:
+async def _endings(engine: AsyncEngine, job_id: int) -> list[str]:
+    async with engine.connect() as connection:
+        rows = await connection.scalars(
+            text("select ended_by from fleet_attempts where job_id = :job order by attempt"),
+            {"job": job_id},
+        )
+        return list(rows)
+
+
+async def test_a_runner_that_always_crashes_is_retried_then_dead_lettered(
+    fleet_engine: AsyncEngine,
+) -> None:
     jobs = [NewJob(name=f"j{n}", payload={"n": n}) for n in (3, 4)]
     submission = await submit_batch(fleet_engine, label="b", jobs=jobs)
-    await _worker(fleet_engine).run(exit_when_idle=True)
-    states = [job.state for job in await batch_jobs(fleet_engine, submission.batch_id)]
-    assert states == ["failed", "succeeded"]
-    crashed = await job_result(fleet_engine, submission.job_ids[0])
-    assert crashed is not None and crashed.body == {"error": "RuntimeError: boom"}
+    worker = _worker(fleet_engine, retry=NO_BACKOFF)
+    await asyncio.wait_for(worker.run(exit_when_idle=True), timeout=10)
+    assert (worker.published, worker.released) == (1, 3)
+    crashed, fine = await batch_jobs(fleet_engine, submission.batch_id)
+    assert (crashed.state, crashed.attempt, crashed.last_error) == (
+        "dead_lettered",
+        3,
+        "RuntimeError: boom",
+    )
+    assert await job_result(fleet_engine, crashed.id) is None
+    assert await _endings(fleet_engine, crashed.id) == ["released"] * 3
+    assert (fine.state, fine.attempt) == ("succeeded", 1)
+
+
+async def test_a_passing_infrastructure_failure_is_retried_until_the_job_runs(
+    fleet_engine: AsyncEngine,
+) -> None:
+    calls = 0
+
+    async def flaky(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise ConnectionError("model api unreachable")
+        return RunnerOutcome(outcome="succeeded", body={})
+
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+    await _worker(fleet_engine, flaky, retry=NO_BACKOFF).run(exit_when_idle=True)
+    job = await job_status(fleet_engine, submission.job_ids[0])
+    assert job is not None and (job.state, job.attempt) == ("succeeded", 2)
+    assert job.last_error == "ConnectionError: model api unreachable"
+    assert await _endings(fleet_engine, job.id) == ["released", "published"]
+
+
+async def test_a_task_failure_is_final_on_the_first_attempt(fleet_engine: AsyncEngine) -> None:
+    async def gives_up(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        return RunnerOutcome(outcome="failed", body={"reason": "could not solve it"})
+
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+    worker = _worker(fleet_engine, gives_up, retry=NO_BACKOFF)
+    await worker.run(exit_when_idle=True)
+    assert (worker.published, worker.released) == (1, 0)
+    job = await job_status(fleet_engine, submission.job_ids[0])
+    assert job is not None and (job.state, job.attempt, job.last_error) == ("failed", 1, None)
+    assert await _endings(fleet_engine, job.id) == ["published"]
 
 
 async def test_exiting_when_idle_waits_for_an_abandoned_job(fleet_engine: AsyncEngine) -> None:
@@ -183,6 +234,6 @@ async def test_the_worker_command_drains_a_batch(
     process = start_worker(fleet_database_url, exit_when_idle=True)
     output, _ = await asyncio.to_thread(process.communicate, timeout=60)
     assert process.returncode == 0, output
-    assert "w0: 4 published, 0 rejected, 0 lost" in output
+    assert "w0: 4 published, 0 rejected, 0 lost, 0 released" in output
     states = {job.state for job in await batch_jobs(fleet_engine, submission.batch_id)}
     assert states == {"succeeded"}

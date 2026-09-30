@@ -10,6 +10,7 @@ import socket
 import sys
 import time
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any, cast
 
 from pydantic import BaseModel
@@ -17,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings, async_url
 from fleet.models import DEFAULT_RETRY, ClaimedJob, Outcome, RetryPolicy
-from fleet.store import claim, heartbeat, publish, reap, start, unfinished_jobs
+from fleet.store import claim, heartbeat, publish, reap, release, start, unfinished_jobs
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +28,17 @@ class RunnerOutcome(BaseModel):
     body: dict[str, Any]
 
 
-# (job name, payload) -> what happened; a runner never touches the store itself
+# (job name, payload) -> the task's final outcome; raising instead marks an infrastructure failure
 Runner = Callable[[str, dict[str, Any]], Awaitable[RunnerOutcome]]
 Sleep = Callable[[float], Awaitable[None]]
 Clock = Callable[[], float]
+
+
+@dataclass(frozen=True, slots=True)
+class RunnerError:
+    """A runner raised: the failure was underneath the task, not in it."""
+
+    error: str
 
 
 def load_runner(path: str) -> Runner:
@@ -78,20 +86,22 @@ class Worker:
         self.published = 0
         # results refused because the lease had run out by the time the job finished
         self.rejected = 0
-        # runs stopped early because a heartbeat found the lease gone
+        # attempts that lost their lease before they could finish
         self.lost = 0
+        # attempts given back for a retry after an infrastructure failure
+        self.released = 0
 
     async def _reap(self) -> None:
         self._reaped_at = self._clock()
         await reap(self._engine, retry=self._retry)
 
-    async def _attempt(self, job: ClaimedJob) -> RunnerOutcome:
+    async def _attempt(self, job: ClaimedJob) -> RunnerOutcome | RunnerError:
         try:
             return await self._runner(job.name, job.payload)
-        except Exception as exc:  # a runner crash is recorded as this job's failure
-            return RunnerOutcome(outcome="failed", body={"error": f"{type(exc).__name__}: {exc}"})
+        except Exception as exc:  # a crash is never the task's answer, so it is retried
+            return RunnerError(f"{type(exc).__name__}: {exc}")
 
-    async def _run(self, job: ClaimedJob) -> RunnerOutcome | None:
+    async def _run(self, job: ClaimedJob) -> RunnerOutcome | RunnerError | None:
         """Run a job while extending its lease; None when the lease was lost and the run stopped."""
         work = asyncio.ensure_future(self._attempt(job))
         try:
@@ -130,6 +140,9 @@ class Worker:
             self.lost += 1
             logger.info("%s: lost the lease on job %s, run stopped", self.worker_id, job.id)
             return True
+        if isinstance(outcome, RunnerError):
+            await self._release(job, outcome.error)
+            return True
         accepted = await publish(
             self._engine,
             job_id=job.id,
@@ -149,6 +162,25 @@ class Worker:
                 job.attempt,
             )
         return True
+
+    async def _release(self, job: ClaimedJob, error: str) -> None:
+        state = await release(
+            self._engine, job_id=job.id, attempt=job.attempt, error=error, retry=self._retry
+        )
+        if state is None:
+            # too late to give it back: the lease ran out, and a reaper ends the attempt instead
+            self.lost += 1
+            logger.info("%s: lost the lease on job %s after: %s", self.worker_id, job.id, error)
+            return
+        self.released += 1
+        logger.info(
+            "%s: job %s attempt %s failed underneath the task, now %s: %s",
+            self.worker_id,
+            job.id,
+            job.attempt,
+            state,
+            error,
+        )
 
     async def run(self, *, exit_when_idle: bool = False, stop: asyncio.Event | None = None) -> int:
         """Work until stopped; with exit_when_idle, until no job anywhere is unfinished."""
@@ -237,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(
         f"worker {worker.worker_id}: {worker.published} published, {worker.rejected} rejected, "
-        f"{worker.lost} lost",
+        f"{worker.lost} lost, {worker.released} released",
         flush=True,
     )
     return 0
