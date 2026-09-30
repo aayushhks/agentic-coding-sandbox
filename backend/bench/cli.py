@@ -3,9 +3,12 @@
 import argparse
 import asyncio
 import sys
-from dataclasses import asdict
+from collections.abc import Awaitable, Callable
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
+
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import get_settings
 from app.llm.base import LLMProvider
@@ -14,12 +17,13 @@ from app.sandbox.base import SandboxConfig
 from bench.environment import capture_environment
 from bench.executor import (
     AGENT_CONFIGS,
+    BatchResult,
     Executor,
     JobCallback,
     ProviderFactory,
     SequentialExecutor,
-    StopCheck,
 )
+from bench.fleet_executor import FleetExecutor
 from bench.groq_limits import is_daily_cap, retry_delay
 from bench.jobs import JobResult
 from bench.metrics import PERCENTILE_METHOD, compute_metrics
@@ -29,6 +33,7 @@ from bench.records import (
     SummaryRecord,
     TrialRecord,
     load_trials,
+    outcome_vector,
     summarize,
     summary_path,
     trial_path,
@@ -46,16 +51,30 @@ from bench.replay import (
     recordings_digest,
     write_recording,
 )
-from bench.taskset import BenchTask, TaskSet, load_taskset, plan_jobs
+from bench.runner import replay_payload
+from bench.taskset import BenchTask, Job, TaskSet, load_taskset, plan_jobs
+from fleet.config import async_url
+from fleet.localdb import LocalPostgres
+from fleet.migrate import migrate
+from fleet.store import server_version
 
 DEFAULT_MODEL = "qwen/qwen3.8-27b"
 DEFAULT_SEED = 1
 DEFAULT_TRIALS = 5
 
+# runs one planned batch through some executor
+BatchRun = Callable[[list[Job]], Awaitable[BatchResult]]
+
+
+class Described(Protocol):
+    name: str
+    topology: str
+    workers: int
+
 
 def build_config(
     taskset: TaskSet,
-    executor: Executor,
+    executor: Described,
     *,
     mode: Literal["real", "replay"],
     latency: str | None,
@@ -117,22 +136,13 @@ async def run_trial(
     taskset: TaskSet,
     count: int,
     seed: int,
-    executor: Executor,
-    provider_for: ProviderFactory,
+    execute: BatchRun,
     config: BenchConfig,
-    stop_check: StopCheck | None = None,
-    on_result: JobCallback | None = None,
 ) -> TrialRecord:
     # captured before the run so the git state is the code that actually ran
     environment = capture_environment()
     started_at = utc_now()
-    batch = await executor.run(
-        taskset,
-        plan_jobs(taskset, count, seed),
-        provider_for,
-        stop_check=stop_check,
-        on_result=on_result,
-    )
+    batch = await execute(plan_jobs(taskset, count, seed))
     return TrialRecord(
         label=label,
         trial=trial,
@@ -140,8 +150,40 @@ async def run_trial(
         interrupted=batch.interrupted,
         config=config,
         environment=environment,
-        metrics=compute_metrics(batch.results, workers=executor.workers),
+        metrics=compute_metrics(batch.results, workers=config.workers),
         jobs=batch.results,
+    )
+
+
+def _replayable(
+    taskset: TaskSet, recordings: dict[str, Recording], count: int, seed: int
+) -> dict[str, Recording]:
+    used = {task.id: recordings[task.id] for task in taskset.tasks if task.id in recordings}
+    missing = sorted({job.task_id for job in plan_jobs(taskset, count, seed)} - used.keys())
+    if missing:
+        raise ValueError(f"no recording for {', '.join(missing)}; record the task set first")
+    return used
+
+
+def _replay_config(
+    taskset: TaskSet,
+    executor: Described,
+    used: dict[str, Recording],
+    *,
+    latency: LatencyProfile,
+    count: int,
+    seed: int,
+) -> BenchConfig:
+    return build_config(
+        taskset,
+        executor,
+        mode="replay",
+        latency=latency.value,
+        tasks=count,
+        seed=seed,
+        digest_of_recordings=recordings_digest(used),
+        provider="replay",
+        model=", ".join(sorted({recording.model for recording in used.values()})),
     )
 
 
@@ -160,21 +202,9 @@ async def replay_trials(
 ) -> SummaryRecord:
     """Replay the recordings for N trials, writing each trial record and their summary."""
     active = executor or SequentialExecutor()
-    used = {task.id: recordings[task.id] for task in taskset.tasks if task.id in recordings}
-    missing = sorted({job.task_id for job in plan_jobs(taskset, count, seed)} - used.keys())
-    if missing:
-        raise ValueError(f"no recording for {', '.join(missing)}; record the task set first")
-    config = build_config(
-        taskset,
-        active,
-        mode="replay",
-        latency=latency.value,
-        tasks=count,
-        seed=seed,
-        digest_of_recordings=recordings_digest(used),
-        provider="replay",
-        model=", ".join(sorted({recording.model for recording in used.values()})),
-    )
+    used = _replayable(taskset, recordings, count, seed)
+    config = _replay_config(taskset, active, used, latency=latency, count=count, seed=seed)
+    progress = _progress(count) if verbose else None
     records = []
     for trial in range(1, trials + 1):
         if verbose:
@@ -185,10 +215,13 @@ async def replay_trials(
             taskset=taskset,
             count=count,
             seed=seed,
-            executor=active,
-            provider_for=lambda task: ReplayProvider(used[task.id], latency=latency),
+            execute=lambda jobs: active.run(
+                taskset,
+                jobs,
+                lambda task: ReplayProvider(used[task.id], latency=latency),
+                on_result=progress,
+            ),
             config=config,
-            on_result=_progress(count) if verbose else None,
         )
         write_record(record, trial_path(out_dir, trial))
         records.append(record)
@@ -254,12 +287,15 @@ async def record_trial(
         taskset=taskset,
         count=count,
         seed=seed,
-        executor=executor,
-        # the recorder owns retries so each call's latency leaves out rate-limit waits
-        provider_for=lambda task: RecordingProvider(inner_for(task), retry_delay=retry_delay),
+        execute=lambda jobs: executor.run(
+            taskset,
+            jobs,
+            # the recorder owns retries so each call's latency leaves out rate-limit waits
+            lambda task: RecordingProvider(inner_for(task), retry_delay=retry_delay),
+            stop_check=_daily_cap_reached,
+            on_result=_both(keep, _progress(count) if verbose else None),
+        ),
         config=config,
-        stop_check=_daily_cap_reached,
-        on_result=_both(keep, _progress(count) if verbose else None),
     )
     write_record(record, trial_path(out_dir, trial))
     trials = load_trials(out_dir)
@@ -277,6 +313,121 @@ def summarize_label(label: str, out_dir: Path) -> SummaryRecord:
 def replay_passed(summary: SummaryRecord) -> bool:
     """Replay is only trustworthy with identical outcomes and no divergence in any trial."""
     return summary.outcomes_identical and summary.metrics["counts.failed_harness"].max == 0
+
+
+@dataclass(slots=True)
+class AbResult:
+    sequential: SummaryRecord
+    fleet: SummaryRecord
+    # every trial of both arms produced the same outcome for every job
+    outcomes_match: bool
+
+
+async def ab_trials(
+    *,
+    taskset: TaskSet,
+    recordings: dict[str, Recording],
+    latency: LatencyProfile,
+    trials: int,
+    count: int,
+    seed: int,
+    out_root: Path,
+    fleet: FleetExecutor,
+    verbose: bool = True,
+) -> AbResult:
+    """Interleave sequential and fleet trials in one session, alternating which arm goes first."""
+    sequential = SequentialExecutor()
+    used = _replayable(taskset, recordings, count, seed)
+    arms: dict[str, tuple[str, BenchConfig, BatchRun]] = {
+        "sequential": (
+            f"ab-sequential-replay-{latency.value}",
+            _replay_config(taskset, sequential, used, latency=latency, count=count, seed=seed),
+            lambda jobs: sequential.run(
+                taskset, jobs, lambda task: ReplayProvider(used[task.id], latency=latency)
+            ),
+        ),
+        "fleet": (
+            f"ab-fleet-1w-replay-{latency.value}",
+            _replay_config(taskset, fleet, used, latency=latency, count=count, seed=seed),
+            lambda jobs: fleet.run(
+                taskset, jobs, lambda task: replay_payload(task, used[task.id], latency)
+            ),
+        ),
+    }
+    records: dict[str, list[TrialRecord]] = {arm: [] for arm in arms}
+    for trial in range(1, trials + 1):
+        # alternating the order keeps warm-up and drift from favoring one arm
+        order = ("sequential", "fleet") if trial % 2 else ("fleet", "sequential")
+        for arm in order:
+            label, config, execute = arms[arm]
+            record = await run_trial(
+                label=label,
+                trial=trial,
+                taskset=taskset,
+                count=count,
+                seed=seed,
+                execute=execute,
+                config=config,
+            )
+            write_record(record, trial_path(out_root / label, trial))
+            records[arm].append(record)
+            if verbose:
+                wall = record.metrics.batch_wall_clock_seconds
+                print(f"trial {trial}/{trials} {arm:<10} batch {wall:6.2f}s", flush=True)
+    summaries = {}
+    for arm, (label, _config, _execute) in arms.items():
+        summaries[arm] = summarize(label, records[arm])
+        write_record(summaries[arm], summary_path(out_root / label))
+    reference = outcome_vector(records["sequential"][0])
+    every = records["sequential"] + records["fleet"]
+    return AbResult(
+        sequential=summaries["sequential"],
+        fleet=summaries["fleet"],
+        outcomes_match=all(outcome_vector(record) == reference for record in every),
+    )
+
+
+async def _server_version(url: str) -> str:
+    engine = create_async_engine(async_url(url))
+    try:
+        return await server_version(engine)
+    finally:
+        await engine.dispose()
+
+
+def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
+    cluster = None if args.database_url else LocalPostgres.start()
+    url: str = args.database_url or (cluster.url if cluster else "")
+    try:
+        migrate(url)
+        version = asyncio.run(_server_version(url))
+        fleet = FleetExecutor(
+            url,
+            topology=(
+                f"single host: one fleet worker process, the fleet api and {version}, "
+                "all on this machine"
+            ),
+        )
+        result = asyncio.run(
+            ab_trials(
+                taskset=taskset,
+                recordings=load_recordings(args.recordings or RECORDINGS_ROOT / taskset.version),
+                latency=LatencyProfile(args.latency),
+                trials=args.trials,
+                count=count,
+                seed=args.seed,
+                out_root=args.out_root or RESULTS_ROOT,
+                fleet=fleet,
+            )
+        )
+    finally:
+        if cluster is not None:
+            cluster.stop()
+    print_summary(result.sequential)
+    print_summary(result.fleet)
+    print(f"per-job outcomes match across both arms: {result.outcomes_match}")
+    both = replay_passed(result.sequential) and replay_passed(result.fleet)
+    return 0 if result.outcomes_match and both else 1
 
 
 def print_summary(summary: SummaryRecord) -> None:
@@ -330,6 +481,15 @@ def _parser() -> argparse.ArgumentParser:
     summary = commands.add_parser("summarize", help="rebuild a label's summary from its trials")
     summary.add_argument("--label", required=True)
     summary.add_argument("--out", type=Path, default=None)
+
+    ab = commands.add_parser("ab", help="interleave sequential and one-worker fleet replays")
+    ab.add_argument("--latency", choices=[p.value for p in LatencyProfile], default="zero")
+    ab.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
+    ab.add_argument("--tasks", type=int, default=None, help="jobs (default: each task once)")
+    ab.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    ab.add_argument("--recordings", type=Path, default=None)
+    ab.add_argument("--out-root", type=Path, default=None)
+    ab.add_argument("--database-url", default=None, help="default: a throwaway local Postgres")
     return parser
 
 
@@ -342,6 +502,8 @@ def main(argv: list[str] | None = None) -> int:
 
     taskset = load_taskset()
     count = args.tasks or len(taskset.tasks)
+    if args.command == "ab":
+        return _run_ab(args, taskset, count)
     if args.command == "record":
         api_key = get_settings().groq_api_key
         if not api_key:

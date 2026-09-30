@@ -4,11 +4,20 @@ from pathlib import Path
 import groq
 import httpx
 import pytest
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.llm.base import CompletionResult, LLMProvider, Message
-from bench.cli import main, record_trial, replay_passed, replay_trials
+from bench.cli import ab_trials, main, record_trial, replay_passed, replay_trials
+from bench.fleet_executor import FleetExecutor
 from bench.jobs import FailureKind, Outcome
-from bench.records import load_trials, summarize, summary_path, trial_path, write_record
+from bench.records import (
+    BenchConfig,
+    load_trials,
+    summarize,
+    summary_path,
+    trial_path,
+    write_record,
+)
 from bench.replay import LatencyProfile, load_recordings, recordings_digest
 from bench.taskset import BenchTask, plan_jobs
 from tests.bench_helpers import (
@@ -191,3 +200,30 @@ def test_summarize_command_rebuilds_the_summary(
 def test_replay_command_rejects_more_than_one_worker() -> None:
     with pytest.raises(SystemExit):
         main(["replay", "--workers", "2"])
+
+
+async def test_ab_trials_interleave_two_arms_that_differ_only_in_the_executor(
+    tmp_path: Path, fleet_engine: AsyncEngine, fleet_database_url: str
+) -> None:
+    result = await ab_trials(
+        taskset=MINI_TASKSET,
+        recordings=await record_mini_batch(),
+        latency=LatencyProfile.ZERO,
+        trials=2,
+        count=3,
+        seed=1,
+        out_root=tmp_path,
+        fleet=FleetExecutor(fleet_database_url, lease_seconds=60),
+        verbose=False,
+    )
+    assert result.outcomes_match
+    assert result.sequential.trials == result.fleet.trials == [1, 2]
+    assert replay_passed(result.sequential) and replay_passed(result.fleet)
+    differing = {
+        field
+        for field in BenchConfig.model_fields
+        if getattr(result.sequential.config, field) != getattr(result.fleet.config, field)
+    }
+    assert differing == {"executor", "topology"}
+    assert (tmp_path / "ab-fleet-1w-replay-zero" / "summary.json").is_file()
+    assert (tmp_path / "ab-sequential-replay-zero" / "trial-2.json").is_file()

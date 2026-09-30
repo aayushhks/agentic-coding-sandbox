@@ -309,3 +309,10 @@ async def job_result(engine: AsyncEngine, job_id: int) -> PublishedResult | None
     if row is None:
         return None
     return PublishedResult.model_validate({**row._asdict(), "body": _json(row.body)})
+
+
+async def server_version(engine: AsyncEngine) -> str:
+    """The server's name and version, e.g. "PostgreSQL 16.13", for run records."""
+    async with engine.connect() as connection:
+        full = await connection.scalar(text("select version()"))
+    return " ".join(str(full).split()[:2])
