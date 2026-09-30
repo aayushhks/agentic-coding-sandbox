@@ -1,13 +1,10 @@
 name: deploy
 
-# Surfaces the live AWS deployment on GitHub the way hosting integrations do.
-# On every push to main (and on demand) this records a deployment to the `aws-production`
-# environment and smoke-tests the public dashboard, so the repo's Deployments/Environments
-# panel shows an entry linking straight to the live site — backed by a real health check, so
-# it only goes green when the site genuinely responds.
-#
-# Infra: CloudFront (HTTPS) -> EC2 (Docker, pinned Elastic IP) serving the self-contained
-# image. The instance serves itself, so this is a deployment marker + smoke test, not a build.
+# Surfaces the live deployment on GitHub the way hosting integrations do. Vercel builds and serves
+# the static dashboard on every push to main; this records a deployment to the `production`
+# environment and smoke-tests the public site, so the repo's Deployments panel links straight to
+# it — backed by real checks, so it only goes green when the site genuinely responds. It also
+# checks that the original AWS link, which is in already-shared resumes, still redirects there.
 
 on:
   push:
@@ -15,32 +12,40 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: aws-production
+  group: production
   cancel-in-progress: false
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     environment:
-      name: aws-production
-      url: https://d3co9fcex8s4iu.cloudfront.net
+      name: production
+      url: https://agentic-coding-sandbox.vercel.app
     env:
-      BASE_URL: https://d3co9fcex8s4iu.cloudfront.net
+      BASE_URL: https://agentic-coding-sandbox.vercel.app
+      OLD_URL: https://d3co9fcex8s4iu.cloudfront.net
     steps:
-      - name: smoke-test the live dashboard
+      - name: smoke-test the live dashboard and the old link
         run: |
           set -euo pipefail
 
-          echo "GET $BASE_URL/health"
-          code=$(curl -sS -o /tmp/health.json -w '%{http_code}' \
-            --retry 5 --retry-all-errors --retry-delay 10 --max-time 30 "$BASE_URL/health")
-          cat /tmp/health.json; echo
-          test "$code" = "200" || { echo "::error::/health returned HTTP $code"; exit 1; }
+          echo "GET $BASE_URL/"
+          code=$(curl -sS -o /tmp/index.html -w '%{http_code}' \
+            --retry 5 --retry-all-errors --retry-delay 10 --max-time 30 "$BASE_URL/")
+          test "$code" = "200" || { echo "::error::/ returned HTTP $code"; exit 1; }
+          grep -q 'id="root"' /tmp/index.html || { echo "::error::/ is not the dashboard"; exit 1; }
 
-          echo "GET $BASE_URL/api/runs"
-          rcode=$(curl -sS -o /tmp/runs.json -w '%{http_code}' --max-time 30 "$BASE_URL/api/runs")
-          head -c 300 /tmp/runs.json; echo
-          test "$rcode" = "200" || { echo "::error::/api/runs returned HTTP $rcode"; exit 1; }
-          grep -q '"solve_rate"' /tmp/runs.json || { echo "::error::/api/runs returned no run data"; exit 1; }
+          echo "GET $BASE_URL/static-api/runs.json"
+          rcode=$(curl -sS -o /tmp/runs.json -w '%{http_code}' --max-time 30 "$BASE_URL/static-api/runs.json")
+          test "$rcode" = "200" || { echo "::error::runs.json returned HTTP $rcode"; exit 1; }
+          grep -q '"solve_rate"' /tmp/runs.json || { echo "::error::runs.json has no run data"; exit 1; }
 
-          echo "live and healthy at $BASE_URL"
+          echo "GET $OLD_URL/"
+          read -r ocode target < <(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 30 "$OLD_URL/")
+          test "$ocode" = "302" || { echo "::error::the old link returned HTTP $ocode"; exit 1; }
+          case "$target" in
+            "$BASE_URL"/*) ;;
+            *) echo "::error::the old link redirects to $target"; exit 1 ;;
+          esac
+
+          echo "live at $BASE_URL, and $OLD_URL redirects there"
