@@ -17,8 +17,9 @@ forward-deployed-engineering deployment story, and as the systems engineering un
 loop, a namespace-isolated sandbox, real MCP protocol conformance, a production-readiness eval).
 
 It stands on a foundation worth stating plainly: an autonomous coding agent + eval harness that, on
-a 15-task benchmark, goes **86.7% → 100%** after two targeted hardening fixes — the loop, sandbox,
-and measurement the deployment layer sits on. Full story under [`docs/`](docs/).
+a 15-task benchmark, goes **86.7% → 100%** after two targeted hardening fixes (single runs on Llama
+3.3 70B, a model Groq has since retired, so they can't be re-run) — the loop, sandbox, and
+measurement the deployment layer sits on. Full story under [`docs/`](docs/).
 
 ## Architecture
 
@@ -48,7 +49,7 @@ flowchart TB
 | **Judgment** | escalate the underspecified / conflicting / missing-file / duplicate / hijack tickets instead of guessing | [m12](docs/m12-messy-input-hardening.md) |
 | **Proof** | a deployment-owner eval — resolution / correct-escalation / false-fix / **injection-resistance** rates + cost & latency (p50/p95) | [m13](docs/m13-production-readiness-eval.md) |
 | **Report** | a stakeholder dashboard over that eval — headline metrics, per-ticket outcomes, inline trace drill-down | [m14](docs/m14-deployment-report.md) |
-| **Foundation** | the coding agent + benchmark it's built on, hardened 86.7% → 100% | [m6](docs/m6-real-agent-run.md) · [m7](docs/m7-analysis.md) |
+| **Foundation** | the coding agent + benchmark it's built on, hardened 86.7% → 100% (single runs, on a since-retired model) | [m6](docs/m6-real-agent-run.md) · [m7](docs/m7-analysis.md) |
 
 ## Tech stack
 
