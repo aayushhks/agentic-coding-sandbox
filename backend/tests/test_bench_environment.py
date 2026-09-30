@@ -71,3 +71,4 @@ def test_capture_on_this_machine() -> None:
     assert env.memory_total_gib > 0
     assert env.python == platform.python_version()
     assert env.kernel == platform.release()
+    assert isinstance(env.sandbox_network_isolated, bool)

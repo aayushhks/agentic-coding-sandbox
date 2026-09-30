@@ -7,6 +7,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from app.sandbox.subprocess_sandbox import SubprocessSandbox
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _GIB = 1024**3
 
@@ -25,6 +27,16 @@ class Environment(BaseModel):
     os: str
     kernel: str
     python: str
+    # whether sandboxed commands got a private network namespace; None in records made before
+    sandbox_network_isolated: bool | None = None
+
+
+def sandbox_network_isolated() -> bool:
+    sandbox = SubprocessSandbox()
+    try:
+        return sandbox.network_isolated
+    finally:
+        sandbox.cleanup()
 
 
 def _read(path: Path) -> str | None:
@@ -120,4 +132,5 @@ def capture_environment(
         os=_os_name(_read(os_release) or ""),
         kernel=platform.release(),
         python=platform.python_version(),
+        sandbox_network_isolated=sandbox_network_isolated(),
     )
