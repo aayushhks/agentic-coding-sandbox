@@ -51,6 +51,23 @@ async def test_agent_solves_a_task_with_the_real_sandbox(sandbox: SubprocessSand
     assert (sandbox.workspace / "solution.py").is_file()
 
 
+async def test_every_step_is_reported_as_soon_as_it_is_recorded(
+    sandbox: SubprocessSandbox,
+) -> None:
+    responses = ["not json", _call("list_dir", path="."), _call("finish", answer="done")]
+    seen: list[int] = []
+    agent = Agent(
+        MockProvider(responses=responses),
+        sandbox,
+        AgentConfig(max_iterations=5),
+        on_step=lambda step: seen.append(step.index),
+    )
+    run = await agent.run("list, then finish")
+    # malformed, tool and finishing steps alike, in order
+    assert seen == [step.index for step in run.steps] == [0, 1, 2]
+    assert run.steps[0].malformed
+
+
 async def test_agent_stops_at_max_iterations(sandbox: SubprocessSandbox) -> None:
     responses = [_call("list_dir", path=".") for _ in range(3)]
     agent = Agent(MockProvider(responses=responses), sandbox, AgentConfig(max_iterations=3))

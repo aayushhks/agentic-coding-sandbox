@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from app.agent.loop import Agent
-from app.agent.types import AgentConfig, AgentRun
+from app.agent.types import AgentConfig, AgentRun, StepCallback
 from app.benchmark.schema import Task
 from app.core.config import get_settings
 from app.llm.base import LLMProvider
@@ -58,12 +58,13 @@ async def run_task(
     agent_config: AgentConfig | None = None,
     sandbox_config: SandboxConfig | None = None,
     transport: str | None = None,
+    on_step: StepCallback | None = None,
 ) -> TaskResult:
     """Set up the task workspace, let the agent solve it, then grade against hidden tests."""
     sandbox = make_sandbox(transport or get_settings().tool_transport, sandbox_config)
     try:
         setup_workspace(sandbox, task.workspace_files)
-        agent = Agent(provider, sandbox, agent_config)
+        agent = Agent(provider, sandbox, agent_config, on_step=on_step)
         run = await agent.run(task.description)
         evaluation = grade(sandbox, task)
         return TaskResult(

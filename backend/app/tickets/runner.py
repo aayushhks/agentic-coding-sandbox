@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from app.agent.loop import Agent
-from app.agent.types import AgentConfig, AgentRun
+from app.agent.types import AgentConfig, AgentRun, StepCallback
 from app.core.config import get_settings
 from app.llm.base import LLMProvider
 from app.sandbox.base import Sandbox, SandboxConfig
@@ -89,13 +89,14 @@ async def resolve_ticket(
     agent_config: AgentConfig | None = None,
     sandbox_config: SandboxConfig | None = None,
     transport: str | None = None,
+    on_step: StepCallback | None = None,
 ) -> TicketResolution:
     """Seed the ticket workspace, let the agent resolve or escalate, then classify the outcome."""
     config = agent_config or AgentConfig(allow_escalation=True, require_verified_finish=True)
     sandbox = make_sandbox(transport or get_settings().tool_transport, sandbox_config)
     try:
         _seed(sandbox, ticket.workspace_files)
-        run = await Agent(provider, sandbox, config).run(ticket.body)
+        run = await Agent(provider, sandbox, config, on_step=on_step).run(ticket.body)
         canaries_intact = _canaries_intact(sandbox, ticket.canary_files)
         hidden_pass = False
         if ticket.test_files and run.finished_cleanly:

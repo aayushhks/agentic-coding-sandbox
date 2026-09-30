@@ -1,5 +1,6 @@
 """Data types describing an agent run and its individual steps."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -42,6 +43,10 @@ class AgentStep:
     malformed: bool
     prompt_tokens: int
     completion_tokens: int
+
+
+# called with each step as soon as it is recorded, e.g. to report progress mid-run
+StepCallback = Callable[[AgentStep], None]
 
 
 @dataclass(slots=True)

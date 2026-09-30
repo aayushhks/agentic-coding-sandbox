@@ -8,7 +8,7 @@ from app.agent.protocol import (
     format_observation,
     parse_tool_call,
 )
-from app.agent.types import AgentConfig, AgentRun, AgentStep, TerminationReason
+from app.agent.types import AgentConfig, AgentRun, AgentStep, StepCallback, TerminationReason
 from app.llm.base import CompletionResult, LLMProvider, Message, Role
 from app.sandbox.base import Sandbox
 from app.sandbox.tools import ToolCall, ToolName, ToolResult
@@ -22,10 +22,18 @@ class Agent:
         provider: LLMProvider,
         sandbox: Sandbox,
         config: AgentConfig | None = None,
+        *,
+        on_step: StepCallback | None = None,
     ) -> None:
         self._provider = provider
         self._sandbox = sandbox
         self._config = config or AgentConfig()
+        self._on_step = on_step
+
+    def _record(self, steps: list[AgentStep], step: AgentStep) -> None:
+        steps.append(step)
+        if self._on_step is not None:
+            self._on_step(step)
 
     async def run(self, task: str) -> AgentRun:
         messages = self._initial_messages(task)
@@ -46,7 +54,7 @@ class Agent:
                     max_tokens=self._config.max_tokens,
                 )
             except Exception as exc:  # provider failures are a recorded outcome, not a crash
-                steps.append(self._error_step(index, f"provider error: {exc}"))
+                self._record(steps, self._error_step(index, f"provider error: {exc}"))
                 termination = TerminationReason.PROVIDER_ERROR
                 break
 
@@ -63,7 +71,7 @@ class Agent:
                     f"Your last response could not be parsed: {exc}. Respond with a single "
                     'JSON object: {"thought": "...", "tool": "...", "arguments": {...}}.'
                 )
-                steps.append(self._malformed_step(index, raw, observation, completion))
+                self._record(steps, self._malformed_step(index, raw, observation, completion))
                 messages.append(Message(role=Role.USER, content=observation))
                 if consecutive_malformed >= self._config.max_consecutive_malformed:
                     termination = TerminationReason.MALFORMED_LIMIT
@@ -74,7 +82,8 @@ class Agent:
 
             if parsed.tool_call.name == ToolName.ESCALATE:
                 escalation_reason = str(parsed.tool_call.arguments.get("reason", ""))
-                steps.append(
+                self._record(
+                    steps,
                     AgentStep(
                         index=index,
                         thought=parsed.thought,
@@ -85,7 +94,7 @@ class Agent:
                         malformed=False,
                         prompt_tokens=completion.prompt_tokens,
                         completion_tokens=completion.completion_tokens,
-                    )
+                    ),
                 )
                 termination = TerminationReason.ESCALATED
                 break
@@ -97,7 +106,8 @@ class Agent:
                         "run_tests tool until the tests pass. A result of 'no tests ran' "
                         "(exit code 5) does not count as verification."
                     )
-                    steps.append(
+                    self._record(
+                        steps,
                         AgentStep(
                             index=index,
                             thought=parsed.thought,
@@ -108,12 +118,13 @@ class Agent:
                             malformed=False,
                             prompt_tokens=completion.prompt_tokens,
                             completion_tokens=completion.completion_tokens,
-                        )
+                        ),
                     )
                     messages.append(Message(role=Role.USER, content=observation))
                     continue
                 final_answer = str(parsed.tool_call.arguments.get("answer", ""))
-                steps.append(
+                self._record(
+                    steps,
                     AgentStep(
                         index=index,
                         thought=parsed.thought,
@@ -124,7 +135,7 @@ class Agent:
                         malformed=False,
                         prompt_tokens=completion.prompt_tokens,
                         completion_tokens=completion.completion_tokens,
-                    )
+                    ),
                 )
                 termination = TerminationReason.FINISHED
                 break
@@ -133,7 +144,8 @@ class Agent:
             observation = format_observation(result)
             if self._counts_as_verification(parsed.tool_call, result):
                 verified = True
-            steps.append(
+            self._record(
+                steps,
                 AgentStep(
                     index=index,
                     thought=parsed.thought,
@@ -144,7 +156,7 @@ class Agent:
                     malformed=False,
                     prompt_tokens=completion.prompt_tokens,
                     completion_tokens=completion.completion_tokens,
-                )
+                ),
             )
             messages.append(Message(role=Role.USER, content=observation))
 
