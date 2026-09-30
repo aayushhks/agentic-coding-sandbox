@@ -19,6 +19,8 @@ analysis, and the systems built on top of them.
 | [m15-deployment-and-framing.md](m15-deployment-and-framing.md) | The README reframe around the deployment story, a recorded MCP client session, and deploy packaging (report baked into the image + static-exported) |
 | [mcp-session.md](mcp-session.md) | A real recorded MCP client ↔ sandbox-server session (the screenshot-free demo) |
 | [m16-bench-harness.md](m16-bench-harness.md) | The execution-platform baseline: a bench harness with record/replay, and today's single-process path measured — 5-trial replay baselines plus a real-model trial |
+| [m17-job-store.md](m17-job-store.md) | The durable job store and submission API: a Postgres queue, kill-and-restart testing, and the measured cost of durability with one worker |
+| [design.md](design.md) | The execution platform's design: why Postgres and `SKIP LOCKED`, the job lifecycle, database-enforced invariants, leases and publishing |
 
 ## Results
 

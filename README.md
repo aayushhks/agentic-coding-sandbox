@@ -51,6 +51,7 @@ flowchart TB
 | **Report** | a stakeholder dashboard over that eval — headline metrics, per-ticket outcomes, inline trace drill-down | [m14](docs/m14-deployment-report.md) |
 | **Foundation** | the coding agent + benchmark it's built on, hardened 86.7% → 100% (single runs, on a since-retired model) | [m6](docs/m6-real-agent-run.md) · [m7](docs/m7-analysis.md) |
 | **Execution baseline** | a bench harness that records model responses once and replays them deterministically; today's single-process path measured over 5-trial replays and a real-model trial | [m16](docs/m16-bench-harness.md) |
+| **Durable execution** | a Postgres job queue with leases and atomic publishes; a worker killed mid-batch loses and duplicates nothing, checked on every push | [m17](docs/m17-job-store.md) · [design](docs/design.md) |
 
 ## Tech stack
 
@@ -300,6 +301,26 @@ uv run python -m bench.cli record --trial 2                       # a real-model
 
 The measured baseline for today's single-process path is in
 [docs/m16-bench-harness.md](docs/m16-bench-harness.md).
+
+## Fleet (durable job queue)
+
+`backend/fleet/` runs batches of tasks through a job queue on Postgres. Workers claim jobs with
+`SELECT … FOR UPDATE SKIP LOCKED` under a lease, publish each result in the same transaction that
+finishes the job, and take back jobs whose lease lapsed, so any process can be killed at any moment
+without losing or duplicating work. A test kills a worker with `SIGKILL` at seeded points mid-batch
+on every push and checks from the database that every job finished exactly once.
+
+```bash
+cd backend
+uv run python -m fleet.migrate                                      # schema (FLEET_DATABASE_URL)
+uv run uvicorn fleet.api:app                                        # the submission api
+uv run python -m fleet.worker --runner bench.runner:run_job         # a worker
+uv run python -m bench.cli ab --trials 5                            # sequential vs fleet a/b
+```
+
+Measured cost of durability with one worker, restart testing, and the design (why Postgres over
+Redis or a broker, and what that gives up): [docs/m17-job-store.md](docs/m17-job-store.md) ·
+[docs/design.md](docs/design.md).
 
 ## Honest limitations
 
