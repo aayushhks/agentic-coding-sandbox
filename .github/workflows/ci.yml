@@ -24,6 +24,8 @@ jobs:
       # the fleet tests run against this service, and fail rather than skip without it
       TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fleet_test
       REQUIRE_POSTGRES: "1"
+      # the sandbox's namespace tests fail rather than skip when the runner can't isolate
+      REQUIRE_SANDBOX_ISOLATION: "1"
     defaults:
       run:
         working-directory: backend
@@ -40,6 +42,13 @@ jobs:
 
       - name: install dependencies
         run: uv sync
+
+      - name: allow unprivileged user namespaces (ubuntu 24.04 restricts them through apparmor)
+        run: |
+          if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          unshare --user --map-root-user --net --mount --pid --fork true && echo "namespaces available"
 
       - name: ruff check
         run: uv run ruff check .
