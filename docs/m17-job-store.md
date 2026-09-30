@@ -74,7 +74,7 @@ of both arms (15 solved, 2 escalated, 1 expected failure), as were tokens (108,8
 ranges overlap. The measurable cost shows up per job, from the records' Postgres timestamps (90 jobs
 per arm):
 
-- **2.4 ms per job** idle between one job's publish and the next claim (median; p95 4.0 ms, max
+- **2.4 ms per job** idle between one job's publish and the next claim (median; p95 4.1 ms, max
   5.1 ms), against 0.1 ms in-process;
 - **78 ms once per batch** before the first claim (median; 44–109 ms), because the idle worker was
   between polls when the batch arrived;
@@ -85,8 +85,9 @@ and jobs that take most of a second, durability costs about 1%.
 
 ## Honest notes
 
-- **One worker.** Several workers, heartbeats and fencing come in M18; until then a lease has to
-  outlast the longest job, so it defaults to 10 minutes.
+- **One worker.** Several workers, heartbeats and fencing came next, in
+  [M18](m18-worker-pool.md); at M17 a lease had to outlast the longest job, so it defaulted to
+  10 minutes.
 - **Single machine.** Postgres, the API, the worker and the harness share 4 vCPUs.
 - **Replay at zero latency** is the harness's worst case for overhead: jobs are short and CPU-bound.
   With the model's real latency, the same 2.4 ms per job is a smaller share.
