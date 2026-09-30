@@ -37,6 +37,9 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "ruff" },
 ]
+task = [
+    { name = "pytest" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -63,6 +66,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.8" },
 ]
+task = [{ name = "pytest", specifier = ">=8.3" }]
 
 [[package]]
 name = "aiosqlite"

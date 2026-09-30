@@ -27,6 +27,10 @@ dev = [
     "httpx>=0.27",
     "matplotlib>=3.10.9",
 ]
+# what a task's sandbox needs at run time, installed in the task image: the agent runs its tests
+task = [
+    "pytest>=8.3",
+]
 
 [tool.uv]
 package = false

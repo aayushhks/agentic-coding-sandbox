@@ -16,7 +16,7 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN --mount=type=secret,id=ca \
     if [ -f /run/secrets/ca ]; then export PIP_CERT=/run/secrets/ca SSL_CERT_FILE=/run/secrets/ca; fi \
     && pip install --no-cache-dir uv==0.8.17 \
-    && uv sync --frozen --no-dev --no-install-project \
+    && uv sync --frozen --no-dev --group task --no-install-project \
     && pip uninstall --yes uv
 
 # the root filesystem is read-only at run time, so bytecode is compiled now or never
