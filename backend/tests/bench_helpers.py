@@ -1,9 +1,19 @@
 """Builders shared by the bench tests."""
 
+import json
+
+from app.benchmark.schema import Task, TaskCategory, TaskDifficulty, TaskMetadata
+from app.llm.base import LLMProvider
+from app.llm.mock_provider import MockProvider
+from app.tickets.loader import load_tickets
 from bench.environment import Environment
+from bench.executor import SequentialExecutor
 from bench.jobs import JobResult, Outcome
 from bench.metrics import PERCENTILE_METHOD, compute_metrics
+from bench.probes import UNSATISFIABLE_SPEC
 from bench.records import BenchConfig, TrialRecord
+from bench.replay import Recording, RecordingProvider, build_recording
+from bench.taskset import BenchTask, Expectation, TaskKind, TaskSet, plan_jobs
 
 
 def make_config(**overrides: object) -> BenchConfig:
@@ -86,3 +96,113 @@ def make_job(claimed: float, finished: float, **overrides: object) -> JobResult:
     }
     fields.update(overrides)
     return JobResult.model_validate(fields)
+
+
+# a three-task set covering a solve, an escalation and an expected failure
+ADDER = Task(
+    metadata=TaskMetadata(
+        id="adder",
+        title="Add",
+        description="Implement add(a, b) in add.py returning the sum.",
+        category=TaskCategory.ALGORITHMS,
+        difficulty=TaskDifficulty.EASY,
+    ),
+    test_files={
+        "test_hidden_add.py": (
+            "from add import add\n\n\ndef test_add():\n    assert add(2, 3) == 5\n"
+        ),
+    },
+    reference_files={"add.py": "def add(a, b):\n    return a + b\n"},
+)
+TICKET = next(ticket for ticket in load_tickets() if ticket.id == "TCK-04")
+
+
+def _benchmark_task(task: Task, expected: Expectation) -> BenchTask:
+    return BenchTask(
+        id=task.id,
+        kind=TaskKind.BENCHMARK,
+        category=task.category.value,
+        difficulty=task.difficulty.value,
+        expected=expected,
+        benchmark=task,
+    )
+
+
+MINI_TASKSET = TaskSet(
+    version="test",
+    tasks=[
+        _benchmark_task(ADDER, Expectation.SOLVE),
+        BenchTask(
+            id=TICKET.id,
+            kind=TaskKind.TICKET,
+            category=TICKET.category,
+            difficulty="n/a",
+            expected=Expectation.ESCALATE,
+            ticket=TICKET,
+        ),
+        _benchmark_task(UNSATISFIABLE_SPEC, Expectation.FAIL),
+    ],
+)
+
+
+def tool_call(tool: str, **arguments: object) -> str:
+    return json.dumps({"thought": f"using {tool}", "tool": tool, "arguments": arguments})
+
+
+SCRIPTS = {
+    "adder": [
+        tool_call("write_file", path="add.py", content="def add(a, b):\n    return a + b\n"),
+        tool_call(
+            "write_file",
+            path="test_add.py",
+            content="from add import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n",
+        ),
+        tool_call("run_tests"),
+        tool_call("finish", answer="done"),
+    ],
+    "TCK-04": [tool_call("escalate", reason="no measurable target for 'faster'")],
+    "unsatisfiable_spec": [
+        tool_call(
+            "write_file",
+            path="names.py",
+            content="def normalize(name):\n    return name.strip().lower()\n",
+        ),
+        tool_call(
+            "write_file",
+            path="test_own.py",
+            content=(
+                "from names import normalize\n\n\n"
+                "def test_it():\n    assert normalize(' A ') == 'a'\n"
+            ),
+        ),
+        tool_call("run_tests"),
+        tool_call("finish", answer="done"),
+    ],
+}
+
+
+def scripted_provider(task: BenchTask) -> LLMProvider:
+    return MockProvider(SCRIPTS[task.id])
+
+
+async def record_mini_batch() -> dict[str, Recording]:
+    recordings: dict[str, Recording] = {}
+
+    def keep(task: BenchTask, provider: LLMProvider, result: JobResult) -> None:
+        assert isinstance(provider, RecordingProvider)
+        recordings[task.id] = build_recording(
+            provider,
+            task_id=task.id,
+            taskset_version="test",
+            outcome=result.outcome.value,
+            git_sha="x",
+            recorded_at="t",
+        )
+
+    await SequentialExecutor().run(
+        MINI_TASKSET,
+        plan_jobs(MINI_TASKSET, 3, seed=1),
+        lambda task: RecordingProvider(scripted_provider(task)),
+        on_result=keep,
+    )
+    return recordings

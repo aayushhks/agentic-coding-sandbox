@@ -1,133 +1,23 @@
 import itertools
-import json
 from collections.abc import Sequence
 
 import pytest
 
 from app.agent.types import AgentRun, TerminationReason
-from app.benchmark.schema import Task, TaskCategory, TaskDifficulty, TaskMetadata
 from app.llm.base import CompletionResult, LLMProvider, Message
-from app.llm.mock_provider import MockProvider
-from app.tickets.loader import load_tickets
 from app.tickets.models import ExpectedOutcome
 from app.tickets.runner import ResolutionOutcome, TicketResolution
 from bench.executor import SequentialExecutor, failure_kind, ticket_outcome
-from bench.jobs import FailureKind, JobResult, Outcome
-from bench.probes import UNSATISFIABLE_SPEC
-from bench.replay import Recording, RecordingProvider, ReplayProvider, build_recording
-from bench.taskset import BenchTask, Expectation, Job, TaskKind, TaskSet, plan_jobs
-
-ADDER = Task(
-    metadata=TaskMetadata(
-        id="adder",
-        title="Add",
-        description="Implement add(a, b) in add.py returning the sum.",
-        category=TaskCategory.ALGORITHMS,
-        difficulty=TaskDifficulty.EASY,
-    ),
-    test_files={
-        "test_hidden_add.py": (
-            "from add import add\n\n\ndef test_add():\n    assert add(2, 3) == 5\n"
-        ),
-    },
-    reference_files={"add.py": "def add(a, b):\n    return a + b\n"},
-)
-TICKET = next(ticket for ticket in load_tickets() if ticket.id == "TCK-04")
-
-
-def _benchmark(task: Task, expected: Expectation) -> BenchTask:
-    return BenchTask(
-        id=task.id,
-        kind=TaskKind.BENCHMARK,
-        category=task.category.value,
-        difficulty=task.difficulty.value,
-        expected=expected,
-        benchmark=task,
-    )
-
-
-TASKSET = TaskSet(
-    version="test",
-    tasks=[
-        _benchmark(ADDER, Expectation.SOLVE),
-        BenchTask(
-            id=TICKET.id,
-            kind=TaskKind.TICKET,
-            category=TICKET.category,
-            difficulty="n/a",
-            expected=Expectation.ESCALATE,
-            ticket=TICKET,
-        ),
-        _benchmark(UNSATISFIABLE_SPEC, Expectation.FAIL),
-    ],
-)
-
-
-def _call(tool: str, **arguments: object) -> str:
-    return json.dumps({"thought": f"using {tool}", "tool": tool, "arguments": arguments})
-
-
-SCRIPTS = {
-    "adder": [
-        _call("write_file", path="add.py", content="def add(a, b):\n    return a + b\n"),
-        _call(
-            "write_file",
-            path="test_add.py",
-            content="from add import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n",
-        ),
-        _call("run_tests"),
-        _call("finish", answer="done"),
-    ],
-    "TCK-04": [_call("escalate", reason="no measurable target for 'faster'")],
-    "unsatisfiable_spec": [
-        _call(
-            "write_file",
-            path="names.py",
-            content="def normalize(name):\n    return name.strip().lower()\n",
-        ),
-        _call(
-            "write_file",
-            path="test_own.py",
-            content=(
-                "from names import normalize\n\n\n"
-                "def test_it():\n    assert normalize(' A ') == 'a'\n"
-            ),
-        ),
-        _call("run_tests"),
-        _call("finish", answer="done"),
-    ],
-}
-
-
-def _scripted(task: BenchTask) -> LLMProvider:
-    return MockProvider(SCRIPTS[task.id])
-
-
-async def _record_batch() -> dict[str, Recording]:
-    recordings: dict[str, Recording] = {}
-
-    def keep(task: BenchTask, provider: LLMProvider, result: JobResult) -> None:
-        assert isinstance(provider, RecordingProvider)
-        recordings[task.id] = build_recording(
-            provider,
-            task_id=task.id,
-            taskset_version="test",
-            outcome=result.outcome.value,
-            git_sha="x",
-            recorded_at="t",
-        )
-
-    await SequentialExecutor().run(
-        TASKSET,
-        plan_jobs(TASKSET, 3, seed=1),
-        lambda task: RecordingProvider(_scripted(task)),
-        on_result=keep,
-    )
-    return recordings
+from bench.jobs import FailureKind, Outcome
+from bench.replay import RecordingProvider, ReplayProvider, build_recording
+from bench.taskset import Job, plan_jobs
+from tests.bench_helpers import MINI_TASKSET, record_mini_batch, scripted_provider
 
 
 async def test_executor_runs_every_kind_and_classifies_outcomes() -> None:
-    batch = await SequentialExecutor().run(TASKSET, plan_jobs(TASKSET, 3, seed=1), _scripted)
+    batch = await SequentialExecutor().run(
+        MINI_TASKSET, plan_jobs(MINI_TASKSET, 3, seed=1), scripted_provider
+    )
     assert batch.interrupted is None
     by_task = {result.task_id: result for result in batch.results}
     assert (by_task["adder"].outcome, by_task["adder"].failure_mode) == (Outcome.SOLVED, None)
@@ -147,7 +37,9 @@ async def test_executor_runs_every_kind_and_classifies_outcomes() -> None:
 
 
 async def test_one_worker_runs_jobs_back_to_back() -> None:
-    batch = await SequentialExecutor().run(TASKSET, plan_jobs(TASKSET, 3, seed=1), _scripted)
+    batch = await SequentialExecutor().run(
+        MINI_TASKSET, plan_jobs(MINI_TASKSET, 3, seed=1), scripted_provider
+    )
     results = batch.results
     assert all(r.submitted_at == 0.0 and r.worker == "w0" and r.attempts == 1 for r in results)
     assert all(r.finished_at > r.claimed_at for r in results)
@@ -156,9 +48,11 @@ async def test_one_worker_runs_jobs_back_to_back() -> None:
 
 
 async def test_replay_reproduces_a_recorded_batch() -> None:
-    recordings = await _record_batch()
+    recordings = await record_mini_batch()
     batch = await SequentialExecutor().run(
-        TASKSET, plan_jobs(TASKSET, 3, seed=1), lambda task: ReplayProvider(recordings[task.id])
+        MINI_TASKSET,
+        plan_jobs(MINI_TASKSET, 3, seed=1),
+        lambda task: ReplayProvider(recordings[task.id]),
     )
     assert {r.task_id: r.outcome.value for r in batch.results} == {
         task_id: recording.outcome for task_id, recording in recordings.items()
@@ -172,10 +66,10 @@ async def test_replay_reproduces_a_recorded_batch() -> None:
 
 
 async def test_replay_divergence_is_a_harness_failure() -> None:
-    recording = (await _record_batch())["adder"]
+    recording = (await record_mini_batch())["adder"]
     truncated = recording.model_copy(update={"calls": recording.calls[:-1]})
     batch = await SequentialExecutor().run(
-        TASKSET, [Job("adder#0", "adder", 0)], lambda _task: ReplayProvider(truncated)
+        MINI_TASKSET, [Job("adder#0", "adder", 0)], lambda _task: ReplayProvider(truncated)
     )
     result = batch.results[0]
     assert (result.outcome, result.failure_mode, result.failure_kind) == (
@@ -195,7 +89,7 @@ async def test_stop_check_ends_the_batch_and_drops_the_interrupted_job() -> None
         return "daily cap reached" if len(checked) == 2 else None
 
     batch = await SequentialExecutor().run(
-        TASKSET, plan_jobs(TASKSET, 3, seed=1), _scripted, stop_check=stop
+        MINI_TASKSET, plan_jobs(MINI_TASKSET, 3, seed=1), scripted_provider, stop_check=stop
     )
     assert len(batch.results) == 1
     assert batch.interrupted == "daily cap reached after 1 of 3 jobs"
@@ -255,7 +149,7 @@ class _RejectingProvider(LLMProvider):
 async def test_a_recorded_provider_failure_replays_as_the_same_infra_failure() -> None:
     recorder = RecordingProvider(_RejectingProvider())
     job = [Job("adder#0", "adder", 0)]
-    first = await SequentialExecutor().run(TASKSET, job, lambda _task: recorder)
+    first = await SequentialExecutor().run(MINI_TASKSET, job, lambda _task: recorder)
     recording = build_recording(
         recorder,
         task_id="adder",
@@ -264,7 +158,9 @@ async def test_a_recorded_provider_failure_replays_as_the_same_infra_failure() -
         git_sha="x",
         recorded_at="t",
     )
-    second = await SequentialExecutor().run(TASKSET, job, lambda _task: ReplayProvider(recording))
+    second = await SequentialExecutor().run(
+        MINI_TASKSET, job, lambda _task: ReplayProvider(recording)
+    )
     for batch in (first, second):
         result = batch.results[0]
         assert (result.outcome, result.failure_mode, result.failure_kind) == (
