@@ -234,14 +234,14 @@ async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) ->
 
 
 async def start(engine: AsyncEngine, *, job_id: int, attempt: int) -> bool:
-    """Mark a claimed job running; False unless this attempt still holds a live lease."""
+    """Mark a claimed job running; False if its lease lapsed or its cancel was requested."""
     async with engine.begin() as connection:
         result = await connection.execute(
             text(
                 "update fleet_jobs set state = 'running', started_at = clock_timestamp(), "
                 "updated_at = clock_timestamp() "
                 "where id = :job and attempt = :attempt and state = 'claimed' "
-                "and lease_expires_at > clock_timestamp()"
+                "and lease_expires_at > clock_timestamp() and cancel_requested_at is null"
             ),
             {"job": job_id, "attempt": attempt},
         )

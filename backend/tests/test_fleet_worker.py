@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import NewJob
-from fleet.store import batch_jobs, claim, job_result, job_status, reap, submit_batch
+from fleet.store import batch_jobs, cancel, claim, job_result, job_status, reap, submit_batch
 from fleet.worker import RunnerOutcome, Worker, load_runner
 from tests.fleet_helpers import NO_BACKOFF, sleep_runner, start_worker
 
@@ -234,6 +234,37 @@ async def test_the_worker_command_drains_a_batch(
     process = start_worker(fleet_database_url, exit_when_idle=True)
     output, _ = await asyncio.to_thread(process.communicate, timeout=60)
     assert process.returncode == 0, output
-    assert "w0: 4 published, 0 rejected, 0 lost, 0 released" in output
+    assert "w0: 4 published, 0 rejected, 0 lost, 0 released, 0 cancelled" in output
     states = {job.state for job in await batch_jobs(fleet_engine, submission.batch_id)}
     assert states == {"succeeded"}
+
+
+async def test_a_cancelled_running_job_stops_and_releases_its_lease_at_once(
+    fleet_engine: AsyncEngine,
+) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+    job_id = submission.job_ids[0]
+    running = asyncio.Event()
+    interrupted = asyncio.Event()
+
+    async def long_job(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        running.set()
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            interrupted.set()
+            raise
+        return RunnerOutcome(outcome="succeeded", body={})
+
+    # a 30 s lease, so a release at expiry would be far too late to pass
+    worker = Worker(fleet_engine, long_job, worker_id="w", lease_seconds=30, heartbeat_seconds=0.05)
+    stepping = asyncio.create_task(worker.step())
+    await asyncio.wait_for(running.wait(), timeout=5)
+    assert await cancel(fleet_engine, job_id) == "running"
+    await asyncio.wait_for(stepping, timeout=5)
+    assert interrupted.is_set()
+    assert (worker.cancelled, worker.published, worker.lost) == (1, 0, 0)
+    job = await job_status(fleet_engine, job_id)
+    assert job is not None and (job.state, job.lease_expires_at) == ("cancelled", None)
+    assert job.finished_at is not None and job.cancel_requested_at is not None
+    assert (job.finished_at - job.cancel_requested_at).total_seconds() < 1

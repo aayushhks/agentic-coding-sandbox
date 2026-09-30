@@ -18,7 +18,17 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings, async_url
 from fleet.models import DEFAULT_RETRY, ClaimedJob, Outcome, RetryPolicy
-from fleet.store import claim, heartbeat, publish, reap, release, start, unfinished_jobs
+from fleet.store import (
+    claim,
+    finish_cancelled,
+    heartbeat,
+    job_status,
+    publish,
+    reap,
+    release,
+    start,
+    unfinished_jobs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +42,11 @@ class RunnerOutcome(BaseModel):
 Runner = Callable[[str, dict[str, Any]], Awaitable[RunnerOutcome]]
 Sleep = Callable[[float], Awaitable[None]]
 Clock = Callable[[], float]
+
+
+@dataclass(frozen=True, slots=True)
+class Cancelled:
+    """A heartbeat found the job's cancel requested, so the run was stopped."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +105,8 @@ class Worker:
         self.lost = 0
         # attempts given back for a retry after an infrastructure failure
         self.released = 0
+        # jobs stopped and ended because their cancel was requested
+        self.cancelled = 0
 
     async def _reap(self) -> None:
         self._reaped_at = self._clock()
@@ -101,7 +118,7 @@ class Worker:
         except Exception as exc:  # a crash is never the task's answer, so it is retried
             return RunnerError(f"{type(exc).__name__}: {exc}")
 
-    async def _run(self, job: ClaimedJob) -> RunnerOutcome | RunnerError | None:
+    async def _run(self, job: ClaimedJob) -> RunnerOutcome | RunnerError | Cancelled | None:
         """Run a job while extending its lease; None when the lease was lost and the run stopped."""
         work = asyncio.ensure_future(self._attempt(job))
         try:
@@ -109,11 +126,13 @@ class Worker:
                 done, _ = await asyncio.wait({work}, timeout=self._heartbeat)
                 if done:
                     return work.result()
-                extended = await heartbeat(
+                beat = await heartbeat(
                     self._engine, job_id=job.id, attempt=job.attempt, lease_seconds=self._lease
                 )
-                if extended is None:
+                if beat is None:
                     return None
+                if beat.cancel_requested:
+                    return Cancelled()
         finally:
             # whatever ends the wait, the run never outlives it
             work.cancel()
@@ -131,11 +150,18 @@ class Worker:
         if job is None:
             return False
         if not await start(self._engine, job_id=job.id, attempt=job.attempt):
-            # the lease lapsed between claim and start, so the job is no longer this worker's
-            self.lost += 1
-            logger.info("%s: lost the lease on job %s before starting it", self.worker_id, job.id)
+            # cancelled before it started, or its lease lapsed and it is no longer this worker's
+            if not await self._cancel(job):
+                self.lost += 1
+                logger.info(
+                    "%s: lost the lease on job %s before starting it", self.worker_id, job.id
+                )
             return True
         outcome = await self._run(job)
+        if isinstance(outcome, Cancelled):
+            if not await self._cancel(job):
+                self.lost += 1
+            return True
         if outcome is None:
             self.lost += 1
             logger.info("%s: lost the lease on job %s, run stopped", self.worker_id, job.id)
@@ -153,6 +179,10 @@ class Worker:
         )
         if accepted:
             self.published += 1
+        elif (status := await job_status(self._engine, job.id)) and status.state == "cancelled":
+            # a cancel requested before the result arrived ended the job instead
+            self.cancelled += 1
+            logger.info("%s: job %s was cancelled before its result landed", self.worker_id, job.id)
         else:
             self.rejected += 1
             logger.info(
@@ -161,6 +191,14 @@ class Worker:
                 job.id,
                 job.attempt,
             )
+        return True
+
+    async def _cancel(self, job: ClaimedJob) -> bool:
+        """End a job whose cancel was requested, releasing its lease at once."""
+        if not await finish_cancelled(self._engine, job_id=job.id, attempt=job.attempt):
+            return False
+        self.cancelled += 1
+        logger.info("%s: job %s cancelled, lease released", self.worker_id, job.id)
         return True
 
     async def _release(self, job: ClaimedJob, error: str) -> None:
@@ -269,7 +307,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(
         f"worker {worker.worker_id}: {worker.published} published, {worker.rejected} rejected, "
-        f"{worker.lost} lost, {worker.released} released",
+        f"{worker.lost} lost, {worker.released} released, {worker.cancelled} cancelled",
         flush=True,
     )
     return 0

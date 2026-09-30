@@ -494,3 +494,14 @@ async def test_cancelling_a_finished_job_changes_nothing(fleet_engine: AsyncEngi
     assert await cancel(fleet_engine, job.id) == "failed"
     status = await job_status(fleet_engine, job.id)
     assert status is not None and (status.state, status.cancel_requested_at) == ("failed", None)
+
+
+async def test_a_job_cancelled_before_it_starts_is_never_started(fleet_engine: AsyncEngine) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None
+    assert await cancel(fleet_engine, job.id) == "claimed"
+    assert not await start(fleet_engine, job_id=job.id, attempt=1)
+    assert await finish_cancelled(fleet_engine, job_id=job.id, attempt=1)
+    status = await job_status(fleet_engine, job.id)
+    assert status is not None and (status.state, status.started_at) == ("cancelled", None)
