@@ -141,9 +141,10 @@ every result, in one repeatable-read snapshot — and reports every violation of
 | **No stale writes** | every result came from the job's last attempt, by the worker holding it, before that attempt's lease ran out, and closed that attempt; each attempt was claimed only after the one before it ended |
 | **Accounting adds up** | each job's attempt log runs 1…n with no gaps and every attempt ended; a reaped lease had run out and a released one hadn't; only the last attempt may have published; a dead letter used its whole budget; the final states sum to the jobs submitted |
 
-**What it proves**, for a run that has drained: across what Postgres recorded, no job has zero or two
-results, none is stranded, no attempt overlapped another of the same job, and every accepted result
-was written by the only attempt entitled to write it, while its lease was live.
+**What it proves**, for a run that has drained: across what Postgres recorded, every job that finished
+with an outcome has exactly one result and no other job has any, none is stranded, no attempt
+overlapped another of the same job, and every accepted result was written by the only attempt
+entitled to write it, while its lease was live.
 
 **What it doesn't:**
 
@@ -155,8 +156,9 @@ was written by the only attempt entitled to write it, while its lease was live.
 - **The attempt log's own honesty.** It cross-checks three tables written by the same store code;
   a bug that corrupted all three consistently would pass. The database constraints are the second
   line.
-- **A clock that runs backwards.** Every comparison uses Postgres's `clock_timestamp()`; a wall-clock
-  step backwards during a run could make a correct run look wrong (never the reverse).
+- **A clock that runs backwards.** Every comparison uses Postgres's `clock_timestamp()`. A wall-clock
+  step backwards during a run could make a correct run look wrong, or stamp a late write early
+  enough to hide it.
 - **Anything mid-run.** It checks a drained run; "nothing lost" means nothing was left unfinished,
   not that anything finished quickly.
 
