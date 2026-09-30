@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -35,8 +35,11 @@ def start_worker(
     runner: str = "tests.fleet_helpers:sleep_runner",
     worker_id: str = "w0",
     lease_seconds: float = 60.0,
+    heartbeat_seconds: float | None = None,
+    reap_every_seconds: float | None = None,
     retry_backoff_seconds: float | None = None,
     exit_when_idle: bool = False,
+    output: IO[str] | int = subprocess.PIPE,
 ) -> "subprocess.Popen[str]":
     """Start `python -m fleet.worker` as its own process, the way a deployment would."""
     command = [
@@ -52,15 +55,20 @@ def start_worker(
         "--database-url",
         url,
     ]
-    if retry_backoff_seconds is not None:
-        command += ["--retry-backoff-seconds", str(retry_backoff_seconds)]
+    for flag, value in (
+        ("--heartbeat-seconds", heartbeat_seconds),
+        ("--reap-every-seconds", reap_every_seconds),
+        ("--retry-backoff-seconds", retry_backoff_seconds),
+    ):
+        if value is not None:
+            command += [flag, str(value)]
     if exit_when_idle:
         command.append("--exit-when-idle")
     return subprocess.Popen(
         command,
         cwd=BACKEND_ROOT,
         env={**os.environ, "PYTHONPATH": str(BACKEND_ROOT)},
-        stdout=subprocess.PIPE,
+        stdout=output,
         stderr=subprocess.STDOUT,
         text=True,
     )
