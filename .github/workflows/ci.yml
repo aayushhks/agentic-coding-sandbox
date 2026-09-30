@@ -43,6 +43,9 @@ jobs:
           DATABASE_URL: "sqlite+aiosqlite:///mcp-smoke.db"
         run: uv run python -m app.eval.cli --label ci-mcp-smoke --create-tables --limit 1
 
+      - name: bench replay (every recorded task, two trials, fails on divergence)
+        run: uv run python -m bench.cli replay --label ci-replay --trials 2 --out "$RUNNER_TEMP/bench-ci"
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
