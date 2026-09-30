@@ -167,6 +167,18 @@ def test_hidden_directories_look_empty_to_commands(tmp_path: Path) -> None:
     assert [path.name for path in secret.iterdir()] == ["result.json"]
 
 
+def test_only_hiding_directories_needs_a_mount_namespace(tmp_path: Path) -> None:
+    plain = SubprocessSandbox()
+    hiding = SubprocessSandbox(SandboxConfig(hidden_paths=(str(tmp_path),)))
+    try:
+        _needs(plain, "pid")
+        _needs(hiding, "mount")
+        assert "mount" not in plain.isolation.split("+")
+    finally:
+        plain.cleanup()
+        hiding.cleanup()
+
+
 def test_a_sandbox_that_must_isolate_refuses_to_start_without_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

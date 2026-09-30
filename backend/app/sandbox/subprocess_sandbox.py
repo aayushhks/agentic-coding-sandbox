@@ -218,7 +218,8 @@ class SubprocessSandbox(Sandbox):
         """Namespace sets to try, strongest first; root needs no user namespace for them."""
         config = self._config
         net = ["net"] if config.network_disabled else []
-        sets = [[*net, "mount", "pid"]]
+        # a mount namespace only when directories need hiding: container runtimes often deny mount
+        sets = [[*net, "mount", "pid"] if config.hidden_paths else [*net, "pid"]]
         # the older network-only sandbox, for hosts that refuse the rest, unless more is required
         if config.network_disabled and not config.require_isolation and not config.hidden_paths:
             sets.append(["net"])
