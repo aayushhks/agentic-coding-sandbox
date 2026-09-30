@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+# The image every fleet task runs in: Python, the backend's code and its locked dependencies.
+# Build it from the repository root: docker build -f backend/Dockerfile.task -t fleet-task:local .
+FROM mirror.gcr.io/library/python:3.13-slim@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH=/app/.venv/bin:$PATH \
+    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
+# a build secret named ca lets a host that re-signs tls reach the package index; ci needs none
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN --mount=type=secret,id=ca \
+    if [ -f /run/secrets/ca ]; then export PIP_CERT=/run/secrets/ca SSL_CERT_FILE=/run/secrets/ca; fi \
+    && pip install --no-cache-dir uv==0.8.17 \
+    && uv sync --frozen --no-dev --no-install-project \
+    && pip uninstall --yes uv
+
+# the root filesystem is read-only at run time, so bytecode is compiled now or never
+COPY backend/app app
+COPY backend/bench bench
+COPY backend/fleet fleet
+RUN python -m compileall -q app bench fleet
+
+# tasks never run as root
+RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin task
+USER 10001
