@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, cast
 
-from sqlalchemy import text
+from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import (
@@ -23,10 +23,12 @@ from fleet.models import (
     RetryPolicy,
     Submission,
 )
+from fleet.policy import DEFAULT_POLICY, ExecutionPolicy
 
 _JOB_COLUMNS = (
     "id, batch_id, position, name, state, attempt, max_attempts, worker_id, lease_expires_at, "
-    "result_id, submitted_at, available_at, claimed_at, started_at, finished_at, last_error"
+    "result_id, submitted_at, available_at, claimed_at, started_at, finished_at, last_error, "
+    "policy, cancel_requested_at"
 )
 LEASE_EXPIRED = "lease expired"
 
@@ -77,14 +79,21 @@ def _json(value: Any) -> dict[str, Any]:
     return loaded
 
 
-def request_digest(label: str, jobs: Sequence[NewJob], max_attempts: int) -> str:
+def request_digest(
+    label: str, jobs: Sequence[NewJob], max_attempts: int, policy: ExecutionPolicy
+) -> str:
     return _digest(
         {
             "label": label,
             "max_attempts": max_attempts,
+            "policy": policy.model_dump(mode="json"),
             "jobs": [job.model_dump(mode="json") for job in jobs],
         }
     )
+
+
+def _status(row: Row[Any]) -> JobStatus:
+    return JobStatus.model_validate({**row._asdict(), "policy": _json(row.policy)})
 
 
 async def submit_batch(
@@ -94,13 +103,14 @@ async def submit_batch(
     jobs: Sequence[NewJob],
     idempotency_key: str | None = None,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    policy: ExecutionPolicy = DEFAULT_POLICY,
 ) -> Submission:
     """Enqueue a batch in one transaction; a repeated key returns the original batch."""
     if not jobs:
         raise ValueError("a batch needs at least one job")
     if max_attempts < 1:
         raise ValueError("every job needs at least one attempt")
-    digest = request_digest(label, jobs, max_attempts)
+    digest = request_digest(label, jobs, max_attempts, policy)
     async with engine.begin() as connection:
         # a concurrent insert of the same key waits here and then conflicts, so one batch wins
         batch_id = await connection.scalar(
@@ -133,9 +143,9 @@ async def submit_batch(
         rows = await connection.execute(
             text(
                 "insert into fleet_jobs "
-                "(batch_id, position, name, payload, payload_digest, max_attempts) "
+                "(batch_id, position, name, payload, payload_digest, max_attempts, policy) "
                 "select :batch, item.position, item.name, item.payload::jsonb, item.digest, "
-                ":max_attempts "
+                ":max_attempts, CAST(:policy AS jsonb) "
                 "from unnest(CAST(:positions AS integer[]), CAST(:names AS text[]), "
                 "CAST(:payloads AS text[]), CAST(:digests AS text[])) "
                 "as item(position, name, payload, digest) "
@@ -144,6 +154,7 @@ async def submit_batch(
             {
                 "batch": batch_id,
                 "max_attempts": max_attempts,
+                "policy": policy.model_dump_json(),
                 "positions": list(range(len(jobs))),
                 "names": [job.name for job in jobs],
                 "payloads": payloads,
@@ -168,7 +179,7 @@ async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) ->
                     "where id = (select id from fleet_jobs where state = 'queued' "
                     "and available_at <= clock_timestamp() "
                     "order by id limit 1 for update skip locked) "
-                    "returning id, attempt, name, payload, claimed_at, lease_expires_at"
+                    "returning id, attempt, name, payload, claimed_at, lease_expires_at, policy"
                 ),
                 {"worker": worker_id, "lease": lease_seconds},
             )
@@ -195,6 +206,7 @@ async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) ->
         name=row.name,
         payload=_json(row.payload),
         lease_expires_at=row.lease_expires_at,
+        policy=ExecutionPolicy.model_validate(_json(row.policy)),
     )
 
 
@@ -392,7 +404,7 @@ async def job_status(engine: AsyncEngine, job_id: int) -> JobStatus | None:
                 text(f"select {_JOB_COLUMNS} from fleet_jobs where id = :job"), {"job": job_id}
             )
         ).first()
-    return None if row is None else JobStatus.model_validate(row._asdict())
+    return None if row is None else _status(row)
 
 
 async def batch_jobs(engine: AsyncEngine, batch_id: int) -> list[JobStatus]:
@@ -403,7 +415,7 @@ async def batch_jobs(engine: AsyncEngine, batch_id: int) -> list[JobStatus]:
             ),
             {"batch": batch_id},
         )
-        return [JobStatus.model_validate(row._asdict()) for row in rows]
+        return [_status(row) for row in rows]
 
 
 async def job_result(engine: AsyncEngine, job_id: int) -> PublishedResult | None:

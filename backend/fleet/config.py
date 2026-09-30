@@ -4,6 +4,9 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fleet.models import DEFAULT_RETRY
+from fleet.policy import OperatorLimits
+
+_LIMITS = OperatorLimits()
 
 
 def async_url(url: str) -> str:
@@ -27,6 +30,26 @@ class FleetSettings(BaseSettings):
     # the wait before retrying after an infrastructure failure, doubling up to the cap
     retry_backoff_seconds: float = DEFAULT_RETRY.backoff_seconds
     retry_backoff_cap_seconds: float = DEFAULT_RETRY.backoff_cap_seconds
+    # the operator's ceilings on what any batch may ask for
+    max_cpus: float = _LIMITS.max_cpus
+    max_memory_mb: int = _LIMITS.max_memory_mb
+    max_pids: int = _LIMITS.max_pids
+    max_tmp_mb: int = _LIMITS.max_tmp_mb
+    max_timeout_seconds: float = _LIMITS.max_timeout_seconds
+    # comma-separated host:port destinations a batch may be granted; none unless listed
+    grantable_egress: str = ""
+
+    def operator_limits(self) -> OperatorLimits:
+        return OperatorLimits(
+            max_cpus=self.max_cpus,
+            max_memory_mb=self.max_memory_mb,
+            max_pids=self.max_pids,
+            max_tmp_mb=self.max_tmp_mb,
+            max_timeout_seconds=self.max_timeout_seconds,
+            grantable_egress=frozenset(
+                item.strip().lower() for item in self.grantable_egress.split(",") if item.strip()
+            ),
+        )
 
     @field_validator("database_url")
     @classmethod

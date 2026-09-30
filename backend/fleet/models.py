@@ -5,6 +5,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from fleet.policy import ExecutionPolicy
+
 JobState = Literal[
     "queued",
     "claimed",
@@ -51,6 +53,7 @@ class ClaimedJob(BaseModel):
     name: str
     payload: dict[str, Any]
     lease_expires_at: datetime
+    policy: ExecutionPolicy
 
 
 class JobStatus(BaseModel):
@@ -72,6 +75,8 @@ class JobStatus(BaseModel):
     finished_at: datetime | None
     # why the latest attempt ended without a result, and so why a dead letter is one
     last_error: str | None
+    policy: ExecutionPolicy
+    cancel_requested_at: datetime | None
 
 
 class BatchStatus(BaseModel):

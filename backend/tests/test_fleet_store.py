@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import NewJob, RetryPolicy
+from fleet.policy import ExecutionPolicy
 from fleet.store import (
     IdempotencyConflictError,
     batch_jobs,
@@ -378,3 +379,19 @@ async def test_a_release_needs_a_live_lease_on_the_current_attempt(
     assert await release(fleet_engine, job_id=late.id, attempt=1, error="e") is None
     status = await job_status(fleet_engine, late.id)
     assert status is not None and (status.state, status.worker_id) == ("claimed", "fast")
+
+
+async def test_each_job_keeps_its_batchs_policy_and_is_claimed_with_it(
+    fleet_engine: AsyncEngine,
+) -> None:
+    policy = ExecutionPolicy(memory_mb=256, timeout_seconds=30, egress=("api.groq.com:443",))
+    submission = await submit_batch(fleet_engine, label="b", jobs=_jobs(2), policy=policy)
+    assert {job.policy for job in await batch_jobs(fleet_engine, submission.batch_id)} == {policy}
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None and job.policy == policy
+    # the same key and jobs under a different policy is a different batch
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(2), idempotency_key="k")
+    with pytest.raises(IdempotencyConflictError):
+        await submit_batch(
+            fleet_engine, label="b", jobs=_jobs(2), idempotency_key="k", policy=policy
+        )

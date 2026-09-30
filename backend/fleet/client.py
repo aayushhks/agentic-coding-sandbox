@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import httpx
 
 from fleet.models import DEFAULT_MAX_ATTEMPTS, BatchStatus, NewJob, Submission
+from fleet.policy import DEFAULT_POLICY, ExecutionPolicy
 
 
 class FleetClient:
@@ -27,6 +28,7 @@ class FleetClient:
         jobs: Sequence[NewJob],
         idempotency_key: str | None = None,
         max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+        policy: ExecutionPolicy = DEFAULT_POLICY,
     ) -> Submission:
         response = await self._http.post(
             "/batches",
@@ -34,6 +36,7 @@ class FleetClient:
                 "label": label,
                 "idempotency_key": idempotency_key,
                 "max_attempts": max_attempts,
+                "policy": policy.model_dump(mode="json"),
                 "jobs": [job.model_dump(mode="json") for job in jobs],
             },
         )

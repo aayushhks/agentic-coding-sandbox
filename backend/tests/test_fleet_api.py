@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from fleet.api import create_app
 from fleet.client import FleetClient
 from fleet.models import NewJob
+from fleet.policy import OperatorLimits
 from fleet.store import claim, publish
 from fleet.worker import Worker
 from tests.fleet_helpers import sleep_runner
@@ -104,3 +105,21 @@ async def test_the_client_submits_and_waits_while_a_worker_drains(
     )
     await draining
     assert (status.total, status.counts, status.done) == (4, {"succeeded": 4}, True)
+
+
+async def test_a_batch_asking_past_the_operators_limits_is_refused(
+    fleet_engine: AsyncEngine,
+) -> None:
+    limits = OperatorLimits(max_memory_mb=512)
+    app = create_app(fleet_engine, limits=limits)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://fleet") as client:
+        too_big = {**_batch(), "policy": {"memory_mb": 4096}}
+        refused = await client.post("/batches", json=too_big)
+        assert refused.status_code == 403
+        assert "memory_mb 4096 is over the limit of 512" in refused.json()["detail"]
+        network = {**_batch(key="n"), "policy": {"egress": ["example.com:443"]}}
+        assert (await client.post("/batches", json=network)).status_code == 403
+        fits = await client.post("/batches", json={**_batch(key="f"), "policy": {"memory_mb": 256}})
+        assert fits.status_code == 201
+        job = (await client.get(f"/jobs/{fits.json()['job_ids'][0]}")).json()
+        assert (job["policy"]["memory_mb"], job["policy"]["egress"]) == (256, [])
