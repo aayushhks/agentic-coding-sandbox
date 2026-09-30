@@ -91,14 +91,20 @@ def memory_limit_bytes(cgroup_root: Path) -> int | None:
     return int(raw)
 
 
-def _git(*args: str) -> str | None:
+def _git(repo: Path, *args: str) -> str | None:
     try:
         done = subprocess.run(
-            ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, timeout=10, check=True
+            ["git", *args], cwd=repo, capture_output=True, text=True, timeout=10, check=True
         )
     except (OSError, subprocess.SubprocessError):
         return None
     return done.stdout.strip()
+
+
+def git_dirty(repo: Path) -> bool:
+    """True when anything but the bench's own output records differs from the commit."""
+    # a batch writes each trial's record before the next trial starts, so outputs are excluded
+    return bool(_git(repo, "status", "--porcelain", "--", ".", ":(exclude)docs/results/bench"))
 
 
 def _os_name(os_release: str) -> str:
@@ -120,8 +126,8 @@ def capture_environment(
         limit_gib = None
     logical = os.cpu_count() or 1
     return Environment(
-        git_sha=_git("rev-parse", "HEAD") or "unknown",
-        git_dirty=bool(_git("status", "--porcelain")),
+        git_sha=_git(REPO_ROOT, "rev-parse", "HEAD") or "unknown",
+        git_dirty=git_dirty(REPO_ROOT),
         cpu_model=parse_cpu_model(cpuinfo),
         logical_cpus=logical,
         usable_cpus=len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else logical,

@@ -1,10 +1,12 @@
 import platform
 import re
+import subprocess
 from pathlib import Path
 
 from bench.environment import (
     capture_environment,
     cpu_quota_cores,
+    git_dirty,
     memory_limit_bytes,
     parse_cpu_model,
     parse_mem_total_gib,
@@ -62,6 +64,31 @@ def test_cgroup_v1_unlimited_and_missing(tmp_path: Path) -> None:
     _write(tmp_path, "cpu/cpu.cfs_quota_us", "-1")
     _write(tmp_path, "cpu/cpu.cfs_period_us", "100000")
     assert cpu_quota_cores(tmp_path) is None
+
+
+def test_git_dirty_ignores_the_bench_output_records(tmp_path: Path) -> None:
+    def git(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q")
+    _write(tmp_path, "code.py", "x = 1\n")
+    git("add", ".")
+    git(
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-qm",
+        "c",
+    )
+    assert not git_dirty(tmp_path)
+    _write(tmp_path, "docs/results/bench/demo/trial-1.json", "{}")
+    assert not git_dirty(tmp_path)
+    _write(tmp_path, "code.py", "x = 2\n")
+    assert git_dirty(tmp_path)
 
 
 def test_capture_on_this_machine() -> None:
