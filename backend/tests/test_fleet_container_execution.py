@@ -19,7 +19,7 @@ from fleet.models import NewJob, PublishedResult
 from fleet.policy import ExecutionPolicy
 from fleet.store import cancel, claim, job_result, job_status, live_attempts, submit_batch
 from fleet.worker import Worker
-from tests.fleet_helpers import NO_BACKOFF
+from tests.fleet_helpers import NO_BACKOFF, assert_invariants_hold, start_worker
 
 PROBES = "fleet.probes:run"
 
@@ -319,3 +319,53 @@ async def test_generated_code_cannot_use_its_tasks_egress(
     assert result is not None
     # the task may reach its proxy, but the code it runs has no network at all
     assert "Network is unreachable" in result.body["proxy"] or "resolution" in result.body["proxy"]
+
+
+async def test_a_killed_container_worker_loses_nothing_and_leaves_nothing_running(
+    fleet_engine: AsyncEngine,
+    fleet_database_url: str,
+    docker: Docker,
+    task_image: str,
+    deployment: str,
+) -> None:
+    jobs = [NewJob(name=f"j{n}", payload={"probe": "sleep", "seconds": 3}) for n in range(2)]
+    submission = await submit_batch(fleet_engine, label="killed", jobs=jobs)
+    in_containers = (
+        *("--execution", "container"),
+        *("--task-image", task_image, "--deployment", deployment),
+    )
+    first = start_worker(
+        fleet_database_url,
+        runner=PROBES,
+        worker_id="first",
+        lease_seconds=1.5,
+        retry_backoff_seconds=0.1,
+        extra_args=in_containers,
+    )
+    deadline = time.monotonic() + 60
+    while not await _containers(docker, deployment):
+        assert first.poll() is None and time.monotonic() < deadline, "no task container started"
+        await asyncio.sleep(0.1)
+    # the worker dies; the container it started keeps running with nobody to stop it
+    first.kill()
+    await asyncio.to_thread(first.wait)
+    orphans = {item["Id"] for item in await _containers(docker, deployment)}
+    assert orphans
+    second = start_worker(
+        fleet_database_url,
+        runner=PROBES,
+        worker_id="second",
+        lease_seconds=1.5,
+        reap_every_seconds=0.5,
+        retry_backoff_seconds=0.1,
+        exit_when_idle=True,
+        extra_args=in_containers,
+    )
+    output, _ = await asyncio.to_thread(second.communicate, timeout=120)
+    assert second.returncode == 0, output
+    await assert_invariants_hold(fleet_engine, submission.job_ids)
+    for job_id in submission.job_ids:
+        result = await job_result(fleet_engine, job_id)
+        assert result is not None and (result.outcome, result.worker_id) == ("succeeded", "second")
+    # the orphan was stopped, and nothing else was left behind
+    assert await _containers(docker, deployment) == []

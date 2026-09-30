@@ -60,6 +60,7 @@ def start_worker(
     retry_backoff_seconds: float | None = None,
     exit_when_idle: bool = False,
     output: IO[str] | int = subprocess.PIPE,
+    extra_args: tuple[str, ...] = (),
 ) -> "subprocess.Popen[str]":
     """Start `python -m fleet.worker` as its own process, the way a deployment would."""
     command = [
@@ -84,6 +85,7 @@ def start_worker(
             command += [flag, str(value)]
     if exit_when_idle:
         command.append("--exit-when-idle")
+    command += extra_args
     return subprocess.Popen(
         command,
         cwd=BACKEND_ROOT,
