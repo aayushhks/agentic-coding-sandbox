@@ -8,7 +8,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.llm.base import CompletionResult, LLMProvider, Message
-from bench.cli import ab_trials, main, record_trial, replay_passed, replay_trials
+from bench.cli import AbResult, ab_trials, main, record_trial, replay_passed, replay_trials
+from bench.executor import SequentialExecutor
 from bench.fleet_executor import FleetExecutor
 from bench.jobs import FailureKind, Outcome
 from bench.records import (
@@ -214,20 +215,56 @@ async def test_ab_trials_interleave_two_arms_that_differ_only_in_the_executor(
         count=3,
         seed=1,
         out_root=tmp_path,
-        fleet=FleetExecutor(fleet_database_url, lease_seconds=60),
+        first=SequentialExecutor(),
+        second=FleetExecutor(fleet_database_url, lease_seconds=60),
         verbose=False,
     )
     assert result.outcomes_match
-    assert result.sequential.trials == result.fleet.trials == [1, 2]
-    assert replay_passed(result.sequential) and replay_passed(result.fleet)
-    differing = {
-        field
-        for field in BenchConfig.model_fields
-        if getattr(result.sequential.config, field) != getattr(result.fleet.config, field)
-    }
-    assert differing == {"executor", "topology"}
+    assert result.first.trials == result.second.trials == [1, 2]
+    assert replay_passed(result.first) and replay_passed(result.second)
+    # what differs is where the jobs ran, and nothing about the tasks, recordings or agent
+    assert _differing(result) == {"executor", "topology", "execution"}
+    assert result.second.config.execution is not None
+    assert result.second.config.execution["mode"] == "process"
     assert (tmp_path / "ab-fleet-1w-replay-zero" / "summary.json").is_file()
     assert (tmp_path / "ab-sequential-replay-zero" / "trial-2.json").is_file()
+
+
+def _differing(result: AbResult) -> set[str]:
+    return {
+        field
+        for field in BenchConfig.model_fields
+        if getattr(result.first.config, field) != getattr(result.second.config, field)
+    }
+
+
+async def test_ab_trials_can_compare_the_fleet_in_process_against_in_containers(
+    tmp_path: Path, fleet_engine: AsyncEngine, fleet_database_url: str, task_image: str
+) -> None:
+    containers = FleetExecutor(
+        fleet_database_url, lease_seconds=60, mode="container", task_image=task_image
+    )
+    result = await ab_trials(
+        taskset=MINI_TASKSET,
+        recordings=await record_mini_batch(),
+        latency=LatencyProfile.ZERO,
+        trials=2,
+        count=3,
+        seed=1,
+        out_root=tmp_path,
+        first=FleetExecutor(fleet_database_url, lease_seconds=60),
+        second=containers,
+        verbose=False,
+    )
+    assert result.outcomes_match
+    assert replay_passed(result.first) and replay_passed(result.second)
+    assert _differing(result) == {"topology", "execution"}
+    [trial] = [
+        t for t in load_trials(tmp_path / "ab-fleet-1w-container-replay-zero") if t.trial == 1
+    ]
+    for job in trial.jobs:
+        assert job.execution is not None and job.execution["mode"] == "container"
+        assert job.execution["usage"]["max_rss_mb"] > 0
 
 
 async def test_the_replay_command_runs_trials_on_a_pool_of_fleet_workers(

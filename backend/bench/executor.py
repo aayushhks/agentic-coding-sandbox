@@ -41,6 +41,7 @@ class Executor(Protocol):
     name: str
     topology: str
     workers: int
+    execution: dict[str, Any] | None
 
     async def run(
         self,
@@ -197,6 +198,7 @@ def job_result(
     submitted_at: float,
     claimed_at: float,
     finished_at: float,
+    ran: dict[str, Any] | None = None,
 ) -> JobResult:
     return JobResult(
         job_id=job.id,
@@ -220,6 +222,7 @@ def job_result(
         completion_tokens=execution.completion_tokens,
         retry_wait_seconds=execution.retry_wait_seconds,
         divergence=execution.divergence,
+        execution=ran,
     )
 
 
@@ -228,6 +231,7 @@ class SequentialExecutor:
 
     name = "sequential"
     topology = "single host, one in-process worker"
+    execution: dict[str, Any] | None = None
 
     def __init__(self, workers: int = 1) -> None:
         if workers != 1:

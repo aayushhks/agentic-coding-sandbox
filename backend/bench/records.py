@@ -33,6 +33,8 @@ class BenchConfig(BaseModel):
     sandbox_config: dict[str, Any]
     tool_transport: str
     percentile_method: str
+    # where jobs ran and under what limits: the execution mode, task image and policy, if any
+    execution: dict[str, Any] | None = None
 
 
 class TrialRecord(BaseModel):

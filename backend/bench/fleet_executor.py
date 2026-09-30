@@ -12,7 +12,7 @@ import time
 import uuid
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import IO, Any
+from typing import IO, Any, Literal
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -22,7 +22,8 @@ from bench.runner import execution_from_body
 from bench.taskset import BenchTask, Job, TaskSet
 from fleet.client import FleetClient
 from fleet.models import NewJob
-from fleet.store import batch_jobs
+from fleet.policy import DEFAULT_POLICY, ExecutionPolicy
+from fleet.store import batch_jobs, executions
 from fleet.store import job_result as published_result
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -51,9 +52,10 @@ def _tail(log: IO[bytes]) -> str:
     return log.read().decode(errors="replace")[-2000:]
 
 
-def pool_topology(workers: int, database: str = "Postgres") -> str:
+def pool_topology(workers: int, database: str = "Postgres", *, containers: bool = False) -> str:
     processes = "one fleet worker process" if workers == 1 else f"{workers} fleet worker processes"
-    return f"single host: {processes}, the fleet api and {database}, all on this machine"
+    where = "; each job in a container of its own" if containers else ""
+    return f"single host: {processes}, the fleet api and {database}, all on this machine{where}"
 
 
 class FleetExecutor:
@@ -68,21 +70,38 @@ class FleetExecutor:
         workers: int = 1,
         lease_seconds: float | None = None,
         topology: str | None = None,
+        mode: Literal["process", "container"] = "process",
+        task_image: str = "fleet-task:local",
+        image_id: str | None = None,
+        policy: ExecutionPolicy = DEFAULT_POLICY,
     ) -> None:
         if workers < 1:
             raise ValueError("the fleet needs at least one worker")
         self.workers = workers
-        self.topology = topology or pool_topology(workers)
+        self.mode = mode
+        self.topology = topology or pool_topology(workers, containers=mode == "container")
+        # what the run record says about where jobs ran and under what limits
+        self.execution: dict[str, Any] | None = {
+            "mode": mode,
+            "policy": policy.model_dump(mode="json"),
+        } | ({"image": task_image, "image_id": image_id} if mode == "container" else {})
         self._url = database_url
         # unset, the workers take the fleet's configured lease
         self._lease = lease_seconds
+        self._image = task_image
+        self._policy = policy
+        # its own label, so its workers only ever reap the containers this run started
+        self._deployment = f"bench-{uuid.uuid4().hex[:8]}"
 
     async def run(
         self, taskset: TaskSet, jobs: Sequence[Job], payload_for: PayloadFactory
     ) -> BatchResult:
         port = _free_port()
         env = {"FLEET_DATABASE_URL": self._url}
-        lease = [] if self._lease is None else ["--lease-seconds", str(self._lease)]
+        options = [] if self._lease is None else ["--lease-seconds", str(self._lease)]
+        if self.mode == "container":
+            options += ["--execution", "container", "--task-image", self._image]
+            options += ["--deployment", self._deployment]
         with contextlib.ExitStack() as logs:
             api_log = logs.enter_context(tempfile.TemporaryFile())
             worker_logs = [
@@ -102,7 +121,7 @@ class FleetExecutor:
                 _spawn(
                     [
                         *("-m", "fleet.worker", "--runner", "bench.runner:run_job"),
-                        *("--worker-id", f"w{index}", "--database-url", self._url, *lease),
+                        *("--worker-id", f"w{index}", "--database-url", self._url, *options),
                     ],
                     env,
                     log,
@@ -123,6 +142,7 @@ class FleetExecutor:
                         for job in jobs
                     ],
                     idempotency_key=uuid.uuid4().hex,
+                    policy=self._policy,
                 )
                 while not (await client.batch(submission.batch_id)).done:
                     for worker, log in zip(workers, worker_logs, strict=True):
@@ -148,6 +168,7 @@ class FleetExecutor:
         try:
             rows = await batch_jobs(engine, batch_id)
             published = {row.id: await published_result(engine, row.id) for row in rows}
+            ran = await executions(engine, batch_id)
         finally:
             await engine.dispose()
         by_name = {job.id: job for job in jobs}
@@ -174,6 +195,7 @@ class FleetExecutor:
                     submitted_at=(row.submitted_at - start).total_seconds(),
                     claimed_at=(row.claimed_at - start).total_seconds(),
                     finished_at=(row.finished_at - start).total_seconds(),
+                    ran=ran.get(row.id),
                 )
             )
         return results

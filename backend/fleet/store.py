@@ -447,6 +447,19 @@ async def record_execution(
         )
 
 
+async def executions(engine: AsyncEngine, batch_id: int) -> dict[int, dict[str, Any] | None]:
+    """How each job's latest attempt ran, as its worker recorded it."""
+    async with engine.connect() as connection:
+        rows = await connection.execute(
+            text(
+                "select j.id, a.execution from fleet_jobs j join fleet_attempts a "
+                "on a.job_id = j.id and a.attempt = j.attempt where j.batch_id = :batch"
+            ),
+            {"batch": batch_id},
+        )
+        return {row.id: None if row.execution is None else _json(row.execution) for row in rows}
+
+
 async def live_attempts(engine: AsyncEngine) -> set[tuple[int, int]]:
     """Every (job, attempt) that holds a lease that hasn't run out."""
     async with engine.connect() as connection:

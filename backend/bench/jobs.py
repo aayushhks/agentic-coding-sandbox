@@ -1,6 +1,7 @@
 """What happened to one job in a batch."""
 
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -40,6 +41,8 @@ class JobResult(BaseModel):
     completion_tokens: int
     retry_wait_seconds: float
     divergence: str | None
+    # how the job's final attempt ran, when it ran in a container: limits, exit, peak memory
+    execution: dict[str, Any] | None = None
 
     @property
     def queue_wait(self) -> float:

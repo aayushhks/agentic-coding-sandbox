@@ -3,11 +3,11 @@
 import argparse
 import asyncio
 import sys
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -54,7 +54,8 @@ from bench.replay import (
 )
 from bench.runner import replay_payload
 from bench.taskset import BenchTask, Job, TaskSet, load_taskset, plan_jobs
-from fleet.config import async_url
+from fleet.config import FleetSettings, async_url
+from fleet.docker import Docker
 from fleet.localdb import LocalPostgres
 from fleet.migrate import migrate
 from fleet.store import server_version
@@ -71,6 +72,7 @@ class Described(Protocol):
     name: str
     topology: str
     workers: int
+    execution: dict[str, Any] | None
 
 
 def build_config(
@@ -102,6 +104,7 @@ def build_config(
         sandbox_config=asdict(SandboxConfig()),
         tool_transport=get_settings().tool_transport,
         percentile_method=PERCENTILE_METHOD,
+        execution=executor.execution,
     )
 
 
@@ -334,10 +337,18 @@ def replay_passed(summary: SummaryRecord) -> bool:
 
 @dataclass(slots=True)
 class AbResult:
-    sequential: SummaryRecord
-    fleet: SummaryRecord
+    first: SummaryRecord
+    second: SummaryRecord
     # every trial of both arms produced the same outcome for every job
     outcomes_match: bool
+
+
+def arm_label(executor: Executor | FleetExecutor, latency: LatencyProfile) -> str:
+    """ab-sequential-replay-zero, ab-fleet-1w-replay-zero, ab-fleet-1w-container-replay-zero"""
+    name = executor.name
+    if isinstance(executor, FleetExecutor):
+        name = f"fleet-{executor.workers}w" + ("-container" if executor.mode == "container" else "")
+    return f"ab-{name}-replay-{latency.value}"
 
 
 async def ab_trials(
@@ -349,28 +360,24 @@ async def ab_trials(
     count: int,
     seed: int,
     out_root: Path,
-    fleet: FleetExecutor,
+    first: Executor | FleetExecutor,
+    second: Executor | FleetExecutor,
     verbose: bool = True,
 ) -> AbResult:
-    """Interleave sequential and fleet trials in one session, alternating which arm goes first."""
-    sequential = SequentialExecutor()
+    """Interleave two arms' trials in one session, alternating which arm goes first."""
     used = _replayable(taskset, recordings, count, seed)
     arms: dict[str, tuple[str, BenchConfig, BatchRun]] = {
-        "sequential": (
-            f"ab-sequential-replay-{latency.value}",
-            _replay_config(taskset, sequential, used, latency=latency, count=count, seed=seed),
-            _replay_batch(sequential, taskset, used, latency),
-        ),
-        "fleet": (
-            f"ab-fleet-{fleet.workers}w-replay-{latency.value}",
-            _replay_config(taskset, fleet, used, latency=latency, count=count, seed=seed),
-            _replay_batch(fleet, taskset, used, latency),
-        ),
+        arm: (
+            arm_label(executor, latency),
+            _replay_config(taskset, executor, used, latency=latency, count=count, seed=seed),
+            _replay_batch(executor, taskset, used, latency),
+        )
+        for arm, executor in (("first", first), ("second", second))
     }
     records: dict[str, list[TrialRecord]] = {arm: [] for arm in arms}
     for trial in range(1, trials + 1):
         # alternating the order keeps warm-up and drift from favoring one arm
-        order = ("sequential", "fleet") if trial % 2 else ("fleet", "sequential")
+        order = ("first", "second") if trial % 2 else ("second", "first")
         for arm in order:
             label, config, execute = arms[arm]
             record = await run_trial(
@@ -386,16 +393,16 @@ async def ab_trials(
             records[arm].append(record)
             if verbose:
                 wall = record.metrics.batch_wall_clock_seconds
-                print(f"trial {trial}/{trials} {arm:<10} batch {wall:6.2f}s", flush=True)
+                print(f"trial {trial}/{trials} {label:<36} batch {wall:6.2f}s", flush=True)
     summaries = {}
     for arm, (label, _config, _execute) in arms.items():
         summaries[arm] = summarize(label, records[arm])
         write_record(summaries[arm], summary_path(out_root / label))
-    reference = outcome_vector(records["sequential"][0])
-    every = records["sequential"] + records["fleet"]
+    reference = outcome_vector(records["first"][0])
+    every = records["first"] + records["second"]
     return AbResult(
-        sequential=summaries["sequential"],
-        fleet=summaries["fleet"],
+        first=summaries["first"],
+        second=summaries["second"],
         outcomes_match=all(outcome_vector(record) == reference for record in every),
     )
 
@@ -408,22 +415,54 @@ async def _server_version(url: str) -> str:
         await engine.dispose()
 
 
+async def _image_id(image: str) -> str | None:
+    docker = Docker(FleetSettings().docker_socket)
+    try:
+        return await docker.image_id(image)
+    finally:
+        await docker.aclose()
+
+
 @contextmanager
-def _fleet(database_url: str | None, workers: int) -> Iterator[FleetExecutor]:
-    """A fleet on the given database, or on a throwaway local Postgres when there is none."""
+def _fleet(
+    database_url: str | None, workers: int, modes: Sequence[Literal["process", "container"]]
+) -> Iterator[list[FleetExecutor]]:
+    """Fleets on the given database, or on a throwaway local Postgres when there is none."""
     cluster = None if database_url else LocalPostgres.start()
     url: str = database_url or (cluster.url if cluster else "")
     try:
         migrate(url)
         version = asyncio.run(_server_version(url))
-        yield FleetExecutor(url, workers=workers, topology=pool_topology(workers, version))
+        fleets = []
+        for mode in modes:
+            image = FleetSettings().task_image
+            image_id = asyncio.run(_image_id(image)) if mode == "container" else None
+            if mode == "container" and image_id is None:
+                raise RuntimeError(f"no {image} image; build it with scripts/build-task-image.sh")
+            topology = pool_topology(workers, version, containers=mode == "container")
+            fleets.append(
+                FleetExecutor(
+                    url,
+                    workers=workers,
+                    topology=topology,
+                    mode=mode,
+                    task_image=image,
+                    image_id=image_id,
+                )
+            )
+        yield fleets
     finally:
         if cluster is not None:
             cluster.stop()
 
 
 def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
-    with _fleet(args.database_url, workers=1) as fleet:
+    # sequential against a one-worker fleet, or that fleet in process against in containers
+    modes: list[Literal["process", "container"]] = (
+        ["process"] if args.arms == "sequential-fleet" else ["process", "container"]
+    )
+    with _fleet(args.database_url, 1, modes) as fleets:
+        first: Executor | FleetExecutor = fleets[0] if len(fleets) == 2 else SequentialExecutor()
         result = asyncio.run(
             ab_trials(
                 taskset=taskset,
@@ -433,13 +472,14 @@ def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
                 count=count,
                 seed=args.seed,
                 out_root=args.out_root or RESULTS_ROOT,
-                fleet=fleet,
+                first=first,
+                second=fleets[-1],
             )
         )
-    print_summary(result.sequential)
-    print_summary(result.fleet)
+    print_summary(result.first)
+    print_summary(result.second)
     print(f"per-job outcomes match across both arms: {result.outcomes_match}")
-    both = replay_passed(result.sequential) and replay_passed(result.fleet)
+    both = replay_passed(result.first) and replay_passed(result.second)
     return 0 if result.outcomes_match and both else 1
 
 
@@ -509,6 +549,12 @@ def _parser() -> argparse.ArgumentParser:
     replay.add_argument("--latency", choices=[p.value for p in LatencyProfile], default="zero")
     replay.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     replay.add_argument("--executor", choices=["sequential", "fleet"], default="sequential")
+    replay.add_argument(
+        "--execution",
+        choices=["process", "container"],
+        default="process",
+        help="fleet only: run each job in the worker's process or in a container of its own",
+    )
     replay.add_argument("--workers", type=int, default=1)
     replay.add_argument(
         "--database-url", default=None, help="fleet only; default: a throwaway local Postgres"
@@ -523,7 +569,13 @@ def _parser() -> argparse.ArgumentParser:
     summary.add_argument("--label", required=True)
     summary.add_argument("--out", type=Path, default=None)
 
-    ab = commands.add_parser("ab", help="interleave sequential and one-worker fleet replays")
+    ab = commands.add_parser("ab", help="interleave two arms' replays in one session")
+    ab.add_argument(
+        "--arms",
+        choices=["sequential-fleet", "process-container"],
+        default="sequential-fleet",
+        help="sequential against a one-worker fleet, or that fleet in process against containers",
+    )
     ab.add_argument("--latency", choices=[p.value for p in LatencyProfile], default="zero")
     ab.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     ab.add_argument("--tasks", type=int, default=None, help="jobs (default: each task once)")
@@ -574,8 +626,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.executor == "fleet":
         if args.workers < 1:
             parser.error("the fleet needs at least one worker")
-        with _fleet(args.database_url, args.workers) as fleet:
-            summary = _replay(args, taskset, count, fleet, f"fleet-{args.workers}w")
+        with _fleet(args.database_url, args.workers, [args.execution]) as (fleet,):
+            suffix = "-container" if args.execution == "container" else ""
+            summary = _replay(args, taskset, count, fleet, f"fleet-{args.workers}w{suffix}")
     else:
         try:
             executor = SequentialExecutor(args.workers)
