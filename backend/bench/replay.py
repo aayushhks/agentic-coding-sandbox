@@ -42,6 +42,13 @@ class RecordedCall(BaseModel):
     retry_wait_seconds: float
 
 
+class RecordedError(BaseModel):
+    """A call the provider failed for good; replay raises it again at the same point."""
+
+    observation_head: str
+    message: str
+
+
 class Recording(BaseModel):
     schema_version: int = RECORDING_SCHEMA_VERSION
     task_id: str
@@ -52,6 +59,7 @@ class Recording(BaseModel):
     git_sha: str
     outcome: str
     calls: list[RecordedCall]
+    error: RecordedError | None = None
 
 
 def prefix_sha256(messages: Sequence[Message]) -> str:
@@ -92,6 +100,7 @@ class RecordingProvider(LLMProvider):
         self._clock = clock
         self.calls: list[RecordedCall] = []
         self.gave_up: Exception | None = None
+        self.error: RecordedError | None = None
 
     @property
     def name(self) -> str:
@@ -119,6 +128,10 @@ class RecordingProvider(LLMProvider):
                 delay = self._retry_delay(exc)
                 if delay is None or attempt == self._max_attempts:
                     self.gave_up = exc
+                    self.error = RecordedError(
+                        observation_head=observation_head(messages),
+                        message=f"{type(exc).__name__}: {exc}",
+                    )
                     raise
                 await self._sleep(delay)
                 continue
@@ -158,11 +171,16 @@ def build_recording(
         git_sha=git_sha,
         outcome=outcome,
         calls=list(provider.calls),
+        error=provider.error,
     )
 
 
 class ReplayDivergenceError(RuntimeError):
     """The run asked for something its recording cannot answer."""
+
+
+class RecordedProviderError(RuntimeError):
+    """A provider failure replayed exactly where the recording hit it."""
 
 
 class ReplayProvider(LLMProvider):
@@ -210,6 +228,16 @@ class ReplayProvider(LLMProvider):
     ) -> RecordedCall:
         calls = self._recording.calls
         index = self._cursor
+        error = self._recording.error
+        if index == len(calls) and error is not None:
+            head = observation_head(messages)
+            if head != error.observation_head:
+                self._diverge(
+                    f"call {index} answers {head!r} but the recorded failure answered "
+                    f"{error.observation_head!r}"
+                )
+            self._cursor += 1
+            raise RecordedProviderError(error.message)
         if index >= len(calls):
             self._diverge(f"call {index} was requested but only {len(calls)} were recorded")
         call = calls[index]
@@ -235,7 +263,7 @@ class ReplayProvider(LLMProvider):
 
     def check_consumed(self) -> None:
         """Flag a run that stopped before using every recorded call."""
-        total = len(self._recording.calls)
+        total = len(self._recording.calls) + (1 if self._recording.error is not None else 0)
         if self.divergence is None and self._cursor < total:
             self.divergence = f"the run stopped after {self._cursor} of {total} recorded calls"
 

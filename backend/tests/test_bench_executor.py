@@ -1,11 +1,12 @@
 import itertools
 import json
+from collections.abc import Sequence
 
 import pytest
 
 from app.agent.types import AgentRun, TerminationReason
 from app.benchmark.schema import Task, TaskCategory, TaskDifficulty, TaskMetadata
-from app.llm.base import LLMProvider
+from app.llm.base import CompletionResult, LLMProvider, Message
 from app.llm.mock_provider import MockProvider
 from app.tickets.loader import load_tickets
 from app.tickets.models import ExpectedOutcome
@@ -234,6 +235,44 @@ def test_failure_kinds_separate_agent_infra_and_harness_failures() -> None:
     assert failure_kind("provider_error") == FailureKind.INFRA
     assert failure_kind("sandbox_error") == FailureKind.INFRA
     assert failure_kind("replay_divergence") == FailureKind.HARNESS
+
+
+class _RejectingProvider(LLMProvider):
+    @property
+    def name(self) -> str:
+        return "rejecting"
+
+    @property
+    def model(self) -> str:
+        return "m"
+
+    async def complete(
+        self, messages: Sequence[Message], *, temperature: float = 0.0, max_tokens: int = 1024
+    ) -> CompletionResult:
+        raise RuntimeError("request too large")
+
+
+async def test_a_recorded_provider_failure_replays_as_the_same_infra_failure() -> None:
+    recorder = RecordingProvider(_RejectingProvider())
+    job = [Job("adder#0", "adder", 0)]
+    first = await SequentialExecutor().run(TASKSET, job, lambda _task: recorder)
+    recording = build_recording(
+        recorder,
+        task_id="adder",
+        taskset_version="test",
+        outcome=first.results[0].outcome.value,
+        git_sha="x",
+        recorded_at="t",
+    )
+    second = await SequentialExecutor().run(TASKSET, job, lambda _task: ReplayProvider(recording))
+    for batch in (first, second):
+        result = batch.results[0]
+        assert (result.outcome, result.failure_mode, result.failure_kind) == (
+            Outcome.FAILED,
+            "provider_error",
+            FailureKind.INFRA,
+        )
+        assert result.divergence is None
 
 
 def test_sequential_executor_runs_exactly_one_worker() -> None:

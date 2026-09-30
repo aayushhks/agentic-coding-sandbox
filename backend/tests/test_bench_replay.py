@@ -8,6 +8,8 @@ from app.llm.mock_provider import MockProvider
 from bench.replay import (
     LatencyProfile,
     RecordedCall,
+    RecordedError,
+    RecordedProviderError,
     Recording,
     RecordingProvider,
     ReplayDivergenceError,
@@ -225,3 +227,44 @@ def test_recordings_digest_changes_with_any_response() -> None:
     edited = {"demo": _one_call(content="second")}
     assert recordings_digest(original) == recordings_digest({"demo": _one_call()})
     assert recordings_digest(original) != recordings_digest(edited)
+
+
+async def test_recording_keeps_the_failure_that_ended_a_run() -> None:
+    time = FakeTime()
+    provider = RecordingProvider(
+        FlakyProvider(time, failures=1), sleep=time.sleep, clock=time.clock
+    )
+    with pytest.raises(FlakyError):
+        await provider.complete(_conversation("[ok] exit_code=0"))
+    assert provider.error == RecordedError(
+        observation_head="[ok] exit_code=0", message="FlakyError: busy"
+    )
+
+
+def _failing_after_one_call() -> Recording:
+    recording = _one_call()
+    recording.error = RecordedError(observation_head="[ok]", message="FlakyError: busy")
+    return recording
+
+
+async def test_replay_raises_a_recorded_failure_where_it_happened() -> None:
+    replay = ReplayProvider(_failing_after_one_call())
+    await replay.complete(_conversation())
+    with pytest.raises(RecordedProviderError, match="FlakyError: busy"):
+        await replay.complete(_conversation("[ok]\nwrote 3 bytes"))
+    replay.check_consumed()
+    assert replay.divergence is None
+
+
+async def test_replay_diverges_when_a_recorded_failure_sees_another_observation() -> None:
+    replay = ReplayProvider(_failing_after_one_call())
+    await replay.complete(_conversation())
+    with pytest.raises(ReplayDivergenceError, match="recorded failure"):
+        await replay.complete(_conversation("[error] exit_code=1"))
+
+
+async def test_replay_flags_a_run_that_never_reached_the_recorded_failure() -> None:
+    replay = ReplayProvider(_failing_after_one_call())
+    await replay.complete(_conversation())
+    replay.check_consumed()
+    assert replay.divergence == "the run stopped after 1 of 2 recorded calls"
