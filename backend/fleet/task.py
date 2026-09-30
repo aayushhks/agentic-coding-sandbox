@@ -8,6 +8,7 @@ import asyncio
 import ctypes
 import json
 import os
+import resource
 import sys
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,18 @@ async def _run(runner: Runner, job: dict[str, Any]) -> RunnerOutcome:
     return await runner(job["name"], job["payload"])
 
 
+def _usage() -> dict[str, float]:
+    """Peak memory of this process and of its largest child, and cpu used, for the record."""
+    own, children = (
+        resource.getrusage(who) for who in (resource.RUSAGE_SELF, resource.RUSAGE_CHILDREN)
+    )
+    return {
+        "max_rss_mb": own.ru_maxrss / 1024,
+        "max_child_rss_mb": children.ru_maxrss / 1024,
+        "cpu_seconds": own.ru_utime + own.ru_stime + children.ru_utime + children.ru_stime,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runner", required=True, help="the job runner, as module:function")
@@ -51,8 +64,10 @@ def main(argv: list[str] | None = None) -> int:
                 outcome = asyncio.run(_run(runner, job))
         # the worker treats a runner that raised as an infrastructure failure
         except Exception as exc:
+            _write(args.output / "usage.json", _usage())
             _write(args.output / "error.json", {"error": f"{type(exc).__name__}: {exc}"})
             return 1
+    _write(args.output / "usage.json", _usage())
     _write(args.output / "result.json", outcome.model_dump(mode="json"))
     return 0
 

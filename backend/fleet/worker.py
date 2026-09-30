@@ -1,4 +1,4 @@
-"""A fleet worker: claim a job, hand it to a pluggable runner, publish the result, repeat."""
+"""A fleet worker: claim a job, run it in-process or in a container, publish the result, repeat."""
 
 import argparse
 import asyncio
@@ -14,15 +14,19 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings, async_url
+from fleet.docker import Docker
+from fleet.execution import Attempted, Execution, InContainer, InProcess
 from fleet.models import DEFAULT_RETRY, ClaimedJob, RetryPolicy
-from fleet.runners import Runner, RunnerError, RunnerOutcome, load_runner
+from fleet.runners import Runner, RunnerError, load_runner
 from fleet.store import (
     claim,
     finish_cancelled,
     heartbeat,
     job_status,
+    live_attempts,
     publish,
     reap,
+    record_execution,
     release,
     start,
     unfinished_jobs,
@@ -44,7 +48,7 @@ class Worker:
     def __init__(
         self,
         engine: AsyncEngine,
-        runner: Runner,
+        run: Runner | Execution,
         *,
         worker_id: str,
         lease_seconds: float,
@@ -61,7 +65,8 @@ class Worker:
             raise ValueError("a heartbeat has to come sooner than the lease runs out")
         self.worker_id = worker_id
         self._engine = engine
-        self._runner = runner
+        # a plain runner runs in this process; containers come in through an execution
+        self._execution = run if isinstance(run, Execution) else InProcess(run)
         self._lease = lease_seconds
         self._heartbeat = beat
         self._reap_every = reap_every_seconds
@@ -81,19 +86,15 @@ class Worker:
         # jobs stopped and ended because their cancel was requested
         self.cancelled = 0
 
-    async def _reap(self) -> None:
-        self._reaped_at = self._clock()
+    async def _reap(self, *, orphans: bool = False) -> None:
         await reap(self._engine, retry=self._retry)
+        if orphans:
+            self._reaped_at = self._clock()
+            await self._execution.reap_orphans(lambda: live_attempts(self._engine))
 
-    async def _attempt(self, job: ClaimedJob) -> RunnerOutcome | RunnerError:
-        try:
-            return await self._runner(job.name, job.payload)
-        except Exception as exc:  # a crash is never the task's answer, so it is retried
-            return RunnerError(f"{type(exc).__name__}: {exc}")
-
-    async def _run(self, job: ClaimedJob) -> RunnerOutcome | RunnerError | Cancelled | None:
+    async def _run(self, job: ClaimedJob) -> Attempted | Cancelled | None:
         """Run a job while extending its lease; None when the lease was lost and the run stopped."""
-        work = asyncio.ensure_future(self._attempt(job))
+        work = asyncio.ensure_future(self._execution.run(job, self.worker_id))
         try:
             while True:
                 done, _ = await asyncio.wait({work}, timeout=self._heartbeat)
@@ -115,7 +116,7 @@ class Worker:
         """Run one job; False when there was nothing to claim, even after reaping lapsed leases."""
         # reaping on a timer keeps it off the per-job path while busy
         if self._clock() - self._reaped_at >= self._reap_every:
-            await self._reap()
+            await self._reap(orphans=True)
         job = await claim(self._engine, worker_id=self.worker_id, lease_seconds=self._lease)
         if job is None:
             await self._reap()
@@ -139,16 +140,24 @@ class Worker:
             self.lost += 1
             logger.info("%s: lost the lease on job %s, run stopped", self.worker_id, job.id)
             return True
-        if isinstance(outcome, RunnerError):
-            await self._release(job, outcome.error)
+        if outcome.execution is not None:
+            await record_execution(
+                self._engine,
+                job_id=job.id,
+                attempt=job.attempt,
+                execution=outcome.execution,
+                logs=outcome.logs,
+            )
+        if isinstance(outcome.result, RunnerError):
+            await self._release(job, outcome.result.error)
             return True
         accepted = await publish(
             self._engine,
             job_id=job.id,
             attempt=job.attempt,
             worker_id=self.worker_id,
-            outcome=outcome.outcome,
-            body=outcome.body,
+            outcome=outcome.result.outcome,
+            body=outcome.result.body,
         )
         if accepted:
             self.published += 1
@@ -210,7 +219,7 @@ class Worker:
 async def serve(
     *,
     url: str,
-    runner: Runner,
+    run: Runner | Execution,
     worker_id: str,
     lease_seconds: float,
     heartbeat_seconds: float | None,
@@ -224,9 +233,11 @@ async def serve(
     # a terminate request lets the current job finish and publish before the worker exits
     for signum in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(signum, stop.set)
+    execution = run if isinstance(run, Execution) else InProcess(run)
+    await execution.ready()
     worker = Worker(
         engine,
-        runner,
+        execution,
         worker_id=worker_id,
         lease_seconds=lease_seconds,
         heartbeat_seconds=heartbeat_seconds,
@@ -236,6 +247,7 @@ async def serve(
     try:
         await worker.run(exit_when_idle=exit_when_idle, stop=stop)
     finally:
+        await execution.close()
         await engine.dispose()
     return worker
 
@@ -260,13 +272,26 @@ def main(argv: list[str] | None = None) -> int:
         "--retry-backoff-cap-seconds", type=float, default=settings.retry_backoff_cap_seconds
     )
     parser.add_argument("--database-url", default=settings.database_url)
+    parser.add_argument("--execution", choices=["process", "container"], default=settings.execution)
+    parser.add_argument("--task-image", default=settings.task_image)
+    parser.add_argument("--deployment", default=settings.deployment)
     parser.add_argument("--exit-when-idle", action="store_true")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    run: Runner | Execution = load_runner(args.runner)
+    if args.execution == "container":
+        # the runner is named, not loaded: it is imported inside each task's container
+        run = InContainer(
+            Docker(settings.docker_socket),
+            image=args.task_image,
+            runner=args.runner,
+            deployment=args.deployment,
+            egress_network=settings.egress_network,
+        )
     worker = asyncio.run(
         serve(
             url=args.database_url,
-            runner=load_runner(args.runner),
+            run=run,
             worker_id=args.worker_id,
             lease_seconds=args.lease_seconds,
             heartbeat_seconds=args.heartbeat_seconds,

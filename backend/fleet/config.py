@@ -1,5 +1,7 @@
 """Fleet settings, read from FLEET_* environment variables."""
 
+from typing import Literal
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -38,6 +40,14 @@ class FleetSettings(BaseSettings):
     max_timeout_seconds: float = _LIMITS.max_timeout_seconds
     # comma-separated host:port destinations a batch may be granted; none unless listed
     grantable_egress: str = ""
+    # where attempts run: in the worker's process, or each in a container of its own
+    execution: Literal["process", "container"] = "process"
+    task_image: str = "fleet-task:local"
+    docker_socket: str = "/var/run/docker.sock"
+    # labels this fleet's containers, so one fleet never stops another's on a shared daemon
+    deployment: str = "default"
+    # the network egress proxies reach granted destinations through
+    egress_network: str = "bridge"
 
     def operator_limits(self) -> OperatorLimits:
         return OperatorLimits(

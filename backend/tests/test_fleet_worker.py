@@ -8,6 +8,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import NewJob
+from fleet.policy import ExecutionPolicy
+from fleet.progress import report
 from fleet.runners import RunnerOutcome, load_runner
 from fleet.store import batch_jobs, cancel, claim, job_result, job_status, reap, submit_batch
 from fleet.worker import Worker
@@ -269,3 +271,42 @@ async def test_a_cancelled_running_job_stops_and_releases_its_lease_at_once(
     assert job is not None and (job.state, job.lease_expires_at) == ("cancelled", None)
     assert job.finished_at is not None and job.cancel_requested_at is not None
     assert (job.finished_at - job.cancel_requested_at).total_seconds() < 1
+
+
+async def test_a_job_past_its_timeout_fails_and_keeps_what_it_did(
+    fleet_engine: AsyncEngine,
+) -> None:
+    async def slow(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        for step in range(100):
+            report({"step": step})
+            await asyncio.sleep(0.05)
+        return RunnerOutcome(outcome="succeeded", body={})
+
+    policy = ExecutionPolicy(timeout_seconds=0.3)
+    submission = await submit_batch(
+        fleet_engine, label="b", jobs=[NewJob(name="j", payload={})], policy=policy
+    )
+    worker = _worker(fleet_engine, slow)
+    assert await worker.step()
+    result = await job_result(fleet_engine, submission.job_ids[0])
+    assert result is not None and result.outcome == "failed"
+    # a timeout is final: the task hit its own limit, and a retry would hit it again
+    assert (result.body["failure"], result.attempt) == ("timeout", 1)
+    assert 3 <= result.body["partial"]["events"] <= 7
+    assert result.body["partial"]["last"][0] == {"step": 0}
+
+
+async def test_a_runners_own_timeout_is_an_infrastructure_failure(
+    fleet_engine: AsyncEngine,
+) -> None:
+    async def api_timed_out(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        raise TimeoutError("the model api did not answer")
+
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+    worker = _worker(fleet_engine, api_timed_out, retry=NO_BACKOFF)
+    assert await worker.step()
+    job = await job_status(fleet_engine, submission.job_ids[0])
+    assert job is not None and (job.state, job.last_error) == (
+        "queued",
+        "TimeoutError: the model api did not answer",
+    )

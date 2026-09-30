@@ -428,6 +428,37 @@ async def reap(engine: AsyncEngine, *, retry: RetryPolicy = DEFAULT_RETRY) -> li
         return sorted(row.job_id for row in rows)
 
 
+async def record_execution(
+    engine: AsyncEngine, *, job_id: int, attempt: int, execution: dict[str, Any], logs: str | None
+) -> None:
+    """Keep how an attempt ran and the tail of its output with the attempt."""
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                "update fleet_attempts set execution = CAST(:execution AS jsonb), logs = :logs "
+                "where job_id = :job and attempt = :attempt"
+            ),
+            {
+                "job": job_id,
+                "attempt": attempt,
+                "execution": json.dumps(execution, sort_keys=True),
+                "logs": logs,
+            },
+        )
+
+
+async def live_attempts(engine: AsyncEngine) -> set[tuple[int, int]]:
+    """Every (job, attempt) that holds a lease that hasn't run out."""
+    async with engine.connect() as connection:
+        rows = await connection.execute(
+            text(
+                "select id, attempt from fleet_jobs where state in ('claimed', 'running') "
+                "and lease_expires_at > clock_timestamp()"
+            )
+        )
+        return {(row.id, row.attempt) for row in rows}
+
+
 async def unfinished_jobs(engine: AsyncEngine) -> int:
     """How many jobs anywhere still wait to run or finish."""
     async with engine.connect() as connection:

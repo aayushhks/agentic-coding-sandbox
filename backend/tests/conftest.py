@@ -1,4 +1,6 @@
+import asyncio
 import os
+import uuid
 from collections.abc import AsyncIterator, Iterator
 
 import pytest
@@ -9,8 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.main import create_app
 from fleet.config import async_url
+from fleet.docker import Docker
 from fleet.localdb import LocalPostgres, PostgresUnavailableError
 from fleet.migrate import migrate
+from fleet.source import source_hash
 
 
 @pytest.fixture
@@ -55,3 +59,39 @@ async def fleet_engine(fleet_database_url: str) -> AsyncIterator[AsyncEngine]:
         yield engine
     finally:
         await engine.dispose()
+
+
+async def _docker_has(image: str) -> str | None:
+    docker = Docker()
+    try:
+        if not await docker.ping():
+            return "no docker daemon answers on /var/run/docker.sock"
+        found = await docker.image(image)
+        if found is None:
+            return f"no {image} image; build it with scripts/build-task-image.sh"
+        # an image built from other code would test that code, not this
+        built_from = (found.get("Config", {}).get("Labels") or {}).get("fleet.source")
+        if built_from != source_hash():
+            return f"{image} was built from other code; rebuild it with scripts/build-task-image.sh"
+        return None
+    finally:
+        await docker.aclose()
+
+
+@pytest.fixture(scope="session")
+def task_image() -> str:
+    """The image tasks run in, on a reachable docker daemon: FLEET_TASK_IMAGE, built beforehand."""
+    image = os.environ.get("FLEET_TASK_IMAGE", "fleet-task:local")
+    missing = asyncio.run(_docker_has(image))
+    if missing is not None:
+        # ci sets REQUIRE_DOCKER so the container tests can never be skipped there by accident
+        if os.environ.get("REQUIRE_DOCKER") == "1":
+            pytest.fail(f"docker is required but unavailable: {missing}")
+        pytest.skip(missing)
+    return image
+
+
+@pytest.fixture(scope="session")
+def deployment() -> str:
+    """A label of this test session's own, so it only ever touches the containers it made."""
+    return f"test-{uuid.uuid4().hex[:8]}"

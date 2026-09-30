@@ -71,6 +71,8 @@ async def start(port: int, allowed: frozenset[str], host: str = "0.0.0.0") -> as
 
 async def serve(port: int, allowed: frozenset[str]) -> None:
     async with await start(port, allowed) as server:
+        # the worker waits for this line before it starts the task behind the proxy
+        logger.info("listening on port %d for %s", port, ", ".join(sorted(allowed)))
         await server.serve_forever()
 
 
