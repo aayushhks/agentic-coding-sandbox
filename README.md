@@ -50,6 +50,7 @@ flowchart TB
 | **Proof** | a deployment-owner eval — resolution / correct-escalation / false-fix / **injection-resistance** rates + cost & latency (p50/p95) | [m13](docs/m13-production-readiness-eval.md) |
 | **Report** | a stakeholder dashboard over that eval — headline metrics, per-ticket outcomes, inline trace drill-down | [m14](docs/m14-deployment-report.md) |
 | **Foundation** | the coding agent + benchmark it's built on, hardened 86.7% → 100% (single runs, on a since-retired model) | [m6](docs/m6-real-agent-run.md) · [m7](docs/m7-analysis.md) |
+| **Execution baseline** | a bench harness that records model responses once and replays them deterministically; today's single-process path measured over 5-trial replays and a real-model trial | [m16](docs/m16-bench-harness.md) |
 
 ## Tech stack
 
@@ -267,6 +268,29 @@ DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run python -m app.eval.cli --label
 uv run python -m app.eval.cli --label my-run
 ```
 
+## Bench harness
+
+`backend/bench/` measures how tasks execute — the baseline for turning the agent into a
+distributed execution platform. It runs a fixed 18-task set (the 15 benchmark tasks, two tickets
+that should be escalated, and one deliberately unsatisfiable task) through an executor and writes a
+versioned JSON record per trial: batch wall clock, tasks per minute, queue wait and service time
+(p50 / p95 / p99 / max), worker utilization, outcome counts split into task / infrastructure /
+harness failures, and tokens — with the config and hardware captured by code.
+
+Model responses are **recorded once from a real model and replayed**, so benchmark runs are
+deterministic and free. Replay refuses any request the recording didn't see; a divergence counts as
+a harness failure, and CI replays every recorded task on each push.
+
+```bash
+cd backend
+uv run python -m bench.cli replay --trials 5                      # replay at zero latency
+uv run python -m bench.cli replay --trials 5 --latency recorded   # at the model's measured latency
+uv run python -m bench.cli record --trial 2                       # a real-model trial (GROQ_API_KEY)
+```
+
+The measured baseline for today's single-process path is in
+[docs/m16-bench-harness.md](docs/m16-bench-harness.md).
+
 ## Honest limitations
 
 - **The issue tracker is a local stand-in.** Tickets live in a JSON file; swapping in a real
@@ -283,3 +307,6 @@ uv run python -m app.eval.cli --label my-run
   enterprise-hardened.
 - **The MCP servers run locally, not on the public internet.** The deployed demo shows their
   recorded results (the report), not a live tool endpoint.
+- **The execution baseline is one machine, one worker.** Replay numbers are 5-trial medians on a
+  shared VM where run-to-run noise reached ~8%; the real-model numbers are a single trial until
+  trials 2 and 3 are recorded.
