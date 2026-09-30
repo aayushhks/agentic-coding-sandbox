@@ -51,7 +51,10 @@ jobs:
         run: uv run mypy
 
       - name: pytest
-        run: uv run pytest
+        run: uv run pytest --ignore=tests/test_fleet_stress.py
+
+      - name: fleet stress (8 workers on 1 s leases, killed and paused at random, invariants checked)
+        run: uv run pytest tests/test_fleet_stress.py -s
 
       - name: mcp eval smoke (one benchmark task, mock provider, mcp transport)
         env:
