@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "task_id": "lru_cache",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-09-30T05:47:39+00:00",
+  "git_sha": "88f1c53d2bc56a5044d63e98997ba8cb9ca7aca3",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "9b91b38d3c6e2d5a0b8212996e22d045fdbfcb0a398b467665305ac3cc453027",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"The task is to create an LRU (Least Recently Used) cache. Let me first check the workspace contents, then create the solution.\", \"tool\": \"list_dir\", \"arguments\": {\"path\": \".\"}}",
+      "prompt_tokens": 465,
+      "completion_tokens": 48,
+      "latency_seconds": 0.6221673450002072,
+      "retry_wait_seconds": 22.43885413099997
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"The workspace is empty. I need to create `solution.py` with an `LRUCache` class. The standard efficient implementation uses a doubly-linked list combined with a hash map for O(1) get and put operations.\\n\\nDesign:\\n- A `Node` class with key, value, prev, next.\\n- A `LRUCache` class with:\\n  - `capacity`: max number of items\\n  - `cache`: dict mapping key -> Node\\n  - `head` and `tail`: dummy nodes for the doubly-linked list\\n  - `get(key)`: if key in cache, move node to front (most recently used), return value. Else return -1.\\n  - `put(key, value)`: if key exists, update value and move to front. Else create new node, add to front, and if size exceeds capacity, remove the tail (least recently used).\\n\\nLet me write this solution.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"class Node:\\n    def __init__(self, key=0, value=0):\\n        self.key = key\\n        self.value = value\\n        self.prev = None\\n        self.next = None\\n\\n\\nclass LRUCache:\\n    def __init__(self, capacity):\\n        self.capacity = capacity\\n        self.cache = {}\\n        # Dummy head and tail nodes\\n        self.head = Node()\\n        self.tail = Node()\\n        self.head.next = self.tail\\n        self.tail.prev = self.head\\n\\n    def _remove(self, node):\\n        \\\"\\\"\\\"Remove a node from the linked list.\\\"\\\"\\\"\\n        node.prev.next = node.next\\n        node.next.prev = node.prev\\n\\n    def _add_to_front(self, node):\\n        \\\"\\\"\\\"Add a node right after the head (most recently used position).\\\"\\\"\\\"\\n        node.prev = self.head\\n        node.next = self.head.next\\n        self.head.next.prev = node\\n        self.head.next = node\\n\\n    def get(self, key):\\n        if key in self.cache:\\n            node = self.cache[key]\\n            # Move to front (mark as most recently used)\\n            self._remove(node)\\n            self._add_to_front(node)\\n            return node.value\\n        return -1\\n\\n    def put(self, key, value):\\n        if key in self.cache:\\n            node = self.cache[key]\\n            node.value = value\\n            # Move to front (mark as most recently used)\\n            self._remove(node)\\n            self._add_to_front(node)\\n        else:\\n            node = Node(key, value)\\n            self.cache[key] = node\\n            self._add_to_front(node)\\n            if len(self.cache) > self.capacity:\\n                # Evict the least recently used (node before tail)\\n                lru_node = self.tail.prev\\n                self._remove(lru_node)\\n                del self.cache[lru_node.key]\\n\"}}",
+      "prompt_tokens": 532,
+      "completion_tokens": 650,
+      "latency_seconds": 1.763936461999947,
+      "retry_wait_seconds": 8.16480231100013
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now let me write a comprehensive test file to verify the LRU cache implementation.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"from solution import LRUCache\\n\\n\\ndef test_basic_get_put():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    assert cache.get(1) == 1\\n    assert cache.get(2) == 2\\n\\n\\ndef test_eviction():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.put(3, 3)  # Evicts key 1\\n    assert cache.get(1) == -1\\n    assert cache.get(2) == 2\\n    assert cache.get(3) == 3\\n\\n\\ndef test_get_updates_recency():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.get(1)       # Key 1 is now most recently used\\n    cache.put(3, 3)    # Evicts key 2 (least recently used)\\n    assert cache.get(1) == 1\\n    assert cache.get(2) == -1\\n    assert cache.get(3) == 3\\n\\n\\ndef test_put_updates_existing_key():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.put(1, 10)   # Update key 1, it becomes most recently used\\n    cache.put(3, 3)    # Evicts key 2\\n    assert cache.get(1) == 10\\n    assert cache.get(2) == -1\\n    assert cache.get(3) == 3\\n\\n\\ndef test_capacity_one():\\n    cache = LRUCache(1)\\n    cache.put(1, 1)\\n    assert cache.get(1) == 1\\n    cache.put(2, 2)  # Evicts key 1\\n    assert cache.get(1) == -1\\n    assert cache.get(2) == 2\\n\\n\\ndef test_put_updates_recency():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.put(1, 100)  # Key 1 is now most recently used\\n    cache.put(3, 3)    # Evicts key 2\\n    assert cache.get(1) == 100\\n    assert cache.get(2) == -1\\n    assert cache.get(3) == 3\\n\\n\\ndef test_nonexistent_key():\\n    cache = LRUCache(2)\\n    assert cache.get(99) == -1\\n\\n\\ndef test_leetcode_example():\\n    # Example from LeetCode 146\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    assert cache.get(1) == 1\\n    cache.put(3, 3)    # Evicts key 2\\n    assert cache.get(2) == -1\\n    cache.put(4, 4)    # Evicts key 1\\n    assert cache.get(1) == -1\\n    assert cache.get(3) == 3\\n    assert cache.get(4) == 4\\n\\n\\ndef test_many_operations():\\n    cache = LRUCache(3)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.put(3, 3)\\n    cache.put(4, 4)    # Evicts 1\\n    assert cache.get(1) == -1\\n    assert cache.get(2) == 2\\n    cache.put(5, 5)    # Evicts 3\\n    assert cache.get(3) == -1\\n    assert cache.get(4) == 4\\n    assert cache.get(5) == 5\\n\"}}",
+      "prompt_tokens": 1210,
+      "completion_tokens": 932,
+      "latency_seconds": 2.759847581999793,
+      "retry_wait_seconds": 31.105051569000125
+    },
+    {
+      "index": 3,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now let me run the tests to verify the implementation works correctly.\", \"tool\": \"run_tests\", \"arguments\": {\"target\": \"test_solution.py\"}}",
+      "prompt_tokens": 2171,
+      "completion_tokens": 36,
+      "latency_seconds": 0.6904654270001629,
+      "retry_wait_seconds": 32.58743573399988
+    },
+    {
+      "index": 4,
+      "prefix_sha256": null,
+      "observation_head": "[ok] exit_code=0",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"All 9 tests pass. The LRU cache implementation is correct and handles all the edge cases: basic get/put, eviction, get updating recency, put updating existing keys, capacity of 1, and the LeetCode example. Let me finish the task.\", \"tool\": \"finish\", \"arguments\": {\"answer\": \"Created `solution.py` with an `LRUCache` class using a doubly-linked list + hash map for O(1) get and put operations. The implementation:\\n- Uses dummy head/tail nodes for clean list manipulation\\n- `get(key)`: returns value and moves node to front (MRU position), or returns -1\\n- `put(key, value)`: updates existing key or adds new node at front; evicts LRU node (before tail) when capacity exceeded\\n- Both get and put count as uses, updating recency\\n\\nAll 9 tests pass covering basic operations, eviction, recency updates, capacity edge cases, and the LeetCode 146 example.\"}}",
+      "prompt_tokens": 2246,
+      "completion_tokens": 217,
+      "latency_seconds": 0.7291345730000103,
+      "retry_wait_seconds": 2.096048905999851
+    }
+  ],
+  "error": null
+}
