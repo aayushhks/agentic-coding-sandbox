@@ -12,6 +12,7 @@ from fleet.config import FleetSettings
 from fleet.models import (
     DEFAULT_MAX_ATTEMPTS,
     BatchStatus,
+    CancelResult,
     JobStatus,
     NewJob,
     PublishedResult,
@@ -21,6 +22,7 @@ from fleet.policy import DEFAULT_POLICY, ExecutionPolicy, OperatorLimits, Policy
 from fleet.store import (
     IdempotencyConflictError,
     batch_status,
+    cancel,
     job_result,
     job_status,
     submit_batch,
@@ -106,6 +108,18 @@ def create_app(
         if found is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, f"job {job_id} not found")
         return found
+
+    @app.post("/jobs/{job_id}/cancel")
+    async def cancel_job(job_id: int, response: Response, db: EngineDep) -> CancelResult:
+        """Cancel a job: 200 when it is cancelled, 202 while its worker is asked to stop it."""
+        state = await cancel(db, job_id)
+        if state is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, f"job {job_id} not found")
+        if state in ("claimed", "running"):
+            response.status_code = status.HTTP_202_ACCEPTED
+        elif state != "cancelled":
+            raise HTTPException(status.HTTP_409_CONFLICT, f"job {job_id} already finished: {state}")
+        return CancelResult(job_id=job_id, state=state)
 
     @app.get("/jobs/{job_id}/result")
     async def get_result(job_id: int, db: EngineDep) -> PublishedResult:

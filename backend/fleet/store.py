@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, cast
 
+from pydantic import BaseModel
 from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -34,8 +35,9 @@ LEASE_EXPIRED = "lease expired"
 
 
 def _end_attempts(chosen: str, ending: str) -> str:
-    """End attempts without a result: requeue after a backoff, or dead-letter once all are used."""
-    retry = "j.attempt < j.max_attempts"
+    """End attempts without a result: requeue after a backoff, or cancel or dead-letter the job."""
+    retry = "j.cancel_requested_at is null and j.attempt < j.max_attempts"
+    final = "case when j.cancel_requested_at is not null then 'cancelled' else 'dead_lettered' end"
     backoff = (
         "least(CAST(:backoff AS double precision) * power(2, j.attempt - 1), "
         "CAST(:cap AS double precision))"
@@ -45,7 +47,7 @@ def _end_attempts(chosen: str, ending: str) -> str:
         f"chosen as ({chosen}), "
         "moved as ("
         "update fleet_jobs as j set "
-        f"state = case when {retry} then 'queued' else 'dead_lettered' end, "
+        f"state = case when {retry} then 'queued' else {final} end, "
         f"available_at = case when {retry} "
         f"then now.at + make_interval(secs => {backoff}) else j.available_at end, "
         f"worker_id = case when {retry} then null else j.worker_id end, "
@@ -60,6 +62,27 @@ def _end_attempts(chosen: str, ending: str) -> str:
         "from moved, now where a.job_id = moved.id and a.attempt = moved.attempt "
         "returning a.job_id, moved.state"
     )
+
+
+# ends a job as cancelled, but only for the attempt that holds its live lease
+_FINISH_CANCELLED = (
+    "with now as materialized (select clock_timestamp() as at), "
+    "done as ("
+    "update fleet_jobs as j set state = 'cancelled', lease_expires_at = null, "
+    "finished_at = now.at, updated_at = now.at "
+    "from now where j.id = :job and j.attempt = :attempt and j.state in ('claimed', 'running') "
+    "and j.lease_expires_at > now.at and j.cancel_requested_at is not null "
+    "returning j.id, j.attempt) "
+    "update fleet_attempts as a set ended_at = now.at, ended_by = 'cancelled', error = 'cancelled' "
+    "from done, now where a.job_id = done.id and a.attempt = done.attempt returning a.job_id"
+)
+
+
+class Beat(BaseModel):
+    """A heartbeat's answer: the lease now runs until here, and whether to stop."""
+
+    lease_expires_at: datetime
+    cancel_requested: bool
 
 
 class IdempotencyConflictError(Exception):
@@ -227,26 +250,60 @@ async def start(engine: AsyncEngine, *, job_id: int, attempt: int) -> bool:
 
 async def heartbeat(
     engine: AsyncEngine, *, job_id: int, attempt: int, lease_seconds: float
-) -> datetime | None:
+) -> Beat | None:
     """Extend a live lease to lease_seconds from now; None once this attempt has lost the job."""
     async with engine.begin() as connection:
         # the attempt log keeps the extended lease, so each result can be checked against it
-        extended: datetime | None = await connection.scalar(
+        row = (
+            await connection.execute(
+                text(
+                    "with beat as ("
+                    "update fleet_jobs set lease_expires_at = clock_timestamp() "
+                    "+ make_interval(secs => CAST(:lease AS double precision)), "
+                    "updated_at = clock_timestamp() "
+                    "where id = :job and attempt = :attempt and state in ('claimed', 'running') "
+                    "and lease_expires_at > clock_timestamp() "
+                    "returning id, attempt, lease_expires_at, cancel_requested_at) "
+                    "update fleet_attempts as a set lease_expires_at = beat.lease_expires_at "
+                    "from beat where a.job_id = beat.id and a.attempt = beat.attempt "
+                    "returning a.lease_expires_at, beat.cancel_requested_at is not null "
+                    "as cancel_requested"
+                ),
+                {"job": job_id, "attempt": attempt, "lease": lease_seconds},
+            )
+        ).first()
+    return None if row is None else Beat.model_validate(row._asdict())
+
+
+async def cancel(engine: AsyncEngine, job_id: int) -> JobState | None:
+    """Cancel now if not running, else ask its worker to stop; the state after, None if unknown."""
+    async with engine.begin() as connection:
+        state = await connection.scalar(
             text(
-                "with beat as ("
-                "update fleet_jobs set lease_expires_at = clock_timestamp() "
-                "+ make_interval(secs => CAST(:lease AS double precision)), "
+                "update fleet_jobs set "
+                "state = case when state = 'queued' then 'cancelled' else state end, "
+                "finished_at = case when state = 'queued' then clock_timestamp() "
+                "else finished_at end, "
+                "cancel_requested_at = coalesce(cancel_requested_at, clock_timestamp()), "
                 "updated_at = clock_timestamp() "
-                "where id = :job and attempt = :attempt and state in ('claimed', 'running') "
-                "and lease_expires_at > clock_timestamp() "
-                "returning id, attempt, lease_expires_at) "
-                "update fleet_attempts as a set lease_expires_at = beat.lease_expires_at "
-                "from beat where a.job_id = beat.id and a.attempt = beat.attempt "
-                "returning a.lease_expires_at"
+                "where id = :job and state in ('queued', 'claimed', 'running') returning state"
             ),
-            {"job": job_id, "attempt": attempt, "lease": lease_seconds},
+            {"job": job_id},
         )
-    return extended
+        if state is None:
+            state = await connection.scalar(
+                text("select state from fleet_jobs where id = :job"), {"job": job_id}
+            )
+    return None if state is None else cast(JobState, state)
+
+
+async def finish_cancelled(engine: AsyncEngine, *, job_id: int, attempt: int) -> bool:
+    """End a job whose cancel was requested; False unless this attempt's lease is live."""
+    async with engine.begin() as connection:
+        ended = await connection.scalar(
+            text(_FINISH_CANCELLED), {"job": job_id, "attempt": attempt}
+        )
+    return ended is not None
 
 
 async def publish(
@@ -261,15 +318,23 @@ async def publish(
     """Publish a result and finish the job atomically; False unless this attempt's lease is live."""
     async with engine.begin() as connection:
         # the row lock makes the ownership check and the write a single step
-        lease = await connection.scalar(
-            text(
-                "select lease_expires_at from fleet_jobs where id = :job and attempt = :attempt "
-                "and state in ('claimed', 'running') for update"
-            ),
-            {"job": job_id, "attempt": attempt},
-        )
-        if lease is None:
+        held = (
+            await connection.execute(
+                text(
+                    "select lease_expires_at, cancel_requested_at from fleet_jobs "
+                    "where id = :job and attempt = :attempt "
+                    "and state in ('claimed', 'running') for update"
+                ),
+                {"job": job_id, "attempt": attempt},
+            )
+        ).first()
+        if held is None:
             return False
+        if held.cancel_requested_at is not None:
+            # a cancel requested before the result arrived wins: the job ends cancelled instead
+            await connection.execute(text(_FINISH_CANCELLED), {"job": job_id, "attempt": attempt})
+            return False
+        lease = held.lease_expires_at
         # read under the lock, one clock reading is both the lease check and the publish time
         stored = (
             await connection.execute(

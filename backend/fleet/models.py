@@ -79,6 +79,12 @@ class JobStatus(BaseModel):
     cancel_requested_at: datetime | None
 
 
+class CancelResult(BaseModel):
+    job_id: int
+    # cancelled already, or still running until its worker notices the request
+    state: JobState
+
+
 class BatchStatus(BaseModel):
     batch_id: int
     label: str

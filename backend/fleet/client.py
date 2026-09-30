@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 import httpx
 
-from fleet.models import DEFAULT_MAX_ATTEMPTS, BatchStatus, NewJob, Submission
+from fleet.models import DEFAULT_MAX_ATTEMPTS, BatchStatus, CancelResult, NewJob, Submission
 from fleet.policy import DEFAULT_POLICY, ExecutionPolicy
 
 
@@ -47,6 +47,11 @@ class FleetClient:
         response = await self._http.get(f"/batches/{batch_id}")
         response.raise_for_status()
         return BatchStatus.model_validate(response.json())
+
+    async def cancel(self, job_id: int) -> CancelResult:
+        response = await self._http.post(f"/jobs/{job_id}/cancel")
+        response.raise_for_status()
+        return CancelResult.model_validate(response.json())
 
     async def wait_until_done(
         self, batch_id: int, *, poll_seconds: float = 0.2, timeout_seconds: float = 3600.0

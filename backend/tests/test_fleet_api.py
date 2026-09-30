@@ -123,3 +123,20 @@ async def test_a_batch_asking_past_the_operators_limits_is_refused(
         assert fits.status_code == 201
         job = (await client.get(f"/jobs/{fits.json()['job_ids'][0]}")).json()
         assert (job["policy"]["memory_mb"], job["policy"]["egress"]) == (256, [])
+
+
+async def test_cancel_ends_queued_jobs_asks_running_ones_and_refuses_finished_ones(
+    api: AsyncClient, fleet_engine: AsyncEngine
+) -> None:
+    # claims take the oldest jobs, so the first two get claimed and the last stays queued
+    running, done, queued = (await api.post("/batches", json=_batch())).json()["job_ids"]
+    for _ in range(2):
+        assert await claim(fleet_engine, worker_id="w", lease_seconds=60) is not None
+    await publish(fleet_engine, job_id=done, attempt=1, worker_id="w", outcome="failed", body={})
+    client = FleetClient(http=api)
+    assert (await client.cancel(queued)).state == "cancelled"
+    stopping = await api.post(f"/jobs/{running}/cancel")
+    assert (stopping.status_code, stopping.json()["state"]) == (202, "claimed")
+    finished = await api.post(f"/jobs/{done}/cancel")
+    assert finished.status_code == 409 and "already finished: failed" in finished.json()["detail"]
+    assert (await api.post("/jobs/99/cancel")).status_code == 404

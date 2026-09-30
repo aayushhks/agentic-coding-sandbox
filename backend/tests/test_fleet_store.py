@@ -10,7 +10,10 @@ from fleet.store import (
     IdempotencyConflictError,
     batch_jobs,
     batch_status,
+    cancel,
     claim,
+    finish_cancelled,
+    heartbeat,
     job_result,
     job_status,
     publish,
@@ -395,3 +398,99 @@ async def test_each_job_keeps_its_batchs_policy_and_is_claimed_with_it(
         await submit_batch(
             fleet_engine, label="b", jobs=_jobs(2), idempotency_key="k", policy=policy
         )
+
+
+async def _endings(engine: AsyncEngine, job_id: int) -> list[str]:
+    async with engine.connect() as connection:
+        rows = await connection.scalars(
+            text("select ended_by from fleet_attempts where job_id = :job order by attempt"),
+            {"job": job_id},
+        )
+        return list(rows)
+
+
+async def test_cancelling_a_queued_job_ends_it_at_once(fleet_engine: AsyncEngine) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=_jobs(2))
+    first, second = submission.job_ids
+    assert await cancel(fleet_engine, first) == "cancelled"
+    assert await cancel(fleet_engine, first) == "cancelled"
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None and job.id == second
+    status = await job_status(fleet_engine, first)
+    assert status is not None and (status.state, status.result_id) == ("cancelled", None)
+    assert status.finished_at is not None and status.cancel_requested_at is not None
+    assert await cancel(fleet_engine, 999) is None
+
+
+async def test_cancelling_a_job_waiting_out_its_backoff_ends_it_at_once(
+    fleet_engine: AsyncEngine,
+) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None
+    await release(fleet_engine, job_id=job.id, attempt=1, error="e", retry=RetryPolicy())
+    assert await cancel(fleet_engine, job.id) == "cancelled"
+    assert await _endings(fleet_engine, job.id) == ["released"]
+
+
+async def test_a_running_job_is_asked_to_stop_and_its_worker_ends_it(
+    fleet_engine: AsyncEngine,
+) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None and await start(fleet_engine, job_id=job.id, attempt=1)
+    beat = await heartbeat(fleet_engine, job_id=job.id, attempt=1, lease_seconds=60)
+    assert beat is not None and not beat.cancel_requested
+    # without a request, there is nothing to finish
+    assert not await finish_cancelled(fleet_engine, job_id=job.id, attempt=1)
+    assert await cancel(fleet_engine, job.id) == "running"
+    beat = await heartbeat(fleet_engine, job_id=job.id, attempt=1, lease_seconds=60)
+    assert beat is not None and beat.cancel_requested
+    assert not await finish_cancelled(fleet_engine, job_id=job.id, attempt=2)
+    assert await finish_cancelled(fleet_engine, job_id=job.id, attempt=1)
+    status = await job_status(fleet_engine, job.id)
+    assert status is not None
+    assert (status.state, status.lease_expires_at, status.result_id) == ("cancelled", None, None)
+    assert await _endings(fleet_engine, job.id) == ["cancelled"]
+
+
+async def test_a_cancel_requested_before_the_result_arrives_wins(fleet_engine: AsyncEngine) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None
+    await cancel(fleet_engine, job.id)
+    assert not await publish(
+        fleet_engine, job_id=job.id, attempt=1, worker_id="w", outcome="succeeded", body={}
+    )
+    status = await job_status(fleet_engine, job.id)
+    assert status is not None and (status.state, status.result_id) == ("cancelled", None)
+    assert await job_result(fleet_engine, job.id) is None
+    assert await _endings(fleet_engine, job.id) == ["cancelled"]
+
+
+async def test_a_lapsed_or_released_job_whose_cancel_was_requested_is_cancelled(
+    fleet_engine: AsyncEngine,
+) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=_jobs(2))
+    lapsed = await claim(fleet_engine, worker_id="dead", lease_seconds=0.05)
+    crashed = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert lapsed is not None and crashed is not None
+    for job_id in submission.job_ids:
+        await cancel(fleet_engine, job_id)
+    await asyncio.sleep(0.1)
+    # its worker is gone, so the reaper ends the job instead of retrying it
+    assert await reap(fleet_engine, retry=NO_BACKOFF) == [lapsed.id]
+    assert await release(fleet_engine, job_id=crashed.id, attempt=1, error="e") == "cancelled"
+    jobs = await batch_jobs(fleet_engine, submission.batch_id)
+    assert [job.state for job in jobs] == ["cancelled", "cancelled"]
+    assert await claim(fleet_engine, worker_id="w", lease_seconds=60) is None
+
+
+async def test_cancelling_a_finished_job_changes_nothing(fleet_engine: AsyncEngine) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None
+    await publish(fleet_engine, job_id=job.id, attempt=1, worker_id="w", outcome="failed", body={})
+    assert await cancel(fleet_engine, job.id) == "failed"
+    status = await job_status(fleet_engine, job.id)
+    assert status is not None and (status.state, status.cancel_requested_at) == ("failed", None)
