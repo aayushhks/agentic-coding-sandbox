@@ -1,0 +1,21 @@
+{
+  "category": "algorithms",
+  "completion_tokens": 836,
+  "difficulty": "medium",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 6,
+  "prompt_tokens": 7931,
+  "run_id": 1,
+  "solved": true,
+  "task_id": "merge_sorted",
+  "tool_counts": {
+    "finish": 1,
+    "run_tests": 2,
+    "write_file": 3
+  },
+  "total_tokens": 8767,
+  "trace": [],
+  "wall_clock_seconds": 44.2
+}

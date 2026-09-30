@@ -1,0 +1,22 @@
+{
+  "category": "algorithms",
+  "completion_tokens": 744,
+  "difficulty": "medium",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 6,
+  "prompt_tokens": 4777,
+  "run_id": 1,
+  "solved": true,
+  "task_id": "two_sum",
+  "tool_counts": {
+    "finish": 1,
+    "read_file": 1,
+    "run_tests": 1,
+    "write_file": 3
+  },
+  "total_tokens": 5521,
+  "trace": [],
+  "wall_clock_seconds": 27.7
+}

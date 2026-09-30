@@ -1,0 +1,22 @@
+{
+  "category": "data_structures",
+  "completion_tokens": 538,
+  "difficulty": "medium",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 5,
+  "prompt_tokens": 3260,
+  "run_id": 1,
+  "solved": true,
+  "task_id": "valid_parentheses",
+  "tool_counts": {
+    "finish": 1,
+    "read_file": 1,
+    "run_tests": 1,
+    "write_file": 2
+  },
+  "total_tokens": 3798,
+  "trace": [],
+  "wall_clock_seconds": 18.9
+}

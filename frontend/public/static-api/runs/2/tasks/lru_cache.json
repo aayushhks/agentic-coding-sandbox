@@ -1,0 +1,21 @@
+{
+  "category": "data_structures",
+  "completion_tokens": 1297,
+  "difficulty": "hard",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 8,
+  "prompt_tokens": 13415,
+  "run_id": 2,
+  "solved": true,
+  "task_id": "lru_cache",
+  "tool_counts": {
+    "finish": 1,
+    "run_tests": 3,
+    "write_file": 4
+  },
+  "total_tokens": 14712,
+  "trace": [],
+  "wall_clock_seconds": 73.9
+}

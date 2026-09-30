@@ -1,0 +1,22 @@
+{
+  "category": "bugfix",
+  "completion_tokens": 368,
+  "difficulty": "hard",
+  "eval_exit_code": 1,
+  "eval_output": "",
+  "failure_mode": "wrong_solution",
+  "iterations": 4,
+  "prompt_tokens": 2648,
+  "run_id": 1,
+  "solved": false,
+  "task_id": "fix_binary_search",
+  "tool_counts": {
+    "finish": 1,
+    "read_file": 1,
+    "run_tests": 1,
+    "write_file": 1
+  },
+  "total_tokens": 3016,
+  "trace": [],
+  "wall_clock_seconds": 15.2
+}

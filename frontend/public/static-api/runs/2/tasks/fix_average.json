@@ -1,0 +1,22 @@
+{
+  "category": "bugfix",
+  "completion_tokens": 496,
+  "difficulty": "medium",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 5,
+  "prompt_tokens": 3609,
+  "run_id": 2,
+  "solved": true,
+  "task_id": "fix_average",
+  "tool_counts": {
+    "finish": 1,
+    "read_file": 1,
+    "run_tests": 1,
+    "write_file": 2
+  },
+  "total_tokens": 4105,
+  "trace": [],
+  "wall_clock_seconds": 20.2
+}

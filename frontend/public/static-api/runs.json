@@ -1,0 +1,53 @@
+[
+  {
+    "benchmark_version": "v1",
+    "created_at": "2026-06-04T00:24:49.723853",
+    "id": 2,
+    "label": "groq-llama-3.3-70b-v2-hardened",
+    "model": "llama-3.3-70b-versatile",
+    "provider": "groq",
+    "solve_rate": 1.0,
+    "solved_count": 15,
+    "stats": {
+      "average_iterations": 5.2,
+      "failure_taxonomy": {},
+      "solve_rate": 1.0,
+      "solve_rate_by_category": {
+        "algorithms": 1.0,
+        "bugfix": 1.0,
+        "data_structures": 1.0,
+        "refactor": 1.0,
+        "string_manipulation": 1.0
+      },
+      "total_tokens": 76645
+    },
+    "total_tasks": 15
+  },
+  {
+    "benchmark_version": "v1",
+    "created_at": "2026-05-30T22:26:51.063682",
+    "id": 1,
+    "label": "groq-llama-3.3-70b",
+    "model": "llama-3.3-70b-versatile",
+    "provider": "groq",
+    "solve_rate": 0.8666666666666667,
+    "solved_count": 13,
+    "stats": {
+      "average_iterations": 4.933333333333334,
+      "failure_taxonomy": {
+        "malformed_tool_call": 1,
+        "wrong_solution": 1
+      },
+      "solve_rate": 0.8666666666666667,
+      "solve_rate_by_category": {
+        "algorithms": 1.0,
+        "bugfix": 0.5,
+        "data_structures": 0.5,
+        "refactor": 1.0,
+        "string_manipulation": 1.0
+      },
+      "total_tokens": 65400
+    },
+    "total_tasks": 15
+  }
+]

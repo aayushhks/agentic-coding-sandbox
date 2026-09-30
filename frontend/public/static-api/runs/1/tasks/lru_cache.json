@@ -1,0 +1,17 @@
+{
+  "category": "data_structures",
+  "completion_tokens": 683,
+  "difficulty": "hard",
+  "eval_exit_code": 1,
+  "eval_output": "",
+  "failure_mode": "malformed_tool_call",
+  "iterations": 3,
+  "prompt_tokens": 2250,
+  "run_id": 1,
+  "solved": false,
+  "task_id": "lru_cache",
+  "tool_counts": {},
+  "total_tokens": 2933,
+  "trace": [],
+  "wall_clock_seconds": 14.9
+}

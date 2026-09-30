@@ -1,0 +1,22 @@
+{
+  "category": "string_manipulation",
+  "completion_tokens": 563,
+  "difficulty": "easy",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 7,
+  "prompt_tokens": 6406,
+  "run_id": 2,
+  "solved": true,
+  "task_id": "reverse_string",
+  "tool_counts": {
+    "finish": 1,
+    "list_dir": 1,
+    "run_tests": 2,
+    "write_file": 3
+  },
+  "total_tokens": 6969,
+  "trace": [],
+  "wall_clock_seconds": 35.4
+}

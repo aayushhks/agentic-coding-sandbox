@@ -1,0 +1,22 @@
+{
+  "category": "refactor",
+  "completion_tokens": 529,
+  "difficulty": "hard",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 7,
+  "prompt_tokens": 5103,
+  "run_id": 1,
+  "solved": true,
+  "task_id": "multi_file_shapes",
+  "tool_counts": {
+    "finish": 1,
+    "list_dir": 1,
+    "run_tests": 2,
+    "write_file": 3
+  },
+  "total_tokens": 5632,
+  "trace": [],
+  "wall_clock_seconds": 27.3
+}

@@ -1,0 +1,21 @@
+{
+  "category": "string_manipulation",
+  "completion_tokens": 761,
+  "difficulty": "medium",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 5,
+  "prompt_tokens": 4174,
+  "run_id": 2,
+  "solved": true,
+  "task_id": "roman_to_int",
+  "tool_counts": {
+    "finish": 1,
+    "run_tests": 1,
+    "write_file": 3
+  },
+  "total_tokens": 4935,
+  "trace": [],
+  "wall_clock_seconds": 24.8
+}

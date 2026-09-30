@@ -1,0 +1,21 @@
+{
+  "category": "algorithms",
+  "completion_tokens": 345,
+  "difficulty": "easy",
+  "eval_exit_code": 0,
+  "eval_output": "",
+  "failure_mode": null,
+  "iterations": 4,
+  "prompt_tokens": 2376,
+  "run_id": 2,
+  "solved": true,
+  "task_id": "add_numbers",
+  "tool_counts": {
+    "finish": 1,
+    "run_tests": 1,
+    "write_file": 2
+  },
+  "total_tokens": 2721,
+  "trace": [],
+  "wall_clock_seconds": 3.8
+}
