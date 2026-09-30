@@ -52,6 +52,7 @@ flowchart TB
 | **Foundation** | the coding agent + benchmark it's built on, hardened 86.7% → 100% (single runs, on a since-retired model) | [m6](docs/m6-real-agent-run.md) · [m7](docs/m7-analysis.md) |
 | **Execution baseline** | a bench harness that records model responses once and replays them deterministically; today's single-process path measured over 5-trial replays and a real-model trial | [m16](docs/m16-bench-harness.md) |
 | **Durable execution** | a Postgres job queue with leases and atomic publishes; a worker killed mid-batch loses and duplicates nothing, checked on every push | [m17](docs/m17-job-store.md) · [design](docs/design.md) |
+| **Many workers** | heartbeats, fencing (a worker whose lease lapsed can never write), bounded retries with a dead letter, and an invariant checker run after an 8-worker kill-and-pause stress test on every push | [m18](docs/m18-worker-pool.md) · [design](docs/design.md) |
 
 ## Tech stack
 
@@ -304,22 +305,32 @@ The measured baseline for today's single-process path is in
 
 ## Fleet (durable job queue)
 
-`backend/fleet/` runs batches of tasks through a job queue on Postgres. Workers claim jobs with
-`SELECT … FOR UPDATE SKIP LOCKED` under a lease, publish each result in the same transaction that
-finishes the job, and take back jobs whose lease lapsed, so any process can be killed at any moment
-without losing or duplicating work. A test kills a worker with `SIGKILL` at seeded points mid-batch
-on every push and checks from the database that every job finished exactly once.
+`backend/fleet/` runs batches of tasks through a job queue on Postgres. Any number of workers
+claim jobs with `SELECT … FOR UPDATE SKIP LOCKED` under a lease that heartbeats keep alive, publish
+each result in the same transaction that finishes the job, and take back jobs whose lease lapsed, so
+any process can be killed at any moment without losing or duplicating work. Every write names its
+attempt and is refused once that attempt's lease has run out, so a worker that was paused or cut off
+can never overwrite its successor. Infrastructure failures are retried with backoff and then
+dead-lettered; an agent's own failure is final.
+
+On every push, an invariant checker reads runs back from the database — exactly one result per job,
+nothing lost, no stale writes, accounting that adds up — after a worker is killed at seeded points,
+after workers are paused past their lease, and after 8 workers on 1 s leases are killed and paused at
+random through a 300-job batch.
 
 ```bash
 cd backend
 uv run python -m fleet.migrate                                      # schema (FLEET_DATABASE_URL)
 uv run uvicorn fleet.api:app                                        # the submission api
-uv run python -m fleet.worker --runner bench.runner:run_job         # a worker
+uv run python -m fleet.worker --runner bench.runner:run_job         # a worker (run several)
 uv run python -m bench.cli ab --trials 5                            # sequential vs fleet a/b
+uv run python -m bench.cli replay --executor fleet --workers 4      # replay on a worker pool
 ```
 
-Measured cost of durability with one worker, restart testing, and the design (why Postgres over
-Redis or a broker, and what that gives up): [docs/m17-job-store.md](docs/m17-job-store.md) ·
+Measured cost of durability with one worker and restart testing:
+[docs/m17-job-store.md](docs/m17-job-store.md). Heartbeats, fencing, retries, the invariant checker
+and the stress test: [docs/m18-worker-pool.md](docs/m18-worker-pool.md). The design (why Postgres
+over Redis or a broker, the lease and fencing model, what the checker proves and doesn't):
 [docs/design.md](docs/design.md).
 
 ## Honest limitations
@@ -338,6 +349,8 @@ Redis or a broker, and what that gives up): [docs/m17-job-store.md](docs/m17-job
   enterprise-hardened.
 - **The MCP servers run locally, not on the public internet.** The deployed demo shows their
   recorded results (the report), not a live tool endpoint.
-- **The execution baseline is one machine, one worker.** Replay numbers are 5-trial medians on a
-  shared VM where run-to-run noise reached ~8%; the real-model numbers are a single trial until
-  trials 2 and 3 are recorded.
+- **The execution numbers are from one machine.** Replay numbers are medians over several trials
+  on a shared VM, where the same code's sequential replay has measured from 10.8 s to 12.3 s in
+  different sessions, so only comparisons made within one session count. The real-model numbers are
+  a single trial until trials 2 and 3 are recorded. The fleet runs many workers, but how it scales
+  is not measured yet.

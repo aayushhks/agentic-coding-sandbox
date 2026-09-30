@@ -20,7 +20,8 @@ analysis, and the systems built on top of them.
 | [mcp-session.md](mcp-session.md) | A real recorded MCP client ↔ sandbox-server session (the screenshot-free demo) |
 | [m16-bench-harness.md](m16-bench-harness.md) | The execution-platform baseline: a bench harness with record/replay, and today's single-process path measured — 5-trial replay baselines plus a real-model trial |
 | [m17-job-store.md](m17-job-store.md) | The durable job store and submission API: a Postgres queue, kill-and-restart testing, and the measured cost of durability with one worker |
-| [design.md](design.md) | The execution platform's design: why Postgres and `SKIP LOCKED`, the job lifecycle, database-enforced invariants, leases and publishing |
+| [m18-worker-pool.md](m18-worker-pool.md) | Many workers safely: heartbeats, fencing, bounded retries with a dead letter, an invariant checker that can fail, and an 8-worker kill-and-pause stress test |
+| [design.md](design.md) | The execution platform's design: why Postgres and `SKIP LOCKED`, the job lifecycle, database-enforced invariants, leases, heartbeats and fencing, the retry policy, and what the invariant checker proves and doesn't |
 
 ## Results
 
@@ -28,4 +29,4 @@ Raw per-run results referenced by the write-ups live in [`results/`](results/):
 
 - [`groq-llama-3.3-70b-v1.json`](results/groq-llama-3.3-70b-v1.json) — the M6 baseline (86.7%)
 - [`groq-llama-3.3-70b-v2.json`](results/groq-llama-3.3-70b-v2.json) — the M7 hardened run (100%), and the committed baseline the CI gate enforces
-- [`bench/`](results/bench/) — the M16 trial and summary records (replay baselines, the real-model trial, and superseded runs)
+- [`bench/`](results/bench/) — the bench trial and summary records: the M16 replay baselines, the real-model trial and superseded runs, the M17 A/B, and the M18 regression checks in [`bench/m18/`](results/bench/m18/)
