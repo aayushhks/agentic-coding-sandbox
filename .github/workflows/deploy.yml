@@ -41,7 +41,7 @@ jobs:
           grep -q '"solve_rate"' /tmp/runs.json || { echo "::error::runs.json has no run data"; exit 1; }
 
           echo "GET $OLD_URL/"
-          read -r ocode target < <(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 30 "$OLD_URL/")
+          read -r ocode target < <(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' --max-time 30 "$OLD_URL/")
           test "$ocode" = "302" || { echo "::error::the old link returned HTTP $ocode"; exit 1; }
           case "$target" in
             "$BASE_URL"/*) ;;
