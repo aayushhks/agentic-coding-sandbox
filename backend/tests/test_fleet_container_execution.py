@@ -251,3 +251,71 @@ async def test_containers_of_attempts_that_lost_their_lease_are_stopped(
     finally:
         with contextlib.suppress(Exception):
             await docker.remove(orphan)
+
+
+@pytest_asyncio.fixture
+async def upstream(docker: Docker, task_image: str, deployment: str) -> AsyncIterator[str]:
+    """A network standing in for the internet, with two servers: granted and other."""
+    name = f"{deployment}-upstream"
+    tags = {"fleet.test": deployment}
+    network = await docker.create_network(name, internal=False, labels=tags)
+    servers = []
+    try:
+        for alias in ("granted", "other"):
+            server = await docker.create(
+                f"{deployment}-{alias}",
+                {
+                    "Image": task_image,
+                    "Cmd": ["python", "-m", "http.server", "8000"],
+                    "Labels": tags,
+                    "HostConfig": {"NetworkMode": name},
+                    "NetworkingConfig": {"EndpointsConfig": {name: {"Aliases": [alias]}}},
+                },
+            )
+            servers.append(server)
+            await docker.start(server)
+        await asyncio.sleep(1)
+        yield name
+    finally:
+        for server in servers:
+            await docker.remove(server)
+        await docker.remove_network(network)
+
+
+async def test_a_granted_destination_is_reachable_only_through_the_proxy(
+    fleet_engine: AsyncEngine, docker: Docker, task_image: str, deployment: str, upstream: str
+) -> None:
+    execution = _execution(docker, task_image, deployment, egress_network=upstream)
+    grant = ExecutionPolicy(egress=("granted:8000",))
+    _, granted = await _run_probe(
+        fleet_engine, execution, {"probe": "connect", "host": "granted", "port": 8000}, grant
+    )
+    _, other = await _run_probe(
+        fleet_engine, execution, {"probe": "connect", "host": "other", "port": 8000}, grant
+    )
+    assert granted is not None and other is not None
+    assert granted.body["proxy"] == "HTTP/1.1 200 Connection Established"
+    # anything not granted fails closed: refused by the proxy, and no route around it
+    assert other.body["proxy"] == "HTTP/1.1 403 Forbidden"
+    assert granted.body["direct"].startswith("refused")
+    assert other.body["direct"].startswith("refused")
+    assert await _containers(docker, deployment) == []
+    assert await docker.networks({MANAGED: "1", DEPLOYMENT: deployment}) == []
+
+
+async def test_generated_code_cannot_use_its_tasks_egress(
+    fleet_engine: AsyncEngine, docker: Docker, task_image: str, deployment: str, upstream: str
+) -> None:
+    execution = _execution(docker, task_image, deployment, egress_network=upstream)
+    reach_proxy = (
+        "python3 -c \"import socket; socket.create_connection(('egress', 3128), 2)\" 2>&1 | tail -1"
+    )
+    _, result = await _run_probe(
+        fleet_engine,
+        execution,
+        {"probe": "sandbox", "commands": {"proxy": reach_proxy}},
+        ExecutionPolicy(egress=("granted:8000",)),
+    )
+    assert result is not None
+    # the task may reach its proxy, but the code it runs has no network at all
+    assert "Network is unreachable" in result.body["proxy"] or "resolution" in result.body["proxy"]
