@@ -1,5 +1,7 @@
 """Persist and load benchmark runs in the database."""
 
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,8 +11,13 @@ from app.eval.compare import TaskRow
 from app.eval.report import BenchmarkReport
 
 
-async def persist_report(session: AsyncSession, report: BenchmarkReport) -> int:
-    """Write a report and all its per-task results, returning the new run id."""
+async def persist_report(
+    session: AsyncSession, report: BenchmarkReport, *, created_at: datetime | None = None
+) -> int:
+    """Write a report and all its per-task results, returning the new run id.
+
+    ``created_at`` records when the run actually happened; it defaults to now.
+    """
     run = BenchmarkRun(
         label=report.label,
         provider=report.provider,
@@ -40,6 +47,8 @@ async def persist_report(session: AsyncSession, report: BenchmarkReport) -> int:
             for outcome in report.outcomes
         ],
     )
+    if created_at is not None:
+        run.created_at = created_at
     session.add(run)
     await session.commit()
     await session.refresh(run)

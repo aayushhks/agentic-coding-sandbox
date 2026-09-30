@@ -10,6 +10,7 @@ have empty traces (the solve rates, taxonomy, tokens, and diff are all intact).
 import argparse
 import asyncio
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 from app.db.base import Base
@@ -17,6 +18,12 @@ from app.db.session import create_engine, create_session_factory
 from app.eval.failure import FailureMode
 from app.eval.report import BenchmarkReport, TaskOutcome
 from app.eval.store import persist_report
+
+
+def recorded_run_date(path: Path) -> datetime | None:
+    """When the run in a results JSON happened (its ``run_at_utc``), if the file records it."""
+    raw = json.loads(Path(path).read_text()).get("run_at_utc")
+    return datetime.fromisoformat(str(raw)).replace(tzinfo=UTC) if raw else None
 
 
 def report_from_results_json(path: Path) -> BenchmarkReport:
@@ -64,7 +71,7 @@ async def import_results(
                 await conn.run_sync(Base.metadata.create_all)
         session_factory = create_session_factory(engine)
         async with session_factory() as session:
-            run_id = await persist_report(session, report)
+            run_id = await persist_report(session, report, created_at=recorded_run_date(path))
     finally:
         await engine.dispose()
     return run_id
