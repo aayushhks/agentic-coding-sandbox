@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -227,3 +228,22 @@ async def test_ab_trials_interleave_two_arms_that_differ_only_in_the_executor(
     assert differing == {"executor", "topology"}
     assert (tmp_path / "ab-fleet-1w-replay-zero" / "summary.json").is_file()
     assert (tmp_path / "ab-sequential-replay-zero" / "trial-2.json").is_file()
+
+
+async def test_the_replay_command_runs_trials_on_a_pool_of_fleet_workers(
+    tmp_path: Path, fleet_engine: AsyncEngine, fleet_database_url: str
+) -> None:
+    argv = [
+        *("replay", "--executor", "fleet", "--workers", "2", "--trials", "1", "--tasks", "4"),
+        *("--database-url", fleet_database_url, "--out", str(tmp_path)),
+    ]
+    # the command runs its own event loop, so it gets a thread of its own
+    assert await asyncio.to_thread(main, argv) == 0
+    [trial] = load_trials(tmp_path)
+    assert (trial.label, trial.config.executor, trial.config.workers) == (
+        "fleet-2w-replay-zero",
+        "fleet",
+        2,
+    )
+    assert "2 fleet worker processes" in trial.config.topology
+    assert {job.worker for job in trial.jobs} <= {"w0", "w1"}

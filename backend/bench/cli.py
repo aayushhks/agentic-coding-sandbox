@@ -3,7 +3,8 @@
 import argparse
 import asyncio
 import sys
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal, Protocol
@@ -23,7 +24,7 @@ from bench.executor import (
     ProviderFactory,
     SequentialExecutor,
 )
-from bench.fleet_executor import FleetExecutor
+from bench.fleet_executor import FleetExecutor, pool_topology
 from bench.groq_limits import is_daily_cap, retry_delay
 from bench.jobs import JobResult
 from bench.metrics import PERCENTILE_METHOD, compute_metrics
@@ -187,6 +188,27 @@ def _replay_config(
     )
 
 
+def _replay_batch(
+    executor: Executor | FleetExecutor,
+    taskset: TaskSet,
+    used: dict[str, Recording],
+    latency: LatencyProfile,
+    progress: JobCallback | None = None,
+) -> BatchRun:
+    """Replay a planned batch in process, or submit it to the fleet as self-contained payloads."""
+    if isinstance(executor, FleetExecutor):
+        fleet = executor
+        return lambda jobs: fleet.run(
+            taskset, jobs, lambda task: replay_payload(task, used[task.id], latency)
+        )
+    return lambda jobs: executor.run(
+        taskset,
+        jobs,
+        lambda task: ReplayProvider(used[task.id], latency=latency),
+        on_result=progress,
+    )
+
+
 async def replay_trials(
     *,
     label: str,
@@ -197,14 +219,14 @@ async def replay_trials(
     count: int,
     seed: int,
     out_dir: Path,
-    executor: Executor | None = None,
+    executor: Executor | FleetExecutor | None = None,
     verbose: bool = True,
 ) -> SummaryRecord:
     """Replay the recordings for N trials, writing each trial record and their summary."""
     active = executor or SequentialExecutor()
     used = _replayable(taskset, recordings, count, seed)
     config = _replay_config(taskset, active, used, latency=latency, count=count, seed=seed)
-    progress = _progress(count) if verbose else None
+    execute = _replay_batch(active, taskset, used, latency, _progress(count) if verbose else None)
     records = []
     for trial in range(1, trials + 1):
         if verbose:
@@ -215,12 +237,7 @@ async def replay_trials(
             taskset=taskset,
             count=count,
             seed=seed,
-            execute=lambda jobs: active.run(
-                taskset,
-                jobs,
-                lambda task: ReplayProvider(used[task.id], latency=latency),
-                on_result=progress,
-            ),
+            execute=execute,
             config=config,
         )
         write_record(record, trial_path(out_dir, trial))
@@ -342,16 +359,12 @@ async def ab_trials(
         "sequential": (
             f"ab-sequential-replay-{latency.value}",
             _replay_config(taskset, sequential, used, latency=latency, count=count, seed=seed),
-            lambda jobs: sequential.run(
-                taskset, jobs, lambda task: ReplayProvider(used[task.id], latency=latency)
-            ),
+            _replay_batch(sequential, taskset, used, latency),
         ),
         "fleet": (
-            f"ab-fleet-1w-replay-{latency.value}",
+            f"ab-fleet-{fleet.workers}w-replay-{latency.value}",
             _replay_config(taskset, fleet, used, latency=latency, count=count, seed=seed),
-            lambda jobs: fleet.run(
-                taskset, jobs, lambda task: replay_payload(task, used[task.id], latency)
-            ),
+            _replay_batch(fleet, taskset, used, latency),
         ),
     }
     records: dict[str, list[TrialRecord]] = {arm: [] for arm in arms}
@@ -395,19 +408,22 @@ async def _server_version(url: str) -> str:
         await engine.dispose()
 
 
-def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
-    cluster = None if args.database_url else LocalPostgres.start()
-    url: str = args.database_url or (cluster.url if cluster else "")
+@contextmanager
+def _fleet(database_url: str | None, workers: int) -> Iterator[FleetExecutor]:
+    """A fleet on the given database, or on a throwaway local Postgres when there is none."""
+    cluster = None if database_url else LocalPostgres.start()
+    url: str = database_url or (cluster.url if cluster else "")
     try:
         migrate(url)
         version = asyncio.run(_server_version(url))
-        fleet = FleetExecutor(
-            url,
-            topology=(
-                f"single host: one fleet worker process, the fleet api and {version}, "
-                "all on this machine"
-            ),
-        )
+        yield FleetExecutor(url, workers=workers, topology=pool_topology(workers, version))
+    finally:
+        if cluster is not None:
+            cluster.stop()
+
+
+def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
+    with _fleet(args.database_url, workers=1) as fleet:
         result = asyncio.run(
             ab_trials(
                 taskset=taskset,
@@ -420,14 +436,34 @@ def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
                 fleet=fleet,
             )
         )
-    finally:
-        if cluster is not None:
-            cluster.stop()
     print_summary(result.sequential)
     print_summary(result.fleet)
     print(f"per-job outcomes match across both arms: {result.outcomes_match}")
     both = replay_passed(result.sequential) and replay_passed(result.fleet)
     return 0 if result.outcomes_match and both else 1
+
+
+def _replay(
+    args: argparse.Namespace,
+    taskset: TaskSet,
+    count: int,
+    executor: Executor | FleetExecutor,
+    name: str,
+) -> SummaryRecord:
+    label = args.label or f"{name}-replay-{args.latency}"
+    return asyncio.run(
+        replay_trials(
+            label=label,
+            taskset=taskset,
+            recordings=load_recordings(args.recordings or RECORDINGS_ROOT / taskset.version),
+            latency=LatencyProfile(args.latency),
+            trials=args.trials,
+            count=count,
+            seed=args.seed,
+            out_dir=args.out or RESULTS_ROOT / label,
+            executor=executor,
+        )
+    )
 
 
 def print_summary(summary: SummaryRecord) -> None:
@@ -436,9 +472,10 @@ def print_summary(summary: SummaryRecord) -> None:
         return f"{value.median:.{digits}f} [{value.min:.{digits}f}-{value.max:.{digits}f}]"
 
     config = summary.config
+    workers = "1 worker" if config.workers == 1 else f"{config.workers} workers"
     print(
-        f"{summary.label}: {config.mode} mode, latency={config.latency}, {config.workers} "
-        f"worker, {config.tasks} jobs, seed {config.seed}, trials {summary.trials}"
+        f"{summary.label}: {config.mode} mode, latency={config.latency}, {workers}, "
+        f"{config.tasks} jobs, seed {config.seed}, trials {summary.trials}"
     )
     print(f"  batch wall clock (s)       {stat('batch_wall_clock_seconds')}")
     print(f"  tasks per minute           {stat('tasks_per_minute')}")
@@ -471,7 +508,11 @@ def _parser() -> argparse.ArgumentParser:
     replay = commands.add_parser("replay", help="replay the recordings through the executor")
     replay.add_argument("--latency", choices=[p.value for p in LatencyProfile], default="zero")
     replay.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
+    replay.add_argument("--executor", choices=["sequential", "fleet"], default="sequential")
     replay.add_argument("--workers", type=int, default=1)
+    replay.add_argument(
+        "--database-url", default=None, help="fleet only; default: a throwaway local Postgres"
+    )
     replay.add_argument("--label", default=None)
     replay.add_argument("--tasks", type=int, default=None, help="jobs (default: each task once)")
     replay.add_argument("--seed", type=int, default=DEFAULT_SEED)
@@ -530,24 +571,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"trial {args.trial} done: {record.metrics.counts.model_dump()}")
         return 0
 
-    try:
-        executor = SequentialExecutor(args.workers)
-    except ValueError as exc:
-        parser.error(str(exc))
-    label = args.label or f"sequential-replay-{args.latency}"
-    summary = asyncio.run(
-        replay_trials(
-            label=label,
-            taskset=taskset,
-            recordings=load_recordings(args.recordings or RECORDINGS_ROOT / taskset.version),
-            latency=LatencyProfile(args.latency),
-            trials=args.trials,
-            count=count,
-            seed=args.seed,
-            out_dir=args.out or RESULTS_ROOT / label,
-            executor=executor,
-        )
-    )
+    if args.executor == "fleet":
+        if args.workers < 1:
+            parser.error("the fleet needs at least one worker")
+        with _fleet(args.database_url, args.workers) as fleet:
+            summary = _replay(args, taskset, count, fleet, f"fleet-{args.workers}w")
+    else:
+        try:
+            executor = SequentialExecutor(args.workers)
+        except ValueError as exc:
+            parser.error(str(exc))
+        summary = _replay(args, taskset, count, executor, "sequential")
     print_summary(summary)
     return 0 if replay_passed(summary) else 1
 
