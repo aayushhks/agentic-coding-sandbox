@@ -29,6 +29,26 @@ async def sleep_runner(name: str, payload: dict[str, Any]) -> RunnerOutcome:
     return RunnerOutcome(outcome="succeeded", body={"name": name, "slept_ms": sleep_ms})
 
 
+def _first_to_arrive(marker: str) -> bool:
+    # creating the file fails once it exists, and it outlives the process that made it
+    try:
+        os.close(os.open(marker, os.O_CREAT | os.O_EXCL))
+    except FileExistsError:
+        return False
+    return True
+
+
+async def chaos_runner(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+    """A stand-in job of a given kind: done, given up on, always crashing, or crashing once."""
+    await asyncio.sleep(payload["sleep_ms"] / 1000)
+    kind = payload["kind"]
+    if kind == "crash":
+        raise RuntimeError("crashed underneath the task")
+    if kind == "flaky" and _first_to_arrive(payload["marker"]):
+        raise ConnectionError("dropped on the first try")
+    return RunnerOutcome(outcome="failed" if kind == "gives_up" else "succeeded", body={})
+
+
 def start_worker(
     url: str,
     *,
