@@ -14,8 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.invariants import check, snapshot
 from fleet.models import RetryPolicy, Submission
+from fleet.runners import RunnerOutcome
 from fleet.store import job_result
-from fleet.worker import RunnerOutcome
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 # retries at once, so tests that take jobs back need not wait out a real backoff

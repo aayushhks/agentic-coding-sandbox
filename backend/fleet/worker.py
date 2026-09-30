@@ -2,7 +2,6 @@
 
 import argparse
 import asyncio
-import importlib
 import logging
 import os
 import signal
@@ -11,13 +10,12 @@ import sys
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, cast
 
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings, async_url
-from fleet.models import DEFAULT_RETRY, ClaimedJob, Outcome, RetryPolicy
+from fleet.models import DEFAULT_RETRY, ClaimedJob, RetryPolicy
+from fleet.runners import Runner, RunnerError, RunnerOutcome, load_runner
 from fleet.store import (
     claim,
     finish_cancelled,
@@ -33,13 +31,6 @@ from fleet.store import (
 logger = logging.getLogger(__name__)
 
 
-class RunnerOutcome(BaseModel):
-    outcome: Outcome
-    body: dict[str, Any]
-
-
-# (job name, payload) -> the task's final outcome; raising instead marks an infrastructure failure
-Runner = Callable[[str, dict[str, Any]], Awaitable[RunnerOutcome]]
 Sleep = Callable[[float], Awaitable[None]]
 Clock = Callable[[], float]
 
@@ -47,24 +38,6 @@ Clock = Callable[[], float]
 @dataclass(frozen=True, slots=True)
 class Cancelled:
     """A heartbeat found the job's cancel requested, so the run was stopped."""
-
-
-@dataclass(frozen=True, slots=True)
-class RunnerError:
-    """A runner raised: the failure was underneath the task, not in it."""
-
-    error: str
-
-
-def load_runner(path: str) -> Runner:
-    """Import a runner named as module:function."""
-    module_name, _, attribute = path.partition(":")
-    if not module_name or not attribute:
-        raise ValueError(f"a runner is named as module:function, got {path!r}")
-    runner = getattr(importlib.import_module(module_name), attribute)
-    if not callable(runner):
-        raise TypeError(f"{path} is not callable")
-    return cast(Runner, runner)
 
 
 class Worker:

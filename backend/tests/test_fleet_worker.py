@@ -8,8 +8,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import NewJob
+from fleet.runners import RunnerOutcome, load_runner
 from fleet.store import batch_jobs, cancel, claim, job_result, job_status, reap, submit_batch
-from fleet.worker import RunnerOutcome, Worker, load_runner
+from fleet.worker import Worker
 from tests.fleet_helpers import NO_BACKOFF, sleep_runner, start_worker
 
 

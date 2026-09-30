@@ -19,8 +19,9 @@ from fleet.invariants import (
     snapshot,
 )
 from fleet.models import NewJob
+from fleet.runners import RunnerOutcome
 from fleet.store import cancel, claim, submit_batch
-from fleet.worker import RunnerOutcome, Worker
+from fleet.worker import Worker
 from tests.fleet_helpers import NO_BACKOFF
 
 START = datetime(2026, 1, 1, tzinfo=UTC)

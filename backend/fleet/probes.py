@@ -19,7 +19,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from fleet.progress import report
-from fleet.worker import RunnerOutcome
+from fleet.runners import RunnerOutcome
 
 
 def _cpu_seconds() -> float:

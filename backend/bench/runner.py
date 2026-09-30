@@ -10,7 +10,7 @@ from bench.replay import LatencyProfile, Recording, ReplayProvider
 from bench.taskset import BenchTask
 from fleet.models import Outcome as FleetOutcome
 from fleet.progress import report
-from fleet.worker import RunnerOutcome
+from fleet.runners import RunnerOutcome
 
 FLEET_OUTCOMES: dict[Outcome, FleetOutcome] = {
     Outcome.SOLVED: "succeeded",

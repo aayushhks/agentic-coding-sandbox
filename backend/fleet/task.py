@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from fleet.progress import reporting_to
-from fleet.worker import Runner, RunnerOutcome, load_runner
+from fleet.runners import Runner, RunnerOutcome, load_runner
 
 PR_SET_DUMPABLE = 4
 
