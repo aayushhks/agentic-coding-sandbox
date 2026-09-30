@@ -17,7 +17,7 @@ target_metadata = Base.metadata
 
 
 def _database_url() -> str:
-    # normalize so a host-provided sync Postgres URL (Railway etc.) uses the async driver
+    # normalize so a host-provided sync Postgres URL uses the async driver
     return normalize_database_url(os.environ.get("DATABASE_URL") or get_settings().database_url)
 
 

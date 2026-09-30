@@ -1,7 +1,7 @@
 """Import a committed results JSON into the database as a benchmark run.
 
-The agent's sandbox needs ``unshare --net`` privileges that managed hosts (Railway, Vercel,
-…) don't grant, so a deployed instance can't *produce* runs — it can only display them. This
+The agent's sandbox needs ``unshare --net`` privileges that managed hosts don't grant, so a
+deployed instance can't *produce* runs — it can only display them. This
 seeds a deployed database from a results file checked into ``docs/results/`` so the dashboard
 has something to show. Per-task traces are not stored in the results JSON, so imported runs
 have empty traces (the solve rates, taxonomy, tokens, and diff are all intact).

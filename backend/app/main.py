@@ -42,7 +42,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 
-    # allow the dashboard to call the API from another origin (e.g. Vercel -> Railway)
+    # allow the dashboard to call the API from another origin (a dashboard hosted apart from it)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

@@ -1,6 +1,6 @@
 name: deploy
 
-# Surfaces the live AWS deployment on GitHub the way the Vercel/Railway integrations do.
+# Surfaces the live AWS deployment on GitHub the way hosting integrations do.
 # On every push to main (and on demand) this records a deployment to the `aws-production`
 # environment and smoke-tests the public dashboard, so the repo's Deployments/Environments
 # panel shows an entry linking straight to the live site — backed by a real health check, so

@@ -39,10 +39,10 @@ RUN python -m app.eval.import_results --results /app/docs/results/groq-llama-3.3
 COPY --from=frontend /frontend/dist /app/frontend/dist
 
 EXPOSE 8000
-# honor an injected $PORT (Railway etc.), defaulting to 8000 for local/compose use
+# honor an injected $PORT (managed hosts set one), defaulting to 8000 for local/compose use
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["python", "-c", "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\", \"8000\")}/health').status == 200 else 1)"]
 
 # the image serves the API + dashboard; migrations are run by the orchestrator
-# (docker-compose.yml / railway.json) since they depend on a reachable database
+# (e.g. docker-compose.yml) since they depend on a reachable database
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
