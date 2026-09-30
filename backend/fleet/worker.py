@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings, async_url
-from fleet.models import ClaimedJob, Outcome
+from fleet.models import DEFAULT_RETRY, ClaimedJob, Outcome, RetryPolicy
 from fleet.store import claim, heartbeat, publish, reap, start, unfinished_jobs
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ class Worker:
         lease_seconds: float,
         heartbeat_seconds: float | None = None,
         reap_every_seconds: float = 5.0,
+        retry: RetryPolicy = DEFAULT_RETRY,
         min_poll_seconds: float = 0.05,
         max_poll_seconds: float = 0.5,
         sleep: Sleep = asyncio.sleep,
@@ -68,6 +69,7 @@ class Worker:
         self._lease = lease_seconds
         self._heartbeat = beat
         self._reap_every = reap_every_seconds
+        self._retry = retry
         self._min_poll = min_poll_seconds
         self._max_poll = max_poll_seconds
         self._sleep = sleep
@@ -81,7 +83,7 @@ class Worker:
 
     async def _reap(self) -> None:
         self._reaped_at = self._clock()
-        await reap(self._engine)
+        await reap(self._engine, retry=self._retry)
 
     async def _attempt(self, job: ClaimedJob) -> RunnerOutcome:
         try:
@@ -170,6 +172,7 @@ async def serve(
     lease_seconds: float,
     heartbeat_seconds: float | None,
     reap_every_seconds: float,
+    retry: RetryPolicy,
     exit_when_idle: bool,
 ) -> Worker:
     engine = create_async_engine(async_url(url))
@@ -185,6 +188,7 @@ async def serve(
         lease_seconds=lease_seconds,
         heartbeat_seconds=heartbeat_seconds,
         reap_every_seconds=reap_every_seconds,
+        retry=retry,
     )
     try:
         await worker.run(exit_when_idle=exit_when_idle, stop=stop)
@@ -206,6 +210,12 @@ def main(argv: list[str] | None = None) -> int:
         help="default: a third of the lease",
     )
     parser.add_argument("--reap-every-seconds", type=float, default=settings.reap_every_seconds)
+    parser.add_argument(
+        "--retry-backoff-seconds", type=float, default=settings.retry_backoff_seconds
+    )
+    parser.add_argument(
+        "--retry-backoff-cap-seconds", type=float, default=settings.retry_backoff_cap_seconds
+    )
     parser.add_argument("--database-url", default=settings.database_url)
     parser.add_argument("--exit-when-idle", action="store_true")
     args = parser.parse_args(argv)
@@ -218,6 +228,10 @@ def main(argv: list[str] | None = None) -> int:
             lease_seconds=args.lease_seconds,
             heartbeat_seconds=args.heartbeat_seconds,
             reap_every_seconds=args.reap_every_seconds,
+            retry=RetryPolicy(
+                backoff_seconds=args.retry_backoff_seconds,
+                backoff_cap_seconds=args.retry_backoff_cap_seconds,
+            ),
             exit_when_idle=args.exit_when_idle,
         )
     )

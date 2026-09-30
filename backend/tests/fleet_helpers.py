@@ -12,10 +12,12 @@ from typing import Any
 from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fleet.models import Submission
+from fleet.models import RetryPolicy, Submission
 from fleet.worker import RunnerOutcome
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+# retries at once, so tests that take jobs back need not wait out a real backoff
+NO_BACKOFF = RetryPolicy(backoff_seconds=0.0)
 
 
 async def sleep_runner(name: str, payload: dict[str, Any]) -> RunnerOutcome:
@@ -31,6 +33,7 @@ def start_worker(
     runner: str = "tests.fleet_helpers:sleep_runner",
     worker_id: str = "w0",
     lease_seconds: float = 60.0,
+    retry_backoff_seconds: float | None = None,
     exit_when_idle: bool = False,
 ) -> "subprocess.Popen[str]":
     """Start `python -m fleet.worker` as its own process, the way a deployment would."""
@@ -47,6 +50,8 @@ def start_worker(
         "--database-url",
         url,
     ]
+    if retry_backoff_seconds is not None:
+        command += ["--retry-backoff-seconds", str(retry_backoff_seconds)]
     if exit_when_idle:
         command.append("--exit-when-idle")
     return subprocess.Popen(
@@ -94,7 +99,13 @@ async def kill_mid_batch_and_restart(
 
     Returns the jobs the killed worker was holding, which the fresh one must re-run.
     """
-    first = start_worker(url, runner=runner, worker_id="first", lease_seconds=lease_seconds)
+    first = start_worker(
+        url,
+        runner=runner,
+        worker_id="first",
+        lease_seconds=lease_seconds,
+        retry_backoff_seconds=0.1,
+    )
     # a seeded kill point: after some jobs are published, partway into whatever runs next
     target = rng.randint(0, max_published_before_kill)
     await wait_for_published(engine, submission.batch_id, target)
@@ -109,7 +120,12 @@ async def kill_mid_batch_and_restart(
     in_flight = {row[0] for row in held}
     print(f"killed after {target}+ published, {len(in_flight)} job(s) in flight")
     second = start_worker(
-        url, runner=runner, worker_id="second", lease_seconds=lease_seconds, exit_when_idle=True
+        url,
+        runner=runner,
+        worker_id="second",
+        lease_seconds=lease_seconds,
+        retry_backoff_seconds=0.1,
+        exit_when_idle=True,
     )
     output, _ = await asyncio.to_thread(second.communicate, timeout=300)
     assert second.returncode == 0, output

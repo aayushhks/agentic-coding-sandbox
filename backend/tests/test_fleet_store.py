@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from fleet.models import NewJob
+from fleet.models import NewJob, RetryPolicy
 from fleet.store import (
     IdempotencyConflictError,
     batch_jobs,
@@ -14,10 +14,12 @@ from fleet.store import (
     job_status,
     publish,
     reap,
+    release,
     start,
     submit_batch,
     unfinished_jobs,
 )
+from tests.fleet_helpers import NO_BACKOFF
 
 
 def _jobs(count: int, tag: str = "") -> list[NewJob]:
@@ -150,7 +152,7 @@ async def test_an_expired_attempt_cannot_publish_over_its_successor(
     stale = await claim(fleet_engine, worker_id="slow", lease_seconds=0.05)
     assert stale is not None
     await asyncio.sleep(0.1)
-    assert await reap(fleet_engine) == [stale.id]
+    assert await reap(fleet_engine, retry=NO_BACKOFF) == [stale.id]
     fresh = await claim(fleet_engine, worker_id="fast", lease_seconds=60)
     assert fresh is not None and fresh.attempt == 2
     assert not await start(fleet_engine, job_id=stale.id, attempt=stale.attempt)
@@ -252,3 +254,105 @@ async def test_reads_of_missing_things_return_none(fleet_engine: AsyncEngine) ->
     assert await batch_status(fleet_engine, 99) is None
     assert await job_status(fleet_engine, 99) is None
     assert await job_result(fleet_engine, 99) is None
+
+
+async def _attempt_log(engine: AsyncEngine) -> list[tuple[int, str, str | None, float]]:
+    """Each attempt's number, ending and error, and how long its job then had to wait."""
+    async with engine.connect() as connection:
+        rows = await connection.execute(
+            text(
+                "select a.attempt, a.ended_by, a.error, "
+                "extract(epoch from j.available_at - a.ended_at) as wait "
+                "from fleet_attempts a join fleet_jobs j on j.id = a.job_id order by a.attempt"
+            )
+        )
+        return [(row.attempt, row.ended_by, row.error, float(row.wait)) for row in rows]
+
+
+async def test_a_released_job_waits_out_its_backoff_before_it_is_claimed_again(
+    fleet_engine: AsyncEngine,
+) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None
+    retry = RetryPolicy(backoff_seconds=0.3)
+    state = await release(fleet_engine, job_id=job.id, attempt=1, error="boom", retry=retry)
+    assert state == "queued"
+    assert await claim(fleet_engine, worker_id="w", lease_seconds=60) is None
+    await asyncio.sleep(0.35)
+    again = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert again is not None and (again.id, again.attempt) == (submission.job_ids[0], 2)
+    status = await job_status(fleet_engine, job.id)
+    assert status is not None and status.last_error == "boom"
+
+
+async def test_each_retry_waits_twice_as_long_up_to_the_cap(fleet_engine: AsyncEngine) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    retry = RetryPolicy(backoff_seconds=0.1, backoff_cap_seconds=0.15)
+    for attempt in (1, 2):
+        await asyncio.sleep(0.2)
+        job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+        assert job is not None and job.attempt == attempt
+        assert await release(fleet_engine, job_id=job.id, attempt=attempt, error="e", retry=retry)
+    waits = [wait for _attempt, _ended, _error, wait in await _attempt_log(fleet_engine)]
+    # the job's latest wait: 0.1 s after the first failure, doubled to 0.2 but capped at 0.15
+    assert waits[-1] == pytest.approx(0.15, abs=1e-6)
+
+
+async def test_a_job_that_uses_every_attempt_is_dead_lettered(fleet_engine: AsyncEngine) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    states = []
+    for attempt in (1, 2, 3):
+        job = await claim(fleet_engine, worker_id=f"w{attempt}", lease_seconds=60)
+        assert job is not None and job.attempt == attempt
+        states.append(
+            await release(
+                fleet_engine, job_id=job.id, attempt=attempt, error=f"e{attempt}", retry=NO_BACKOFF
+            )
+        )
+    assert states == ["queued", "queued", "dead_lettered"]
+    status = await job_status(fleet_engine, submission.job_ids[0])
+    assert status is not None
+    assert (status.state, status.result_id, status.lease_expires_at) == (
+        "dead_lettered",
+        None,
+        None,
+    )
+    assert (status.worker_id, status.last_error) == ("w3", "e3")
+    assert status.finished_at is not None
+    assert await claim(fleet_engine, worker_id="w", lease_seconds=60) is None
+    done = await batch_status(fleet_engine, submission.batch_id)
+    assert done is not None and (done.counts, done.done) == ({"dead_lettered": 1}, True)
+    log = await _attempt_log(fleet_engine)
+    assert [(n, ended, error) for n, ended, error, _wait in log] == [
+        (1, "released", "e1"),
+        (2, "released", "e2"),
+        (3, "released", "e3"),
+    ]
+
+
+async def test_lapsed_leases_use_up_attempts_too(fleet_engine: AsyncEngine) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    for _ in range(3):
+        assert await claim(fleet_engine, worker_id="w", lease_seconds=0.01) is not None
+        await asyncio.sleep(0.05)
+        assert await reap(fleet_engine, retry=NO_BACKOFF) == submission.job_ids
+    status = await job_status(fleet_engine, submission.job_ids[0])
+    assert status is not None and (status.state, status.attempt) == ("dead_lettered", 3)
+    assert status.last_error == "lease expired"
+
+
+async def test_a_release_needs_a_live_lease_on_the_current_attempt(
+    fleet_engine: AsyncEngine,
+) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    late = await claim(fleet_engine, worker_id="slow", lease_seconds=0.05)
+    assert late is not None
+    await asyncio.sleep(0.1)
+    assert await release(fleet_engine, job_id=late.id, attempt=1, error="e") is None
+    assert await reap(fleet_engine, retry=NO_BACKOFF) == [late.id]
+    successor = await claim(fleet_engine, worker_id="fast", lease_seconds=60)
+    assert successor is not None and successor.attempt == 2
+    assert await release(fleet_engine, job_id=late.id, attempt=1, error="e") is None
+    status = await job_status(fleet_engine, late.id)
+    assert status is not None and (status.state, status.worker_id) == ("claimed", "fast")

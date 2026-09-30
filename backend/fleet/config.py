@@ -3,6 +3,8 @@
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from fleet.models import DEFAULT_RETRY
+
 
 def async_url(url: str) -> str:
     """Point a plain Postgres URL at the asyncpg driver the fleet uses."""
@@ -22,6 +24,9 @@ class FleetSettings(BaseSettings):
     heartbeat_seconds: float | None = None
     # how often a busy worker returns lapsed leases to the queue; an idle one does it every poll
     reap_every_seconds: float = 5.0
+    # the wait before retrying after an infrastructure failure, doubling up to the cap
+    retry_backoff_seconds: float = DEFAULT_RETRY.backoff_seconds
+    retry_backoff_cap_seconds: float = DEFAULT_RETRY.backoff_cap_seconds
 
     @field_validator("database_url")
     @classmethod

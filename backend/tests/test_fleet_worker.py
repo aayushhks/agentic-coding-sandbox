@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from fleet.models import NewJob
 from fleet.store import batch_jobs, claim, job_result, job_status, reap, submit_batch
 from fleet.worker import RunnerOutcome, Worker, load_runner
-from tests.fleet_helpers import sleep_runner, start_worker
+from tests.fleet_helpers import NO_BACKOFF, sleep_runner, start_worker
 
 
 async def _double(name: str, payload: dict[str, Any]) -> RunnerOutcome:
@@ -51,7 +51,7 @@ async def test_exiting_when_idle_waits_for_an_abandoned_job(fleet_engine: AsyncE
     # a worker that claimed the job and died: its lease simply runs out
     abandoned = await claim(fleet_engine, worker_id="dead", lease_seconds=0.2)
     assert abandoned is not None
-    worker = _worker(fleet_engine, reap_every_seconds=0.05, min_poll_seconds=0.02)
+    worker = _worker(fleet_engine, reap_every_seconds=0.05, min_poll_seconds=0.02, retry=NO_BACKOFF)
     assert await asyncio.wait_for(worker.run(exit_when_idle=True), timeout=10) == 1
     job = (await batch_jobs(fleet_engine, submission.batch_id))[0]
     assert (job.state, job.attempt, job.worker_id) == ("succeeded", 2, "w")
@@ -156,7 +156,9 @@ async def test_a_result_finished_after_the_lease_ran_out_is_refused(
     # nobody had taken the job back yet; the lapsed lease alone refused the result
     job = await job_status(fleet_engine, submission.job_ids[0])
     assert job is not None and (job.state, job.result_id) == ("running", None)
-    rescuer = _worker(fleet_engine, lambda _n, _p: _sleeps(0), min_poll_seconds=0.01)
+    rescuer = _worker(
+        fleet_engine, lambda _n, _p: _sleeps(0), min_poll_seconds=0.01, retry=NO_BACKOFF
+    )
     await asyncio.wait_for(rescuer.run(exit_when_idle=True), timeout=10)
     result = await job_result(fleet_engine, submission.job_ids[0])
     assert result is not None and (result.attempt, result.worker_id, result.body) == (2, "w", {})

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 JobState = Literal[
     "queued",
@@ -17,6 +17,18 @@ JobState = Literal[
 ]
 Outcome = Literal["succeeded", "failed", "escalated"]
 UNFINISHED_STATES: frozenset[str] = frozenset({"queued", "claimed", "running"})
+
+
+class RetryPolicy(BaseModel):
+    """The wait before a retry after an infrastructure failure: doubling from a base, to a cap."""
+
+    model_config = ConfigDict(frozen=True)
+
+    backoff_seconds: float = Field(default=2.0, ge=0)
+    backoff_cap_seconds: float = Field(default=60.0, ge=0)
+
+
+DEFAULT_RETRY = RetryPolicy()
 
 
 class NewJob(BaseModel):
@@ -46,13 +58,18 @@ class JobStatus(BaseModel):
     name: str
     state: JobState
     attempt: int
+    max_attempts: int
     worker_id: str | None
     lease_expires_at: datetime | None
     result_id: int | None
     submitted_at: datetime
+    # a job given back after a failure waits out its backoff before it can be claimed again
+    available_at: datetime
     claimed_at: datetime | None
     started_at: datetime | None
     finished_at: datetime | None
+    # why the latest attempt ended without a result, and so why a dead letter is one
+    last_error: str | None
 
 
 class BatchStatus(BaseModel):

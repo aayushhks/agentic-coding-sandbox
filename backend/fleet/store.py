@@ -4,26 +4,59 @@ import hashlib
 import json
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import (
+    DEFAULT_RETRY,
     UNFINISHED_STATES,
     BatchStatus,
     ClaimedJob,
+    JobState,
     JobStatus,
     NewJob,
     Outcome,
     PublishedResult,
+    RetryPolicy,
     Submission,
 )
 
 _JOB_COLUMNS = (
-    "id, batch_id, position, name, state, attempt, worker_id, lease_expires_at, result_id, "
-    "submitted_at, claimed_at, started_at, finished_at"
+    "id, batch_id, position, name, state, attempt, max_attempts, worker_id, lease_expires_at, "
+    "result_id, submitted_at, available_at, claimed_at, started_at, finished_at, last_error"
 )
+LEASE_EXPIRED = "lease expired"
+
+
+def _end_attempts(chosen: str, ending: str) -> str:
+    """End attempts without a result: requeue after a backoff, or dead-letter once all are used."""
+    retry = "j.attempt < j.max_attempts"
+    backoff = (
+        "least(CAST(:backoff AS double precision) * power(2, j.attempt - 1), "
+        "CAST(:cap AS double precision))"
+    )
+    return (
+        "with now as materialized (select clock_timestamp() as at), "
+        f"chosen as ({chosen}), "
+        "moved as ("
+        "update fleet_jobs as j set "
+        f"state = case when {retry} then 'queued' else 'dead_lettered' end, "
+        f"available_at = case when {retry} "
+        f"then now.at + make_interval(secs => {backoff}) else j.available_at end, "
+        f"worker_id = case when {retry} then null else j.worker_id end, "
+        f"claimed_at = case when {retry} then null else j.claimed_at end, "
+        f"started_at = case when {retry} then null else j.started_at end, "
+        f"finished_at = case when {retry} then null else now.at end, "
+        "lease_expires_at = null, last_error = :error, updated_at = now.at "
+        "from now, chosen where j.id = chosen.id "
+        "returning j.id, j.attempt, j.state) "
+        "update fleet_attempts as a set "
+        f"ended_at = now.at, ended_by = '{ending}', error = :error "
+        "from moved, now where a.job_id = moved.id and a.attempt = moved.attempt "
+        "returning a.job_id, moved.state"
+    )
 
 
 class IdempotencyConflictError(Exception):
@@ -120,6 +153,7 @@ async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) ->
                     "+ make_interval(secs => CAST(:lease AS double precision)), "
                     "updated_at = clock_timestamp() "
                     "where id = (select id from fleet_jobs where state = 'queued' "
+                    "and available_at <= clock_timestamp() "
                     "order by id limit 1 for update skip locked) "
                     "returning id, attempt, name, payload, claimed_at, lease_expires_at"
                 ),
@@ -251,22 +285,55 @@ async def publish(
     return True
 
 
-async def reap(engine: AsyncEngine) -> list[int]:
-    """Return jobs whose lease ran out to the queue, closing the attempt that let it lapse."""
+async def release(
+    engine: AsyncEngine,
+    *,
+    job_id: int,
+    attempt: int,
+    error: str,
+    retry: RetryPolicy = DEFAULT_RETRY,
+) -> JobState | None:
+    """Give a job back after an infrastructure failure; its new state, or None if it wasn't ours."""
     async with engine.begin() as connection:
+        row = (
+            await connection.execute(
+                text(
+                    _end_attempts(
+                        "select id from fleet_jobs where id = :job and attempt = :attempt "
+                        "and state in ('claimed', 'running') "
+                        "and lease_expires_at > (select at from now) for update",
+                        "released",
+                    )
+                ),
+                {
+                    "job": job_id,
+                    "attempt": attempt,
+                    "error": error,
+                    "backoff": retry.backoff_seconds,
+                    "cap": retry.backoff_cap_seconds,
+                },
+            )
+        ).first()
+    return None if row is None else cast(JobState, row.state)
+
+
+async def reap(engine: AsyncEngine, *, retry: RetryPolicy = DEFAULT_RETRY) -> list[int]:
+    """End every attempt whose lease ran out, returning its job to the queue or dead letters."""
+    async with engine.begin() as connection:
+        # skip locked lets concurrent reapers split the lapsed jobs instead of queueing on them
         rows = await connection.execute(
             text(
-                "with expired as ("
-                "update fleet_jobs set state = 'queued', worker_id = null, "
-                "lease_expires_at = null, claimed_at = null, started_at = null, "
-                "updated_at = clock_timestamp() "
-                "where state in ('claimed', 'running') and lease_expires_at <= clock_timestamp() "
-                "returning id, attempt) "
-                "update fleet_attempts as a "
-                "set ended_at = clock_timestamp(), ended_by = 'lease_expired' "
-                "from expired where a.job_id = expired.id and a.attempt = expired.attempt "
-                "returning a.job_id"
-            )
+                _end_attempts(
+                    "select id from fleet_jobs where state in ('claimed', 'running') "
+                    "and lease_expires_at <= (select at from now) for update skip locked",
+                    "lease_expired",
+                )
+            ),
+            {
+                "error": LEASE_EXPIRED,
+                "backoff": retry.backoff_seconds,
+                "cap": retry.backoff_cap_seconds,
+            },
         )
         return sorted(row.job_id for row in rows)
 
