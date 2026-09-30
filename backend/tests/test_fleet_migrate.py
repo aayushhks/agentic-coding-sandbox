@@ -27,21 +27,21 @@ async def test_migration_creates_the_fleet_tables_under_their_own_version_table(
         tables = {row[0] for row in rows}
     assert {"fleet_batches", "fleet_jobs", "fleet_attempts", "fleet_results"} <= tables
     assert "alembic_version" not in tables
-    assert await _version(fleet_engine) == "0002"
+    assert await _version(fleet_engine) == "0003"
 
 
 def test_migrating_again_at_head_changes_nothing(fleet_database_url: str) -> None:
     migrate(fleet_database_url)
 
 
-async def test_the_retry_migration_downgrades_and_upgrades_again(
+async def test_the_later_migrations_downgrade_and_upgrade_again(
     fleet_engine: AsyncEngine, fleet_database_url: str
 ) -> None:
     # alembic runs its own event loop, so it gets a thread of its own
     await asyncio.to_thread(command.downgrade, alembic_config(fleet_database_url), "0001")
     assert await _version(fleet_engine) == "0001"
     await asyncio.to_thread(migrate, fleet_database_url)
-    assert await _version(fleet_engine) == "0002"
+    assert await _version(fleet_engine) == "0003"
 
 
 async def _insert_job(engine: AsyncEngine) -> None:
