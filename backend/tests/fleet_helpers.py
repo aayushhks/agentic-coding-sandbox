@@ -12,7 +12,9 @@ from typing import Any
 from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from fleet.invariants import check, snapshot
 from fleet.models import RetryPolicy, Submission
+from fleet.store import job_result
 from fleet.worker import RunnerOutcome
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -132,39 +134,18 @@ async def kill_mid_batch_and_restart(
     return in_flight
 
 
+async def assert_invariants_hold(engine: AsyncEngine, job_ids: list[int]) -> None:
+    violations = check(await snapshot(engine, job_ids), job_ids)
+    assert not violations, "\n".join(str(violation) for violation in violations)
+
+
 async def assert_every_job_accounted_for_once(
     engine: AsyncEngine, submission: Submission, in_flight: set[int]
 ) -> None:
-    jobs = await rows(
-        engine,
-        "select id, state, attempt, result_id from fleet_jobs where batch_id = :batch order by id",
-        submission.batch_id,
-    )
-    assert [row[0] for row in jobs] == submission.job_ids
-    # no lost job: every one reached a final state
-    assert {row[1] for row in jobs} <= {"succeeded", "failed", "escalated"}
-    results = await rows(
-        engine,
-        "select r.id, r.job_id, r.attempt, r.worker_id from fleet_results r "
-        "join fleet_jobs j on j.id = r.job_id where j.batch_id = :batch",
-        submission.batch_id,
-    )
-    # no duplicate: exactly one published result per job, and it is the one the job points at
-    assert sorted(row[1] for row in results) == submission.job_ids
-    by_job = {row[1]: row for row in results}
-    for job_id, _state, attempt, result_id in jobs:
-        assert by_job[job_id][0] == result_id
-        assert by_job[job_id][2] == attempt
-    attempts = await rows(
-        engine,
-        "select a.job_id, a.attempt, a.ended_by from fleet_attempts a "
-        "join fleet_jobs j on j.id = a.job_id where j.batch_id = :batch",
-        submission.batch_id,
-    )
-    for job_id, _state, attempt, _result in jobs:
-        log = sorted((row[1], row[2]) for row in attempts if row[0] == job_id)
-        # the attempt log matches the job's attempt count, every attempt closed, one published
-        assert [number for number, _ in log] == list(range(1, attempt + 1))
-        assert [ended for _, ended in log] == ["lease_expired"] * (len(log) - 1) + ["published"]
+    # nothing lost, nothing duplicated, no stale write, and an attempt log that adds up
+    await assert_invariants_hold(engine, submission.job_ids)
     for job_id in in_flight:
-        assert by_job[job_id][3] == "second", f"job {job_id} was re-run by the new worker"
+        result = await job_result(engine, job_id)
+        assert result is not None and result.worker_id == "second", (
+            f"job {job_id} was re-run by the new worker"
+        )
