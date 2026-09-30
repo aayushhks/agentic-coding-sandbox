@@ -5,6 +5,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
+from pydantic import BaseModel
+
 from app.agent.types import AgentConfig, AgentRun, TerminationReason
 from app.benchmark.runner import TaskResult, run_task
 from app.eval.failure import FailureMode, classify_failure
@@ -132,6 +134,80 @@ async def _execute(
     return resolution.run, outcome, mode, resolution.correct
 
 
+class TaskExecution(BaseModel):
+    """What running one task produced, whatever queue it came through."""
+
+    outcome: Outcome
+    failure_mode: str | None
+    failure_kind: FailureKind | None
+    matched_expectation: bool
+    termination_reason: str
+    iterations: int
+    llm_calls: int
+    prompt_tokens: int
+    completion_tokens: int
+    retry_wait_seconds: float
+    divergence: str | None
+
+
+async def execute_task(task: BenchTask, provider: LLMProvider) -> TaskExecution:
+    """Run one task and classify it; every executor goes through here, so they run tasks alike."""
+    run, outcome, mode, correct = await _execute(task, provider)
+    divergence = _divergence(provider)
+    if divergence is not None:
+        outcome, mode = Outcome.FAILED, REPLAY_DIVERGENCE
+    kind = failure_kind(mode) if mode is not None else None
+    return TaskExecution(
+        outcome=outcome,
+        failure_mode=mode,
+        failure_kind=kind,
+        matched_expectation=_matched(task, outcome, kind, correct),
+        termination_reason=run.termination_reason.value,
+        iterations=run.iterations,
+        llm_calls=_llm_calls(run),
+        prompt_tokens=run.prompt_tokens,
+        completion_tokens=run.completion_tokens,
+        retry_wait_seconds=_retry_wait(provider),
+        divergence=divergence,
+    )
+
+
+def job_result(
+    job: Job,
+    task: BenchTask,
+    execution: TaskExecution,
+    *,
+    worker: str,
+    attempts: int,
+    submitted_at: float,
+    claimed_at: float,
+    finished_at: float,
+) -> JobResult:
+    return JobResult(
+        job_id=job.id,
+        task_id=task.id,
+        repeat=job.repeat,
+        kind=task.kind.value,
+        expected=task.expected.value,
+        worker=worker,
+        attempts=attempts,
+        submitted_at=submitted_at,
+        claimed_at=claimed_at,
+        finished_at=finished_at,
+        outcome=execution.outcome,
+        failure_mode=execution.failure_mode,
+        failure_kind=execution.failure_kind,
+        matched_expectation=execution.matched_expectation,
+        termination_reason=execution.termination_reason,
+        iterations=execution.iterations,
+        llm_calls=execution.llm_calls,
+        prompt_tokens=execution.prompt_tokens,
+        completion_tokens=execution.completion_tokens,
+        retry_wait_seconds=execution.retry_wait_seconds,
+        divergence=execution.divergence,
+    )
+
+
 class SequentialExecutor:
     """Today's implementation: one in-process worker running the jobs back to back."""
 
@@ -160,37 +236,20 @@ class SequentialExecutor:
             task = taskset.get(job.task_id)
             provider = provider_for(task)
             claimed = clock() - start
-            run, outcome, mode, correct = await _execute(task, provider)
+            execution = await execute_task(task, provider)
             finished = clock() - start
             reason = stop_check(provider) if stop_check is not None else None
             if reason is not None:
                 return BatchResult(results, f"{reason} after {len(results)} of {len(jobs)} jobs")
-            divergence = _divergence(provider)
-            if divergence is not None:
-                outcome, mode = Outcome.FAILED, REPLAY_DIVERGENCE
-            kind = failure_kind(mode) if mode is not None else None
-            result = JobResult(
-                job_id=job.id,
-                task_id=task.id,
-                repeat=job.repeat,
-                kind=task.kind.value,
-                expected=task.expected.value,
+            result = job_result(
+                job,
+                task,
+                execution,
                 worker="w0",
                 attempts=1,
                 submitted_at=0.0,
                 claimed_at=claimed,
                 finished_at=finished,
-                outcome=outcome,
-                failure_mode=mode,
-                failure_kind=kind,
-                matched_expectation=_matched(task, outcome, kind, correct),
-                termination_reason=run.termination_reason.value,
-                iterations=run.iterations,
-                llm_calls=_llm_calls(run),
-                prompt_tokens=run.prompt_tokens,
-                completion_tokens=run.completion_tokens,
-                retry_wait_seconds=_retry_wait(provider),
-                divergence=divergence,
             )
             results.append(result)
             if on_result is not None:
