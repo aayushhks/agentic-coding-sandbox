@@ -78,6 +78,28 @@ async def test_submissions_without_a_key_are_independent(fleet_engine: AsyncEngi
 async def test_an_empty_batch_is_refused(fleet_engine: AsyncEngine) -> None:
     with pytest.raises(ValueError, match="at least one job"):
         await submit_batch(fleet_engine, label="b", jobs=[])
+    with pytest.raises(ValueError, match="at least one attempt"):
+        await submit_batch(fleet_engine, label="b", jobs=_jobs(1), max_attempts=0)
+
+
+async def test_a_batch_sets_how_many_attempts_each_job_gets(fleet_engine: AsyncEngine) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=_jobs(2), max_attempts=1)
+    jobs = await batch_jobs(fleet_engine, submission.batch_id)
+    assert {job.max_attempts for job in jobs} == {1}
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None
+    # with a single attempt, the first infrastructure failure is final
+    assert await release(fleet_engine, job_id=job.id, attempt=1, error="e") == "dead_lettered"
+
+
+async def test_a_key_reused_with_a_different_retry_budget_is_refused(
+    fleet_engine: AsyncEngine,
+) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(2), idempotency_key="k")
+    with pytest.raises(IdempotencyConflictError):
+        await submit_batch(
+            fleet_engine, label="b", jobs=_jobs(2), idempotency_key="k", max_attempts=5
+        )
 
 
 async def test_claims_take_the_oldest_job_under_a_lease(fleet_engine: AsyncEngine) -> None:

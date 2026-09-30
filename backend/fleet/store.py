@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import (
+    DEFAULT_MAX_ATTEMPTS,
     DEFAULT_RETRY,
     UNFINISHED_STATES,
     BatchStatus,
@@ -76,8 +77,14 @@ def _json(value: Any) -> dict[str, Any]:
     return loaded
 
 
-def request_digest(label: str, jobs: Sequence[NewJob]) -> str:
-    return _digest({"label": label, "jobs": [job.model_dump(mode="json") for job in jobs]})
+def request_digest(label: str, jobs: Sequence[NewJob], max_attempts: int) -> str:
+    return _digest(
+        {
+            "label": label,
+            "max_attempts": max_attempts,
+            "jobs": [job.model_dump(mode="json") for job in jobs],
+        }
+    )
 
 
 async def submit_batch(
@@ -86,11 +93,14 @@ async def submit_batch(
     label: str,
     jobs: Sequence[NewJob],
     idempotency_key: str | None = None,
+    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
 ) -> Submission:
     """Enqueue a batch in one transaction; a repeated key returns the original batch."""
     if not jobs:
         raise ValueError("a batch needs at least one job")
-    digest = request_digest(label, jobs)
+    if max_attempts < 1:
+        raise ValueError("every job needs at least one attempt")
+    digest = request_digest(label, jobs, max_attempts)
     async with engine.begin() as connection:
         # a concurrent insert of the same key waits here and then conflicts, so one batch wins
         batch_id = await connection.scalar(
@@ -122,8 +132,10 @@ async def submit_batch(
         payloads = [json.dumps(job.payload, sort_keys=True) for job in jobs]
         rows = await connection.execute(
             text(
-                "insert into fleet_jobs (batch_id, position, name, payload, payload_digest) "
-                "select :batch, item.position, item.name, item.payload::jsonb, item.digest "
+                "insert into fleet_jobs "
+                "(batch_id, position, name, payload, payload_digest, max_attempts) "
+                "select :batch, item.position, item.name, item.payload::jsonb, item.digest, "
+                ":max_attempts "
                 "from unnest(CAST(:positions AS integer[]), CAST(:names AS text[]), "
                 "CAST(:payloads AS text[]), CAST(:digests AS text[])) "
                 "as item(position, name, payload, digest) "
@@ -131,6 +143,7 @@ async def submit_batch(
             ),
             {
                 "batch": batch_id,
+                "max_attempts": max_attempts,
                 "positions": list(range(len(jobs))),
                 "names": [job.name for job in jobs],
                 "payloads": payloads,

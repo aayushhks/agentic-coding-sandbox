@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 import httpx
 
-from fleet.models import BatchStatus, NewJob, Submission
+from fleet.models import DEFAULT_MAX_ATTEMPTS, BatchStatus, NewJob, Submission
 
 
 class FleetClient:
@@ -21,13 +21,19 @@ class FleetClient:
         return response.status_code == httpx.codes.OK
 
     async def submit(
-        self, *, label: str, jobs: Sequence[NewJob], idempotency_key: str | None = None
+        self,
+        *,
+        label: str,
+        jobs: Sequence[NewJob],
+        idempotency_key: str | None = None,
+        max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     ) -> Submission:
         response = await self._http.post(
             "/batches",
             json={
                 "label": label,
                 "idempotency_key": idempotency_key,
+                "max_attempts": max_attempts,
                 "jobs": [job.model_dump(mode="json") for job in jobs],
             },
         )

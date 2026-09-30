@@ -9,7 +9,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings
-from fleet.models import BatchStatus, JobStatus, NewJob, PublishedResult, Submission
+from fleet.models import (
+    DEFAULT_MAX_ATTEMPTS,
+    BatchStatus,
+    JobStatus,
+    NewJob,
+    PublishedResult,
+    Submission,
+)
 from fleet.store import (
     IdempotencyConflictError,
     batch_status,
@@ -22,6 +29,8 @@ from fleet.store import (
 class BatchRequest(BaseModel):
     label: str = Field(min_length=1)
     idempotency_key: str | None = None
+    # how many times each job may run before infrastructure failures dead-letter it
+    max_attempts: int = Field(default=DEFAULT_MAX_ATTEMPTS, ge=1)
     jobs: list[NewJob] = Field(min_length=1)
 
 
@@ -60,7 +69,11 @@ def create_app(engine: AsyncEngine | None = None) -> FastAPI:
         """Enqueue a batch; the same key and jobs again return the original ids with a 200."""
         try:
             submission = await submit_batch(
-                db, label=body.label, jobs=body.jobs, idempotency_key=body.idempotency_key
+                db,
+                label=body.label,
+                jobs=body.jobs,
+                idempotency_key=body.idempotency_key,
+                max_attempts=body.max_attempts,
             )
         except IdempotencyConflictError as exc:
             raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc

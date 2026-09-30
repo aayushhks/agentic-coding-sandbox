@@ -17,6 +17,8 @@ JobState = Literal[
 ]
 Outcome = Literal["succeeded", "failed", "escalated"]
 UNFINISHED_STATES: frozenset[str] = frozenset({"queued", "claimed", "running"})
+# the first run plus two retries after infrastructure failures
+DEFAULT_MAX_ATTEMPTS = 3
 
 
 class RetryPolicy(BaseModel):

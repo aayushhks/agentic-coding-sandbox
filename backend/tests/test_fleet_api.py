@@ -51,6 +51,14 @@ async def test_malformed_batches_are_rejected(api: AsyncClient) -> None:
     assert (await api.post("/batches", json={"label": "x", "jobs": []})).status_code == 422
     no_name = {"label": "x", "jobs": [{"name": "", "payload": {}}]}
     assert (await api.post("/batches", json=no_name)).status_code == 422
+    no_attempts = {**_batch(), "max_attempts": 0}
+    assert (await api.post("/batches", json=no_attempts)).status_code == 422
+
+
+async def test_a_batch_can_set_its_retry_budget(api: AsyncClient) -> None:
+    job_ids = (await api.post("/batches", json={**_batch(), "max_attempts": 5})).json()["job_ids"]
+    status = (await api.get(f"/jobs/{job_ids[0]}")).json()
+    assert (status["max_attempts"], status["last_error"]) == (5, None)
 
 
 async def test_status_endpoints_follow_a_job_to_its_result(
