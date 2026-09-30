@@ -19,13 +19,27 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import assert_never
 
-from app.sandbox.base import Sandbox, SandboxArgumentError, SandboxConfig
+from app.core.config import get_settings
+from app.sandbox.base import Sandbox, SandboxArgumentError, SandboxConfig, SandboxUnavailableError
 from app.sandbox.tools import ToolCall, ToolName, ToolResult
 
 _TRUNCATION_MARKER = "\n... [output truncated]"
+_JAIL = Path(__file__).with_name("jail.py")
+
+
+def _strictest(config: SandboxConfig) -> SandboxConfig:
+    """Apply the environment's sandbox settings, which can only make isolation stricter."""
+    settings = get_settings()
+    hidden = tuple(dict.fromkeys([*config.hidden_paths, *settings.sandbox_hidden_path_list]))
+    return replace(
+        config,
+        require_isolation=config.require_isolation or settings.sandbox_require_isolation,
+        hidden_paths=hidden,
+    )
 
 
 def _build_limit_setter(config: SandboxConfig) -> Callable[[], None]:
@@ -47,15 +61,16 @@ class SubprocessSandbox(Sandbox):
     def __init__(
         self, config: SandboxConfig | None = None, *, workspace: Path | None = None
     ) -> None:
-        self._config = config or SandboxConfig()
+        self._config = _strictest(config or SandboxConfig())
         self._owns_workspace = workspace is None
         base = workspace or Path(tempfile.mkdtemp(prefix="agentic-sandbox-"))
         self._workspace = base.resolve()
         self._python = sys.executable
         self._env = self._build_env()
         self._limit_setter = _build_limit_setter(self._config)
-        self._net_prefix = self._detect_net_prefix()
-        self.network_isolated = self._config.network_disabled and bool(self._net_prefix)
+        # which namespaces commands run in, e.g. "user+net+mount+pid", or "none"
+        self.isolation, self._isolation_prefix = self._detect_isolation()
+        self.network_isolated = self._config.network_disabled and "net" in self.isolation.split("+")
 
     @property
     def workspace(self) -> Path:
@@ -135,10 +150,11 @@ class SubprocessSandbox(Sandbox):
         return ToolResult(output="\n".join(entries) if entries else "(empty)", ok=True)
 
     def _run_command(self, command: str) -> ToolResult:
-        return self._as_result(self._run([*self._net_prefix, "/bin/sh", "-c", command]))
+        return self._as_result(self._run([*self._isolation_prefix, "/bin/sh", "-c", command]))
 
     def _run_tests(self, target: str | None) -> ToolResult:
-        argv = [*self._net_prefix, self._python, "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+        argv = [*self._isolation_prefix, self._python, "-m", "pytest", "-q"]
+        argv += ["-p", "no:cacheprovider"]
         argv.append(target if target else ".")
         return self._as_result(self._run(argv))
 
@@ -198,17 +214,39 @@ class SubprocessSandbox(Sandbox):
             "PYTHONDONTWRITEBYTECODE": "1",
         }
 
-    def _detect_net_prefix(self) -> list[str]:
-        if not self._config.network_disabled:
-            return []
-        candidates: list[list[str]] = []
-        if os.geteuid() == 0:
-            candidates.append(["unshare", "--net", "--"])
-        candidates.append(["unshare", "--user", "--map-root-user", "--net", "--"])
-        for prefix in candidates:
+    def _candidates(self) -> list[list[str]]:
+        """Namespace sets to try, strongest first; root needs no user namespace for them."""
+        config = self._config
+        net = ["net"] if config.network_disabled else []
+        sets = [[*net, "mount", "pid"]]
+        # the older network-only sandbox, for hosts that refuse the rest, unless more is required
+        if config.network_disabled and not config.require_isolation and not config.hidden_paths:
+            sets.append(["net"])
+        users = [[], ["user"]] if os.geteuid() == 0 else [["user"]]
+        return [[*user, *names] for names in sets for user in users]
+
+    def _detect_isolation(self) -> tuple[str, list[str]]:
+        config = self._config
+        wanted = config.network_disabled or config.require_isolation or bool(config.hidden_paths)
+        jail = [self._python, "-I", "-S", str(_JAIL), *config.hidden_paths, "--"]
+        for names in self._candidates() if wanted else []:
+            flags = [f"--{name}" for name in names]
+            if "user" in names:
+                flags.insert(1, "--map-root-user")
+            if "pid" in names:
+                # the command is pid 1 of its namespace, so its leftover children die with it
+                flags += ["--fork", "--kill-child"]
+            prefix = ["unshare", *flags, "--"]
+            if config.hidden_paths:
+                prefix += jail
             if self._probe(prefix):
-                return prefix
-        return []
+                return "+".join(names), prefix
+        if config.require_isolation or config.hidden_paths:
+            raise SandboxUnavailableError(
+                "this host won't give sandboxed commands their own namespaces, "
+                "and the sandbox is configured to refuse to run without them"
+            )
+        return "none", []
 
     @staticmethod
     def _probe(prefix: list[str]) -> bool:

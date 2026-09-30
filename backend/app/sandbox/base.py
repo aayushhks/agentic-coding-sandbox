@@ -17,6 +17,10 @@ class SandboxArgumentError(SandboxError):
     """Raised when a tool call is missing a required argument or uses an invalid path."""
 
 
+class SandboxUnavailableError(SandboxError):
+    """Raised when isolation the configuration requires can't be set up on this host."""
+
+
 @dataclass(frozen=True, slots=True)
 class SandboxConfig:
     """Resource and isolation limits applied to every command the agent runs."""
@@ -27,6 +31,10 @@ class SandboxConfig:
     cpu_seconds: int = 15
     max_file_size_mb: int = 64
     network_disabled: bool = True
+    # refuse to run commands at all when the sandbox can't give them their own namespaces
+    require_isolation: bool = False
+    # directories commands must not see: each is covered by an empty read-only filesystem
+    hidden_paths: tuple[str, ...] = ()
 
 
 class Sandbox(ABC):

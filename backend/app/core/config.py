@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     # stdio. Both paths go through the same Sandbox interface, so agent behavior is identical.
     tool_transport: str = "in_process"
 
+    # the environment can only make the sandbox stricter: require its namespaces, hide directories
+    sandbox_require_isolation: bool = False
+    # colon-separated directories that sandboxed commands must not see
+    sandbox_hidden_paths: str = ""
+
     # database connection string, used from m5 onward
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_sandbox"
 
@@ -60,6 +65,10 @@ class Settings(BaseSettings):
     @classmethod
     def _coerce_async_driver(cls, value: str) -> str:
         return normalize_database_url(value)
+
+    @property
+    def sandbox_hidden_path_list(self) -> tuple[str, ...]:
+        return tuple(path for path in self.sandbox_hidden_paths.split(":") if path)
 
     @property
     def cors_origin_list(self) -> list[str]:

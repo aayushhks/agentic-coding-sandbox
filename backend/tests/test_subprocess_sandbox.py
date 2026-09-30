@@ -1,9 +1,11 @@
 import os
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
-from app.sandbox.base import SandboxConfig
+from app.core.config import get_settings
+from app.sandbox.base import SandboxConfig, SandboxUnavailableError
 from app.sandbox.subprocess_sandbox import SubprocessSandbox
 from app.sandbox.tools import ToolCall, ToolName
 
@@ -124,12 +126,74 @@ def test_run_tests_reports_failure(sandbox: SubprocessSandbox) -> None:
     assert result.exit_code != 0
 
 
+def _needs(sandbox: SubprocessSandbox, *namespaces: str) -> None:
+    missing = set(namespaces) - set(sandbox.isolation.split("+"))
+    if not missing:
+        return
+    # ci sets REQUIRE_SANDBOX_ISOLATION so a host without namespaces fails instead of skipping
+    if os.environ.get("REQUIRE_SANDBOX_ISOLATION") == "1":
+        pytest.fail(f"sandbox isolation is required but has no {sorted(missing)} namespace")
+    pytest.skip(f"no {sorted(missing)} namespace on this host")
+
+
 def test_network_is_blocked_when_isolated(sandbox: SubprocessSandbox) -> None:
-    if not sandbox.network_isolated:
-        pytest.skip("network isolation unavailable in this environment")
+    _needs(sandbox, "net")
     command = "python3 -c \"import socket; socket.create_connection(('1.1.1.1', 53), timeout=3)\""
     result = sandbox.execute(ToolCall(ToolName.RUN_COMMAND, {"command": command}))
     assert not result.ok
+
+
+def test_commands_cannot_signal_processes_outside_the_sandbox(sandbox: SubprocessSandbox) -> None:
+    _needs(sandbox, "pid")
+    command = f"kill -0 {os.getpid()} && echo reached || echo unreachable"
+    result = sandbox.execute(ToolCall(ToolName.RUN_COMMAND, {"command": command}))
+    assert "unreachable" in result.output
+
+
+def test_hidden_directories_look_empty_to_commands(tmp_path: Path) -> None:
+    secret = tmp_path / "control"
+    secret.mkdir()
+    (secret / "result.json").write_text("{}")
+    sb = SubprocessSandbox(SandboxConfig(hidden_paths=(str(secret),)))
+    try:
+        _needs(sb, "mount")
+        listing = sb.execute(ToolCall(ToolName.RUN_COMMAND, {"command": f"ls -A {secret}"}))
+        forged = sb.execute(ToolCall(ToolName.RUN_COMMAND, {"command": f"echo x > {secret}/x"}))
+    finally:
+        sb.cleanup()
+    assert listing.output == "(no output)"
+    assert not forged.ok
+    # only the sandboxed commands lose sight of it
+    assert [path.name for path in secret.iterdir()] == ["result.json"]
+
+
+def test_a_sandbox_that_must_isolate_refuses_to_start_without_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(SubprocessSandbox, "_probe", staticmethod(lambda prefix: False))
+    with pytest.raises(SandboxUnavailableError, match="refuse to run"):
+        SubprocessSandbox(SandboxConfig(require_isolation=True))
+    # without the requirement it still runs, and says it is unisolated
+    unisolated = SubprocessSandbox()
+    assert (unisolated.isolation, unisolated.network_isolated) == ("none", False)
+    unisolated.cleanup()
+
+
+def test_the_environment_can_only_make_the_sandbox_stricter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(SubprocessSandbox, "_probe", staticmethod(lambda prefix: True))
+    monkeypatch.setenv("SANDBOX_REQUIRE_ISOLATION", "1")
+    monkeypatch.setenv("SANDBOX_HIDDEN_PATHS", f"{tmp_path}/a:{tmp_path}/b")
+    get_settings.cache_clear()
+    try:
+        strict = SubprocessSandbox(SandboxConfig(hidden_paths=(f"{tmp_path}/c",)))
+        config = strict._config
+        strict.cleanup()
+    finally:
+        get_settings.cache_clear()
+    assert config.require_isolation
+    assert config.hidden_paths == (f"{tmp_path}/c", f"{tmp_path}/a", f"{tmp_path}/b")
 
 
 def test_finish_returns_answer(sandbox: SubprocessSandbox) -> None:
