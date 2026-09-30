@@ -16,6 +16,8 @@ RESULT_STATES = frozenset({"succeeded", "failed", "escalated"})
 FINAL_STATES = RESULT_STATES | {"dead_lettered", "cancelled"}
 # how an attempt ends when its job has to be retried
 RETRY_ENDINGS = frozenset({"lease_expired", "released"})
+# endings a worker writes itself, which it can only do while its lease is live
+LIVE_ENDINGS = frozenset({"released", "cancelled"})
 
 
 class JobRow(BaseModel):
@@ -24,6 +26,7 @@ class JobRow(BaseModel):
     attempt: int
     max_attempts: int
     result_id: int | None
+    cancel_requested_at: datetime | None = None
 
 
 class AttemptRow(BaseModel):
@@ -69,8 +72,8 @@ async def snapshot(engine: AsyncEngine, job_ids: Sequence[int]) -> Snapshot:
         async with consistent.begin():
             jobs = await consistent.execute(
                 text(
-                    "select id, state, attempt, max_attempts, result_id from fleet_jobs "
-                    "where id = any(:ids)"
+                    "select id, state, attempt, max_attempts, result_id, cancel_requested_at "
+                    "from fleet_jobs where id = any(:ids)"
                 ),
                 ids,
             )
@@ -165,6 +168,8 @@ def _no_stale_write(
             found.append(f"published after attempt {owner.attempt}'s lease ran out")
         if (owner.ended_by, owner.ended_at) != ("published", result.published_at):
             found.append(f"attempt {owner.attempt} was not ended by its own publish")
+        if job.cancel_requested_at is not None and result.published_at >= job.cancel_requested_at:
+            found.append("published after its cancel was requested")
     # a stale write needs two live attempts at once, so each must start after the last one ended
     for earlier, later in pairwise(log):
         if earlier.ended_at is None or later.claimed_at < earlier.ended_at:
@@ -184,8 +189,10 @@ def _accounting(job: JobRow, log: list[AttemptRow]) -> list[Violation]:
             found.append(f"attempt {attempt.attempt} never ended")
         elif attempt.ended_by == "lease_expired" and attempt.ended_at < attempt.lease_expires_at:
             found.append(f"attempt {attempt.attempt} was reaped before its lease ran out")
-        elif attempt.ended_by == "released" and attempt.ended_at >= attempt.lease_expires_at:
-            found.append(f"attempt {attempt.attempt} was released after its lease ran out")
+        elif attempt.ended_by in LIVE_ENDINGS and attempt.ended_at >= attempt.lease_expires_at:
+            found.append(
+                f"attempt {attempt.attempt} ended {attempt.ended_by} after its lease ran out"
+            )
     found += [
         f"attempt {attempt.attempt} ended {attempt.ended_by}, yet the job ran again"
         for attempt in log[:-1]
@@ -199,6 +206,15 @@ def _accounting(job: JobRow, log: list[AttemptRow]) -> list[Violation]:
             found.append(f"dead-lettered after {job.attempt} of {job.max_attempts} attempts")
         if last not in RETRY_ENDINGS:
             found.append(f"dead-lettered, but its last attempt ended {last}")
+        if job.cancel_requested_at is not None:
+            found.append("dead-lettered though its cancel was requested")
+    if job.state == "cancelled":
+        if job.cancel_requested_at is None:
+            found.append("cancelled without a cancel request")
+        if log and last not in {*RETRY_ENDINGS, "cancelled"}:
+            found.append(f"cancelled, but its last attempt ended {last}")
+    elif last == "cancelled":
+        found.append(f"{job.state}, but its last attempt ended cancelled")
     return [Violation("accounting", job.id, detail) for detail in found]
 
 

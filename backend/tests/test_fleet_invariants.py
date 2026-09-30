@@ -19,12 +19,12 @@ from fleet.invariants import (
     snapshot,
 )
 from fleet.models import NewJob
-from fleet.store import claim, submit_batch
+from fleet.store import cancel, claim, submit_batch
 from fleet.worker import RunnerOutcome, Worker
 from tests.fleet_helpers import NO_BACKOFF
 
 START = datetime(2026, 1, 1, tzinfo=UTC)
-SUBMITTED = [1, 2, 3]
+SUBMITTED = [1, 2, 3, 4, 5]
 
 
 def _at(seconds: float) -> datetime:
@@ -44,12 +44,28 @@ def _attempt(job: int, number: int, claimed: float, ended: float, how: str) -> A
 
 
 def _clean() -> Snapshot:
-    """Published at once; published after a lapsed lease; dead-lettered after three crashes."""
+    """Published at once, after a lapsed lease, dead-lettered, cancelled running and queued."""
     return Snapshot(
         jobs=[
             JobRow(id=1, state="succeeded", attempt=1, max_attempts=3, result_id=1),
             JobRow(id=2, state="failed", attempt=2, max_attempts=3, result_id=2),
             JobRow(id=3, state="dead_lettered", attempt=3, max_attempts=3, result_id=None),
+            JobRow(
+                id=4,
+                state="cancelled",
+                attempt=1,
+                max_attempts=3,
+                result_id=None,
+                cancel_requested_at=_at(2),
+            ),
+            JobRow(
+                id=5,
+                state="cancelled",
+                attempt=0,
+                max_attempts=3,
+                result_id=None,
+                cancel_requested_at=_at(1),
+            ),
         ],
         attempts=[
             _attempt(1, 1, 0, 5, "published"),
@@ -58,6 +74,7 @@ def _clean() -> Snapshot:
             _attempt(3, 1, 0, 1, "released"),
             _attempt(3, 2, 3, 4, "released"),
             _attempt(3, 3, 8, 9, "released"),
+            _attempt(4, 1, 0, 3, "cancelled"),
         ],
         results=[
             ResultRow(
@@ -158,6 +175,31 @@ CORRUPTIONS: list[tuple[str, Invariant, Callable[[Snapshot], Snapshot]]] = [
         lambda run: _with(run, "attempts", 1, ended_by="published"),
     ),
     ("more attempts than the budget", "accounting", lambda r: _with(r, "jobs", 2, max_attempts=2)),
+    (
+        "a result published after its cancel was requested",
+        "no_stale_write",
+        lambda run: _with(run, "jobs", 0, cancel_requested_at=_at(4)),
+    ),
+    (
+        "a job cancelled without being asked",
+        "accounting",
+        lambda run: _with(run, "jobs", 3, cancel_requested_at=None),
+    ),
+    (
+        "an attempt ended cancelled after its lease ran out",
+        "accounting",
+        lambda run: _with(run, "attempts", 6, ended_at=_at(31)),
+    ),
+    (
+        "a job run again after its attempt was cancelled",
+        "accounting",
+        lambda run: _with(run, "attempts", 1, ended_by="cancelled"),
+    ),
+    (
+        "a dead letter whose cancel was requested",
+        "accounting",
+        lambda run: _with(run, "jobs", 2, cancel_requested_at=_at(5)),
+    ),
 ]
 
 
@@ -183,27 +225,28 @@ def test_every_invariant_has_a_corruption_that_breaks_it() -> None:
 
 
 def test_totals_that_do_not_add_up_are_caught() -> None:
-    violations = check(_clean(), [*SUBMITTED, 4])
+    violations = check(_clean(), [*SUBMITTED, 6])
     assert [(v.invariant, v.job_id) for v in violations] == [
-        ("nothing_lost", 4),
+        ("nothing_lost", 6),
         ("accounting", None),
     ]
 
 
 async def _mixed_run(engine: AsyncEngine) -> list[int]:
-    """A real run with a published job, a task failure, a dead letter and a lapsed lease."""
+    """A real run: published, given up on, dead-lettered, a lapsed lease, and a cancel."""
 
     async def runner(name: str, payload: dict[str, Any]) -> RunnerOutcome:
         if name == "crashes":
             raise RuntimeError("boom")
         return RunnerOutcome(outcome="failed" if name == "gives-up" else "succeeded", body={})
 
-    names = ["runs", "gives-up", "crashes", "abandoned"]
+    names = ["runs", "gives-up", "crashes", "abandoned", "cancelled"]
     submission = await submit_batch(
         engine, label="mixed", jobs=[NewJob(name=name, payload={}) for name in names]
     )
     # the first job in the queue is claimed by a worker that dies holding it
     assert await claim(engine, worker_id="dies", lease_seconds=0.1) is not None
+    assert await cancel(engine, submission.job_ids[-1]) == "cancelled"
     await asyncio.sleep(0.15)
     worker = Worker(engine, runner, worker_id="w", lease_seconds=5, retry=NO_BACKOFF)
     await asyncio.wait_for(worker.run(exit_when_idle=True), timeout=20)
@@ -214,6 +257,7 @@ async def test_a_real_run_with_every_kind_of_ending_passes(fleet_engine: AsyncEn
     job_ids = await _mixed_run(fleet_engine)
     run = await snapshot(fleet_engine, job_ids)
     assert sorted(job.state for job in run.jobs) == [
+        "cancelled",
         "dead_lettered",
         "failed",
         "succeeded",
