@@ -164,6 +164,46 @@ async def test_an_expired_attempt_cannot_publish_over_its_successor(
     assert result is not None and (result.attempt, result.worker_id) == (2, "fast")
 
 
+async def test_a_lapsed_lease_cannot_publish_even_before_anyone_takes_the_job(
+    fleet_engine: AsyncEngine,
+) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    late = await claim(fleet_engine, worker_id="slow", lease_seconds=0.05)
+    assert late is not None
+    await asyncio.sleep(0.1)
+    # nobody reaped or re-claimed it: the lease running out is enough to fence the attempt off
+    assert not await start(fleet_engine, job_id=late.id, attempt=late.attempt)
+    assert not await publish(
+        fleet_engine, job_id=late.id, attempt=1, worker_id="slow", outcome="failed", body={}
+    )
+    status = await job_status(fleet_engine, late.id)
+    assert status is not None and (status.state, status.result_id) == ("claimed", None)
+    assert await _scalar(fleet_engine, "select count(*) from fleet_results") == 0
+    assert await reap(fleet_engine) == [late.id]
+
+
+async def test_a_result_is_stamped_with_the_moment_its_lease_was_checked(
+    fleet_engine: AsyncEngine,
+) -> None:
+    await submit_batch(fleet_engine, label="b", jobs=_jobs(1))
+    job = await claim(fleet_engine, worker_id="w", lease_seconds=60)
+    assert job is not None
+    assert await publish(
+        fleet_engine, job_id=job.id, attempt=1, worker_id="w", outcome="succeeded", body={}
+    )
+    async with fleet_engine.connect() as connection:
+        row = (
+            await connection.execute(
+                text(
+                    "select r.published_at, j.finished_at, a.ended_at, a.lease_expires_at "
+                    "from fleet_results r join fleet_jobs j on j.id = r.job_id "
+                    "join fleet_attempts a on a.job_id = r.job_id and a.attempt = r.attempt"
+                )
+            )
+        ).one()
+    assert row.published_at == row.finished_at == row.ended_at < row.lease_expires_at
+
+
 async def test_reaping_requeues_only_expired_leases(fleet_engine: AsyncEngine) -> None:
     await submit_batch(fleet_engine, label="b", jobs=_jobs(2))
     short = await claim(fleet_engine, worker_id="w", lease_seconds=0.05)

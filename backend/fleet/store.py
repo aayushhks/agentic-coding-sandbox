@@ -151,13 +151,14 @@ async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) ->
 
 
 async def start(engine: AsyncEngine, *, job_id: int, attempt: int) -> bool:
-    """Mark a claimed job running; False when this attempt no longer owns it."""
+    """Mark a claimed job running; False unless this attempt still holds a live lease."""
     async with engine.begin() as connection:
         result = await connection.execute(
             text(
                 "update fleet_jobs set state = 'running', started_at = clock_timestamp(), "
                 "updated_at = clock_timestamp() "
-                "where id = :job and attempt = :attempt and state = 'claimed'"
+                "where id = :job and attempt = :attempt and state = 'claimed' "
+                "and lease_expires_at > clock_timestamp()"
             ),
             {"job": job_id, "attempt": attempt},
         )
@@ -173,49 +174,54 @@ async def publish(
     outcome: Outcome,
     body: dict[str, Any],
 ) -> bool:
-    """Store a job's result and finish it atomically; False when this attempt no longer owns it."""
+    """Publish a result and finish the job atomically; False unless this attempt's lease is live."""
     async with engine.begin() as connection:
         # the row lock makes the ownership check and the write a single step
-        owner = (
+        lease = await connection.scalar(
+            text(
+                "select lease_expires_at from fleet_jobs where id = :job and attempt = :attempt "
+                "and state in ('claimed', 'running') for update"
+            ),
+            {"job": job_id, "attempt": attempt},
+        )
+        if lease is None:
+            return False
+        # read under the lock, one clock reading is both the lease check and the publish time
+        stored = (
             await connection.execute(
                 text(
-                    "select 1 from fleet_jobs where id = :job and attempt = :attempt "
-                    "and state in ('claimed', 'running') for update"
+                    "insert into fleet_results "
+                    "(job_id, attempt, worker_id, published_at, outcome, body) "
+                    "select :job, :attempt, :worker, now.at, :outcome, CAST(:body AS jsonb) "
+                    "from (select clock_timestamp() as at) as now "
+                    "where now.at < CAST(:lease AS timestamptz) "
+                    "returning id, published_at"
                 ),
-                {"job": job_id, "attempt": attempt},
+                {
+                    "job": job_id,
+                    "attempt": attempt,
+                    "worker": worker_id,
+                    "outcome": outcome,
+                    "body": json.dumps(body, sort_keys=True),
+                    "lease": lease,
+                },
             )
         ).first()
-        if owner is None:
+        if stored is None:
             return False
-        result_id = await connection.scalar(
-            text(
-                "insert into fleet_results "
-                "(job_id, attempt, worker_id, published_at, outcome, body) "
-                "values (:job, :attempt, :worker, clock_timestamp(), :outcome, "
-                "CAST(:body AS jsonb)) returning id"
-            ),
-            {
-                "job": job_id,
-                "attempt": attempt,
-                "worker": worker_id,
-                "outcome": outcome,
-                "body": json.dumps(body, sort_keys=True),
-            },
-        )
         await connection.execute(
             text(
                 "update fleet_jobs set state = :outcome, result_id = :result, "
-                "lease_expires_at = null, finished_at = clock_timestamp(), "
-                "updated_at = clock_timestamp() where id = :job"
+                "lease_expires_at = null, finished_at = :at, updated_at = :at where id = :job"
             ),
-            {"job": job_id, "outcome": outcome, "result": result_id},
+            {"job": job_id, "outcome": outcome, "result": stored.id, "at": stored.published_at},
         )
         await connection.execute(
             text(
-                "update fleet_attempts set ended_at = clock_timestamp(), ended_by = 'published' "
+                "update fleet_attempts set ended_at = :at, ended_by = 'published' "
                 "where job_id = :job and attempt = :attempt"
             ),
-            {"job": job_id, "attempt": attempt},
+            {"job": job_id, "attempt": attempt, "at": stored.published_at},
         )
     return True
 
@@ -229,7 +235,7 @@ async def reap(engine: AsyncEngine) -> list[int]:
                 "update fleet_jobs set state = 'queued', worker_id = null, "
                 "lease_expires_at = null, claimed_at = null, started_at = null, "
                 "updated_at = clock_timestamp() "
-                "where state in ('claimed', 'running') and lease_expires_at < clock_timestamp() "
+                "where state in ('claimed', 'running') and lease_expires_at <= clock_timestamp() "
                 "returning id, attempt) "
                 "update fleet_attempts as a "
                 "set ended_at = clock_timestamp(), ended_by = 'lease_expired' "
