@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml)
 
-> **Live demo → https://d3co9fcex8s4iu.cloudfront.net** — the stakeholder **deployment report** and the benchmark dashboard, over HTTPS from AWS.
+> **Live demo → https://agentic-coding-sandbox.vercel.app** — the stakeholder **deployment report** and the benchmark dashboard, served as a static site (the original AWS link redirects there).
 
 **The problem, in a stakeholder's words.** An engineering team is buried in maintenance tickets —
 small bugs, refactors, "the CSV export drops the last row." They want an AI agent embedded in that
@@ -97,9 +97,22 @@ cd ../backend && DATABASE_URL="sqlite+aiosqlite:///eval.db" uv run uvicorn app.m
 Frontend checks (also run in CI): `npm run typecheck`, `npm test`, `npm run build`. See
 [docs/m8-dashboard.md](docs/m8-dashboard.md) for the API and architecture.
 
-## Deploy (Docker)
+## Deploy
 
-The whole app ships as one **self-contained image**: a multi-stage `Dockerfile` builds the
+**Live: a static site on Vercel.** The dashboard needs no backend in production.
+`frontend/vercel.json` builds it with `VITE_STATIC_DATA=true`, so every read comes from committed
+snapshots of the API in `frontend/public/static-api/`. They are generated from the committed runs by
+the API's own route handlers, and a test fails if they drift from what the API returns:
+
+```bash
+cd backend && uv run python -m app.api.static_export   # regenerate after the results change
+```
+
+Vercel redeploys on every push to `main`. The original AWS link
+(https://d3co9fcex8s4iu.cloudfront.net) answers with a CloudFront Function redirect to the Vercel
+site, so links already shared keep working; the deploy workflow checks both.
+
+**Self-hosted: one Docker image.** The whole app ships as one **self-contained image**: a multi-stage `Dockerfile` builds the
 dashboard, bakes the committed v1/v2 runs into a read-only SQLite database, and serves the API +
 dashboard from a single FastAPI process. So a bare run has data and needs no database:
 
@@ -112,18 +125,15 @@ For a writable Postgres setup instead, `docker compose up --build` brings up Pos
 and applies migrations (the DB starts empty — seed it with
 `python -m app.eval.import_results --results docs/results/groq-llama-3.3-70b-v2.json`).
 
-Because the image is self-contained it deploys to any container host with no database. It runs
-live on **AWS** — a CloudFront distribution serving HTTPS in front of an EC2 instance running the
-container (the live demo link above). The same image runs on **AWS App Runner**
-(`scripts/push-to-ecr.sh` → point App Runner at the image) or free, no-card hosts like
-Render/Koyeb. See [docs/m10-deploy.md](docs/m10-deploy.md) for the image layout and per-platform
-walkthroughs.
+Because the image is self-contained it deploys to any container host with no database. It served
+the live demo from AWS (CloudFront in front of an EC2 instance) before the static Vercel deploy
+replaced it. The same image runs on **AWS App Runner** (`scripts/push-to-ecr.sh` → point App Runner
+at the image) or hosts like Render/Koyeb. See [docs/m10-deploy.md](docs/m10-deploy.md) for the image
+layout and per-platform walkthroughs.
 
 The image also bakes the ticket-eval report, so the **deployment-report** tab and
-`/api/deployment-report` work in production; the report is additionally static-exported into the
-SPA (`/deployment-report.json`), so a pure-static host (S3 + CloudFront) can serve the stakeholder
-view with no backend at all. After a push, rebuild the container on the EC2 box to pick up new
-results — see [docs/m15-deployment-and-framing.md](docs/m15-deployment-and-framing.md).
+`/api/deployment-report` work there too — see
+[docs/m15-deployment-and-framing.md](docs/m15-deployment-and-framing.md).
 
 ## Development checks
 
