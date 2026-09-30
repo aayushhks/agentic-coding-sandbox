@@ -9,6 +9,7 @@ job's publish and the next claim, the wait before the first claim, and job servi
 
 import json
 import statistics
+from itertools import pairwise
 from pathlib import Path
 
 BENCH = Path(__file__).resolve().parents[1]
@@ -37,37 +38,43 @@ def _pairs(roots: list[Path]) -> list[tuple[dict, dict]]:
     ]
 
 
+def _spread(
+    values: list[float], unit: str = "s", scale: float = 1, digits: int = 2, sign: bool = False
+) -> str:
+    spec = f"{'+' if sign else ''}.{digits}f"
+    low, mid, high = (
+        format(scale * value, spec)
+        for value in (min(values), statistics.median(values), max(values))
+    )
+    return f"{mid}{' ' + unit if unit else ''} [{low} to {high}]"
+
+
 def _report(name: str, pairs: list[tuple[dict, dict]]) -> None:
-    median = statistics.median
     seq_wall = [seq["metrics"]["batch_wall_clock_seconds"] for seq, _ in pairs]
     fleet_wall = [fleet["metrics"]["batch_wall_clock_seconds"] for _, fleet in pairs]
     overhead = [f - s for s, f in zip(seq_wall, fleet_wall, strict=True)]
+    utilization = [fleet["metrics"]["utilization"] for _, fleet in pairs]
     gaps, firsts, fleet_service, seq_service = [], [], [], []
     for seq, fleet in pairs:
         jobs = sorted(fleet["jobs"], key=lambda job: job["claimed_at"])
         firsts.append(jobs[0]["claimed_at"] - jobs[0]["submitted_at"])
-        gaps += [later["claimed_at"] - earlier["finished_at"] for earlier, later in zip(jobs, jobs[1:])]
+        gaps += [later["claimed_at"] - earlier["finished_at"] for earlier, later in pairwise(jobs)]
         fleet_service += [job["finished_at"] - job["claimed_at"] for job in jobs]
         seq_service += [job["finished_at"] - job["claimed_at"] for job in seq["jobs"]]
-    shas = sorted({record["environment"]["git_sha"][:7] for pair in pairs for record in pair})
-    clean = not any(record["environment"]["git_dirty"] for pair in pairs for record in pair)
-    utilization = [fleet["metrics"]["utilization"] for _, fleet in pairs]
-    print(f"{name}: {len(pairs)} trial pairs, build {', '.join(shas)}, clean checkout: {clean}")
-    print(f"  batch wall clock, sequential  {median(seq_wall):.2f} s [{min(seq_wall):.2f}-{max(seq_wall):.2f}]")
-    print(f"  batch wall clock, fleet       {median(fleet_wall):.2f} s [{min(fleet_wall):.2f}-{max(fleet_wall):.2f}]")
+    records = [record for pair in pairs for record in pair]
+    shas = ", ".join(sorted({record["environment"]["git_sha"][:7] for record in records}))
+    clean = not any(record["environment"]["git_dirty"] for record in records)
+    median = statistics.median
+    print(f"{name}: {len(pairs)} trial pairs, build {shas}, clean checkout: {clean}")
+    print(f"  batch wall clock, sequential  {_spread(seq_wall)}")
+    print(f"  batch wall clock, fleet       {_spread(fleet_wall)}")
+    print(f"  fleet minus sequential        {_spread(overhead, sign=True)}")
+    print(f"  fleet utilization             {_spread(utilization, unit='', digits=3)}")
     print(
-        f"  fleet minus sequential        {median(overhead):+.2f} s "
-        f"[{min(overhead):+.2f} to {max(overhead):+.2f}]"
+        f"  publish-to-next-claim gap     {_spread(gaps, 'ms', 1000)}, "
+        f"p95 {_percentile(gaps, 95) * 1000:.2f} ms, n={len(gaps)}"
     )
-    print(f"  fleet utilization             {median(utilization):.3f} [{min(utilization):.3f}-{max(utilization):.3f}]")
-    print(
-        f"  publish-to-next-claim gap     {median(gaps) * 1000:.2f} ms "
-        f"(p95 {_percentile(gaps, 95) * 1000:.2f}, max {max(gaps) * 1000:.2f}, n={len(gaps)})"
-    )
-    print(
-        f"  first claim after submit      {median(firsts) * 1000:.1f} ms "
-        f"[{min(firsts) * 1000:.1f}-{max(firsts) * 1000:.1f}]"
-    )
+    print(f"  first claim after submit      {_spread(firsts, 'ms', 1000, 1)}")
     print(
         f"  service time median           fleet {median(fleet_service) * 1000:.1f} ms, "
         f"sequential {median(seq_service) * 1000:.1f} ms"
