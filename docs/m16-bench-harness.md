@@ -73,9 +73,9 @@ Records: [`results/bench/`](results/bench/) — one JSON per trial plus a `summa
 - **Cost:** $0 incurred — the key is on Groq's free tier with no payment method. A list-price cost
   isn't computed because the price couldn't be verified from this environment (groq.com is blocked
   here); records carry `cost_usd: null` rather than an estimate.
-- **This is one trial.** Trials 2 and 3 run on the next two days (one per day, to stay clear of the
-  free tier's daily cap) and the run's `summary.json` is regenerated as they land. Until then, read
-  this as N=1.
+- **This is one trial (N=1).** More real trials haven't been run yet; each one is
+  `bench.cli record --trial N` and regenerates the run's `summary.json`. Until then, read these
+  real-model numbers as a single run.
 
 **The M6/M7 numbers are not comparable.** 86.7% → 100% were single runs on
 `llama-3.3-70b-versatile`, which Groq no longer serves (it now returns `model_not_found`), so they
