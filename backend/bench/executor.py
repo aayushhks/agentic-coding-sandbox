@@ -3,11 +3,11 @@
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel
 
-from app.agent.types import AgentConfig, AgentRun, TerminationReason
+from app.agent.types import AgentConfig, AgentRun, AgentStep, StepCallback, TerminationReason
 from app.benchmark.runner import TaskResult, run_task
 from app.eval.failure import FailureMode, classify_failure
 from app.llm.base import LLMProvider
@@ -120,18 +120,31 @@ def _retry_wait(provider: LLMProvider) -> float:
 
 
 async def _execute(
-    task: BenchTask, provider: LLMProvider
+    task: BenchTask, provider: LLMProvider, on_step: StepCallback | None
 ) -> tuple[AgentRun, Outcome, str | None, bool]:
     """Run one task through today's runner; the bool is the ticket grader's verdict."""
+    config = AGENT_CONFIGS[task.kind]
     if task.benchmark is not None:
-        result = await run_task(task.benchmark, provider, agent_config=AGENT_CONFIGS[task.kind])
+        result = await run_task(task.benchmark, provider, agent_config=config, on_step=on_step)
         outcome, mode = _benchmark_outcome(result)
         return result.run, outcome, mode, True
     if task.ticket is None:
         raise ValueError(f"task {task.id!r} has no payload to run")
-    resolution = await resolve_ticket(task.ticket, provider, agent_config=AGENT_CONFIGS[task.kind])
+    resolution = await resolve_ticket(task.ticket, provider, agent_config=config, on_step=on_step)
     outcome, mode = ticket_outcome(resolution)
     return resolution.run, outcome, mode, resolution.correct
+
+
+def step_event(step: AgentStep) -> dict[str, Any]:
+    """A step as a small progress record: what the agent did and what it cost."""
+    return {
+        "step": step.index,
+        "tool": step.tool_call.name.value if step.tool_call is not None else None,
+        "ok": step.tool_result.ok if step.tool_result is not None else None,
+        "malformed": step.malformed,
+        "prompt_tokens": step.prompt_tokens,
+        "completion_tokens": step.completion_tokens,
+    }
 
 
 class TaskExecution(BaseModel):
@@ -150,9 +163,11 @@ class TaskExecution(BaseModel):
     divergence: str | None
 
 
-async def execute_task(task: BenchTask, provider: LLMProvider) -> TaskExecution:
+async def execute_task(
+    task: BenchTask, provider: LLMProvider, *, on_step: StepCallback | None = None
+) -> TaskExecution:
     """Run one task and classify it; every executor goes through here, so they run tasks alike."""
-    run, outcome, mode, correct = await _execute(task, provider)
+    run, outcome, mode, correct = await _execute(task, provider, on_step)
     divergence = _divergence(provider)
     if divergence is not None:
         outcome, mode = Outcome.FAILED, REPLAY_DIVERGENCE

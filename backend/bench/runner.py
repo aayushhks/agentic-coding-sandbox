@@ -4,11 +4,12 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from bench.executor import TaskExecution, execute_task
+from bench.executor import TaskExecution, execute_task, step_event
 from bench.jobs import Outcome
 from bench.replay import LatencyProfile, Recording, ReplayProvider
 from bench.taskset import BenchTask
 from fleet.models import Outcome as FleetOutcome
+from fleet.progress import report
 from fleet.worker import RunnerOutcome
 
 FLEET_OUTCOMES: dict[Outcome, FleetOutcome] = {
@@ -34,7 +35,11 @@ def replay_payload(
 
 async def run_job(name: str, payload: dict[str, Any]) -> RunnerOutcome:
     job = ReplayJob.model_validate(payload)
-    execution = await execute_task(job.task, ReplayProvider(job.recording, latency=job.latency))
+    execution = await execute_task(
+        job.task,
+        ReplayProvider(job.recording, latency=job.latency),
+        on_step=lambda step: report(step_event(step)),
+    )
     return RunnerOutcome(
         outcome=FLEET_OUTCOMES[execution.outcome], body=execution.model_dump(mode="json")
     )
