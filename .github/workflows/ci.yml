@@ -26,6 +26,8 @@ jobs:
       REQUIRE_POSTGRES: "1"
       # the sandbox's namespace tests fail rather than skip when the runner can't isolate
       REQUIRE_SANDBOX_ISOLATION: "1"
+      # and the container tests fail rather than skip without docker and the task image
+      REQUIRE_DOCKER: "1"
     defaults:
       run:
         working-directory: backend
@@ -49,6 +51,9 @@ jobs:
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           fi
           unshare --user --map-root-user --net --mount --pid --fork true && echo "namespaces available"
+
+      - name: build the task image every fleet task runs in
+        run: ../scripts/build-task-image.sh
 
       - name: ruff check
         run: uv run ruff check .

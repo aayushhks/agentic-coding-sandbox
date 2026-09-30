@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # The image every fleet task runs in: Python, the backend's code and its locked dependencies.
 # Build it from the repository root: docker build -f backend/Dockerfile.task -t fleet-task:local .
 FROM mirror.gcr.io/library/python:3.13-slim@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b
