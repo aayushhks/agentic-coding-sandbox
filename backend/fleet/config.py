@@ -16,9 +16,12 @@ class FleetSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="FLEET_", extra="ignore")
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_sandbox"
-    # how long a claim lasts before another worker may take the job back; longer than any job
-    # until heartbeats extend it
-    lease_seconds: float = 600.0
+    # how long a claim lasts without a heartbeat before another worker may take the job back
+    lease_seconds: float = 30.0
+    # how often a running job's lease is extended; a third of the lease when unset
+    heartbeat_seconds: float | None = None
+    # how often a busy worker returns lapsed leases to the queue; an idle one does it every poll
+    reap_every_seconds: float = 5.0
 
     @field_validator("database_url")
     @classmethod

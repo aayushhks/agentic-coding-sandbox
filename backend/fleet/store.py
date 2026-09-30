@@ -3,6 +3,7 @@
 import hashlib
 import json
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -163,6 +164,30 @@ async def start(engine: AsyncEngine, *, job_id: int, attempt: int) -> bool:
             {"job": job_id, "attempt": attempt},
         )
         return result.rowcount == 1
+
+
+async def heartbeat(
+    engine: AsyncEngine, *, job_id: int, attempt: int, lease_seconds: float
+) -> datetime | None:
+    """Extend a live lease to lease_seconds from now; None once this attempt has lost the job."""
+    async with engine.begin() as connection:
+        # the attempt log keeps the extended lease, so each result can be checked against it
+        extended: datetime | None = await connection.scalar(
+            text(
+                "with beat as ("
+                "update fleet_jobs set lease_expires_at = clock_timestamp() "
+                "+ make_interval(secs => CAST(:lease AS double precision)), "
+                "updated_at = clock_timestamp() "
+                "where id = :job and attempt = :attempt and state in ('claimed', 'running') "
+                "and lease_expires_at > clock_timestamp() "
+                "returning id, attempt, lease_expires_at) "
+                "update fleet_attempts as a set lease_expires_at = beat.lease_expires_at "
+                "from beat where a.job_id = beat.id and a.attempt = beat.attempt "
+                "returning a.lease_expires_at"
+            ),
+            {"job": job_id, "attempt": attempt, "lease": lease_seconds},
+        )
+    return extended
 
 
 async def publish(

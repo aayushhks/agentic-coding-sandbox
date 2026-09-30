@@ -1,11 +1,14 @@
 import asyncio
+import contextlib
+import time
 from typing import Any
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from fleet.models import NewJob
-from fleet.store import batch_jobs, claim, job_result, submit_batch
+from fleet.store import batch_jobs, claim, job_result, job_status, reap, submit_batch
 from fleet.worker import RunnerOutcome, Worker, load_runner
 from tests.fleet_helpers import sleep_runner, start_worker
 
@@ -81,6 +84,89 @@ async def test_an_idle_worker_backs_off_its_polling(fleet_engine: AsyncEngine) -
     assert delays == [0.05, 0.1, 0.2, 0.4, 0.5, 0.5]
 
 
+async def _sleeps(seconds: float) -> RunnerOutcome:
+    await asyncio.sleep(seconds)
+    return RunnerOutcome(outcome="succeeded", body={})
+
+
+async def test_heartbeats_let_a_job_run_well_past_its_lease(fleet_engine: AsyncEngine) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+
+    async def reap_constantly() -> None:
+        while True:
+            await reap(fleet_engine)
+            await asyncio.sleep(0.02)
+
+    reaper = asyncio.create_task(reap_constantly())
+    worker = Worker(fleet_engine, lambda _n, _p: _sleeps(0.9), worker_id="w", lease_seconds=0.3)
+    try:
+        assert await worker.step()
+    finally:
+        reaper.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await reaper
+    # three leases long, yet a reaper running all along never took it: the heartbeats kept it
+    assert (worker.published, worker.lost) == (1, 0)
+    job = await job_status(fleet_engine, submission.job_ids[0])
+    assert job is not None and (job.state, job.attempt) == ("succeeded", 1)
+    async with fleet_engine.connect() as connection:
+        attempt = (
+            await connection.execute(
+                text("select claimed_at, lease_expires_at from fleet_attempts")
+            )
+        ).one()
+    assert (attempt.lease_expires_at - attempt.claimed_at).total_seconds() > 0.9
+
+
+async def test_a_worker_that_loses_its_lease_stops_the_run(fleet_engine: AsyncEngine) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+    stopped = asyncio.Event()
+
+    async def stalls(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        await asyncio.sleep(0.05)
+        # blocking the event loop starves the heartbeats until the lease has run out
+        time.sleep(0.5)  # noqa: ASYNC251
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            stopped.set()
+            raise
+        return RunnerOutcome(outcome="succeeded", body={})
+
+    worker = Worker(fleet_engine, stalls, worker_id="w", lease_seconds=0.2)
+    assert await asyncio.wait_for(worker.step(), timeout=5)
+    assert (worker.published, worker.rejected, worker.lost) == (0, 0, 1)
+    assert stopped.is_set()
+    assert await job_result(fleet_engine, submission.job_ids[0]) is None
+
+
+async def test_a_result_finished_after_the_lease_ran_out_is_refused(
+    fleet_engine: AsyncEngine,
+) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+
+    async def blocks(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        # no heartbeat can run while the loop is blocked, so the lease lapses mid-job
+        time.sleep(0.5)  # noqa: ASYNC251
+        return RunnerOutcome(outcome="succeeded", body={"late": True})
+
+    stalled = Worker(fleet_engine, blocks, worker_id="stalled", lease_seconds=0.2)
+    assert await stalled.step()
+    assert (stalled.published, stalled.rejected, stalled.lost) == (0, 1, 0)
+    # nobody had taken the job back yet; the lapsed lease alone refused the result
+    job = await job_status(fleet_engine, submission.job_ids[0])
+    assert job is not None and (job.state, job.result_id) == ("running", None)
+    rescuer = _worker(fleet_engine, lambda _n, _p: _sleeps(0), min_poll_seconds=0.01)
+    await asyncio.wait_for(rescuer.run(exit_when_idle=True), timeout=10)
+    result = await job_result(fleet_engine, submission.job_ids[0])
+    assert result is not None and (result.attempt, result.worker_id, result.body) == (2, "w", {})
+
+
+def test_a_heartbeat_has_to_come_before_the_lease_runs_out(fleet_engine: AsyncEngine) -> None:
+    with pytest.raises(ValueError, match="sooner than the lease"):
+        Worker(fleet_engine, sleep_runner, worker_id="w", lease_seconds=1, heartbeat_seconds=1)
+
+
 def test_runners_are_named_as_module_and_function() -> None:
     assert load_runner("tests.fleet_helpers:sleep_runner") is sleep_runner
     with pytest.raises(ValueError, match="module:function"):
@@ -95,6 +181,6 @@ async def test_the_worker_command_drains_a_batch(
     process = start_worker(fleet_database_url, exit_when_idle=True)
     output, _ = await asyncio.to_thread(process.communicate, timeout=60)
     assert process.returncode == 0, output
-    assert "w0: 4 published, 0 rejected" in output
+    assert "w0: 4 published, 0 rejected, 0 lost" in output
     states = {job.state for job in await batch_jobs(fleet_engine, submission.batch_id)}
     assert states == {"succeeded"}
