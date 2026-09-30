@@ -40,14 +40,15 @@ extend-exclude = ["benchmark", "migrations"]
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "ASYNC", "RUF"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "bench", "tests"]
+known-first-party = ["app", "bench", "fleet", "tests"]
 
 [tool.mypy]
 python_version = "3.13"
 strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
-files = ["app", "bench", "tests"]
+files = ["app", "bench", "fleet", "tests"]
+exclude = ["^fleet/migrations/"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
