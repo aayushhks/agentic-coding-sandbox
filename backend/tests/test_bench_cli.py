@@ -1,0 +1,193 @@
+from collections.abc import Sequence
+from pathlib import Path
+
+import groq
+import httpx
+import pytest
+
+from app.llm.base import CompletionResult, LLMProvider, Message
+from bench.cli import main, record_trial, replay_passed, replay_trials
+from bench.jobs import FailureKind, Outcome
+from bench.records import load_trials, summarize, summary_path, trial_path, write_record
+from bench.replay import LatencyProfile, load_recordings, recordings_digest
+from bench.taskset import BenchTask, plan_jobs
+from tests.bench_helpers import (
+    MINI_TASKSET,
+    make_job,
+    make_trial,
+    record_mini_batch,
+    scripted_provider,
+)
+
+
+class _DailyCappedProvider(LLMProvider):
+    @property
+    def name(self) -> str:
+        return "groq"
+
+    @property
+    def model(self) -> str:
+        return "m"
+
+    async def complete(
+        self, messages: Sequence[Message], *, temperature: float = 0.0, max_tokens: int = 1024
+    ) -> CompletionResult:
+        request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+        response = httpx.Response(429, request=request)
+        raise groq.RateLimitError(
+            "Rate limit reached on tokens per day (TPD)", response=response, body=None
+        )
+
+
+async def test_replay_trials_write_every_trial_and_a_summary(tmp_path: Path) -> None:
+    recordings = await record_mini_batch()
+    summary = await replay_trials(
+        label="mini",
+        taskset=MINI_TASKSET,
+        recordings=recordings,
+        latency=LatencyProfile.ZERO,
+        trials=2,
+        count=3,
+        seed=1,
+        out_dir=tmp_path,
+        verbose=False,
+    )
+    assert [record.trial for record in load_trials(tmp_path)] == [1, 2]
+    assert summary_path(tmp_path).is_file()
+    assert summary.config.mode == "replay"
+    assert summary.config.recordings_digest == recordings_digest(recordings)
+    assert summary.metrics["counts.jobs"].median == 3
+    assert replay_passed(summary)
+
+
+async def test_replay_needs_a_recording_for_every_planned_task(tmp_path: Path) -> None:
+    recordings = await record_mini_batch()
+    del recordings["adder"]
+    with pytest.raises(ValueError, match="no recording for adder"):
+        await replay_trials(
+            label="mini",
+            taskset=MINI_TASKSET,
+            recordings=recordings,
+            latency=LatencyProfile.ZERO,
+            trials=1,
+            count=3,
+            seed=1,
+            out_dir=tmp_path,
+            verbose=False,
+        )
+
+
+async def test_a_recorded_trial_replays_to_the_same_outcomes(tmp_path: Path) -> None:
+    record = await record_trial(
+        label="mini-real",
+        trial=1,
+        taskset=MINI_TASKSET,
+        count=3,
+        seed=1,
+        inner_for=scripted_provider,
+        provider="mock",
+        model="mock-model",
+        out_dir=tmp_path / "records",
+        recordings_dir=tmp_path / "recordings",
+        verbose=False,
+    )
+    assert record.interrupted is None
+    assert record.config.mode == "real"
+    assert trial_path(tmp_path / "records", 1).is_file()
+    assert summary_path(tmp_path / "records").is_file()
+    recordings = load_recordings(tmp_path / "recordings")
+    assert {task_id: r.outcome for task_id, r in recordings.items()} == {
+        job.task_id: job.outcome.value for job in record.jobs
+    }
+
+    summary = await replay_trials(
+        label="mini-replay",
+        taskset=MINI_TASKSET,
+        recordings=recordings,
+        latency=LatencyProfile.ZERO,
+        trials=2,
+        count=3,
+        seed=1,
+        out_dir=tmp_path / "replay",
+        verbose=False,
+    )
+    replayed = load_trials(tmp_path / "replay")[0]
+    assert {job.job_id: job.outcome for job in replayed.jobs} == {
+        job.job_id: job.outcome for job in record.jobs
+    }
+    assert replay_passed(summary)
+
+
+async def test_recording_stops_at_the_daily_cap_and_keeps_finished_tasks(
+    tmp_path: Path,
+) -> None:
+    first = plan_jobs(MINI_TASKSET, 3, seed=1)[0].task_id
+
+    def inner_for(task: BenchTask) -> LLMProvider:
+        return scripted_provider(task) if task.id == first else _DailyCappedProvider()
+
+    record = await record_trial(
+        label="mini-real",
+        trial=1,
+        taskset=MINI_TASKSET,
+        count=3,
+        seed=1,
+        inner_for=inner_for,
+        provider="mock",
+        model="mock-model",
+        out_dir=tmp_path / "records",
+        recordings_dir=tmp_path / "recordings",
+        verbose=False,
+    )
+    assert record.interrupted == "the provider's daily cap was reached after 1 of 3 jobs"
+    assert [job.task_id for job in record.jobs] == [first]
+    assert set(load_recordings(tmp_path / "recordings")) == {first}
+    assert not summary_path(tmp_path / "records").exists()
+
+
+async def test_recordings_need_each_task_exactly_once(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="exactly one run of every task"):
+        await record_trial(
+            label="mini-real",
+            trial=1,
+            taskset=MINI_TASKSET,
+            count=2,
+            seed=1,
+            inner_for=scripted_provider,
+            provider="mock",
+            model="mock-model",
+            out_dir=tmp_path,
+            recordings_dir=tmp_path,
+            verbose=False,
+        )
+
+
+def test_replay_passes_only_without_divergence_and_with_identical_outcomes() -> None:
+    divergent = make_job(
+        0,
+        1,
+        outcome=Outcome.FAILED,
+        failure_kind=FailureKind.HARNESS,
+        failure_mode="replay_divergence",
+        matched_expectation=False,
+    )
+    escalated = make_job(0, 1, outcome=Outcome.ESCALATED)
+    assert replay_passed(summarize("d", [make_trial(1, [make_job(0, 1)])]))
+    assert not replay_passed(summarize("d", [make_trial(1, [divergent])]))
+    assert not replay_passed(
+        summarize("d", [make_trial(1, [make_job(0, 1)]), make_trial(2, [escalated])])
+    )
+
+
+def test_summarize_command_rebuilds_the_summary(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_record(make_trial(1, [make_job(0, 1)]), trial_path(tmp_path, 1))
+    assert main(["summarize", "--label", "demo", "--out", str(tmp_path)]) == 0
+    assert summary_path(tmp_path).is_file()
+    assert "demo: replay mode" in capsys.readouterr().out
+
+
+def test_replay_command_rejects_more_than_one_worker() -> None:
+    with pytest.raises(SystemExit):
+        main(["replay", "--workers", "2"])
