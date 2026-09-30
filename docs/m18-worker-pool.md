@@ -35,7 +35,7 @@ snapshot — and reports every violation of the kickoff's four invariants:
 
 | Invariant | Checked as |
 |---|---|
-| Exactly one result per job | a finished job has exactly one result, the one it points at, with the same outcome |
+| Exactly one result per job | a job that finished with an outcome has exactly one result, the one it points at, with the same outcome; a dead letter has none |
 | Nothing lost | every submitted job is present and final |
 | No stale writes | each result came from the job's last attempt and worker, before that attempt's lease ran out; no two attempts of a job overlapped |
 | Accounting adds up | attempt logs run 1…n and every attempt ended the way its lease allows; dead letters used their whole budget; final states sum to the jobs submitted |
