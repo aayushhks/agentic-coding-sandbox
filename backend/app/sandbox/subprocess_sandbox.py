@@ -68,6 +68,8 @@ class SubprocessSandbox(Sandbox):
         self._python = sys.executable
         self._env = self._build_env()
         self._limit_setter = _build_limit_setter(self._config)
+        # why the last namespace set was refused, to say so if none works
+        self._refusal = "no namespace set was tried"
         # which namespaces commands run in, e.g. "user+net+mount+pid", or "none"
         self.isolation, self._isolation_prefix = self._detect_isolation()
         self.network_isolated = self._config.network_disabled and "net" in self.isolation.split("+")
@@ -245,14 +247,16 @@ class SubprocessSandbox(Sandbox):
         if config.require_isolation or config.hidden_paths:
             raise SandboxUnavailableError(
                 "this host won't give sandboxed commands their own namespaces, "
-                "and the sandbox is configured to refuse to run without them"
+                f"and the sandbox is configured to refuse to run without them: {self._refusal}"
             )
         return "none", []
 
-    @staticmethod
-    def _probe(prefix: list[str]) -> bool:
+    def _probe(self, prefix: list[str]) -> bool:
         try:
             result = subprocess.run([*prefix, "true"], capture_output=True, timeout=5, check=False)
-        except (OSError, subprocess.SubprocessError):
+        except (OSError, subprocess.SubprocessError) as exc:
+            self._refusal = str(exc)
             return False
+        if result.returncode != 0:
+            self._refusal = result.stderr.decode(errors="replace").strip()[-300:]
         return result.returncode == 0
