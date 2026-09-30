@@ -62,12 +62,17 @@ class Docker:
         except (httpx.TransportError, DockerError):
             return False
 
-    async def image_id(self, image: str) -> str | None:
-        """The image's content digest, or None when the daemon doesn't have it."""
+    async def image(self, image: str) -> dict[str, Any] | None:
+        """What the daemon knows about an image, or None when it doesn't have it."""
         response = await self._call("GET", f"/images/{image}/json", allow=(404,))
         if response.status_code == 404:
             return None
-        return str(response.json()["Id"])
+        return cast(dict[str, Any], response.json())
+
+    async def image_id(self, image: str) -> str | None:
+        """The image's content digest, or None when the daemon doesn't have it."""
+        found = await self.image(image)
+        return None if found is None else str(found["Id"])
 
     async def create(self, name: str, config: dict[str, Any]) -> str:
         response = await self._call(
