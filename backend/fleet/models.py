@@ -5,7 +5,16 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-JobState = Literal["queued", "claimed", "running", "succeeded", "failed", "escalated", "cancelled"]
+JobState = Literal[
+    "queued",
+    "claimed",
+    "running",
+    "succeeded",
+    "failed",
+    "escalated",
+    "dead_lettered",
+    "cancelled",
+]
 Outcome = Literal["succeeded", "failed", "escalated"]
 UNFINISHED_STATES: frozenset[str] = frozenset({"queued", "claimed", "running"})
 
