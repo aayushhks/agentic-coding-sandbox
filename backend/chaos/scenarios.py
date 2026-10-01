@@ -20,7 +20,7 @@ EFFECTS = {
     "fenced": "the paused worker woke to find its lease gone, and stopped the run",
     "refused": "the paused worker woke and tried to publish, and its late result was refused",
     "counted": "the worker counted the result it had committed as published, not refused",
-    "unblocked": "the job a hung worker held mid-transaction was finished by another attempt",
+    "unblocked": "the job a hung worker held mid-transaction was finished by another worker",
     "reaped_once": "each lapsed attempt the fault interrupted was ended once, by a later reap",
     "cancelled": "the job ended cancelled with no result, its attempt ended by the reaper",
     "one_batch": "the batch the client sent again exists once, and the client got it back",
@@ -121,7 +121,7 @@ SCENARIOS = [
         "heartbeat-before-drop",
         "heartbeat.before",
         "drop",
-        "the connection drops mid-task, as the lease is extended",
+        "a heartbeat mid-task fails with the error a dropped connection raises",
         ("survived", "same_attempt"),
     ),
     _kill(
