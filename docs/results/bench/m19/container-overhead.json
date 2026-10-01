@@ -1,0 +1,1362 @@
+{
+  "config": {
+    "rounds": 10,
+    "repeat_per_round": 10,
+    "module": "bench.runner",
+    "commands": {
+      "sandbox_true": "true",
+      "sandbox_pytest_version": "python -m pytest --version"
+    },
+    "policy": {
+      "cpus": 1.0,
+      "memory_mb": 1024,
+      "pids": 256,
+      "tmp_mb": 512,
+      "timeout_seconds": 600.0,
+      "egress": []
+    },
+    "image": "fleet-task:local",
+    "image_id": "sha256:c883aebc434b660390febb2671185976a11078de4036790955763bccd2371f3d",
+    "database": "PostgreSQL 16.13",
+    "topology": "single host: one worker in this process, Postgres on the same machine"
+  },
+  "environment": {
+    "git_sha": "bbc8f6fdaf1e4aa2b4aa20863df9569dd47386a1",
+    "git_dirty": false,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logical_cpus": 4,
+    "usable_cpus": 4,
+    "cpu_quota_cores": null,
+    "memory_total_gib": 15.72,
+    "memory_limit_gib": null,
+    "virtualized": true,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.18.44-fc-v50",
+    "python": "3.13.12",
+    "sandbox_network_isolated": true
+  },
+  "summary": {
+    "process": {
+      "nothing_service_seconds": 0.0022,
+      "python_startup_seconds": 0.0152,
+      "import_seconds": 0.7373,
+      "sandbox_true_seconds": 0.0096,
+      "sandbox_pytest_version_seconds": 0.1768
+    },
+    "container": {
+      "nothing_service_seconds": 0.6578,
+      "nothing_container_seconds": 0.5835,
+      "nothing_outside_container_seconds": 0.0781,
+      "python_startup_seconds": 0.0172,
+      "import_seconds": 0.8777,
+      "sandbox_true_seconds": 0.0075,
+      "sandbox_pytest_version_seconds": 0.2366
+    }
+  },
+  "rounds": {
+    "process": [
+      {
+        "nothing": {
+          "service_seconds": 0.0076,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.017,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.7368,
+              0.7018,
+              0.6784,
+              0.6977,
+              0.7133,
+              0.6821,
+              0.7246,
+              0.6418,
+              0.705,
+              0.6935
+            ],
+            "sandbox_true": [
+              0.0115,
+              0.0125,
+              0.0098,
+              0.0123,
+              0.0127,
+              0.0099,
+              0.0152,
+              0.0092,
+              0.0101,
+              0.0116
+            ],
+            "python_startup": [
+              0.015,
+              0.015,
+              0.018,
+              0.0209,
+              0.0153,
+              0.0161,
+              0.0166,
+              0.0144,
+              0.0184,
+              0.014
+            ],
+            "sandbox_pytest_version": [
+              0.19,
+              0.1847,
+              0.1729,
+              0.1742,
+              0.1796,
+              0.1694,
+              0.1852,
+              0.1582,
+              0.173,
+              0.1646
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0023,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.3062,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.6789,
+              0.7051,
+              0.7527,
+              0.7562,
+              0.737,
+              0.7278,
+              0.682,
+              0.7028,
+              0.7381,
+              0.7487
+            ],
+            "sandbox_true": [
+              0.0117,
+              0.0088,
+              0.0082,
+              0.0089,
+              0.0093,
+              0.0096,
+              0.0084,
+              0.0102,
+              0.0108,
+              0.0101
+            ],
+            "python_startup": [
+              0.0146,
+              0.0153,
+              0.014,
+              0.0155,
+              0.0151,
+              0.016,
+              0.0141,
+              0.0175,
+              0.017,
+              0.0201
+            ],
+            "sandbox_pytest_version": [
+              0.1623,
+              0.1644,
+              0.1667,
+              0.1618,
+              0.1638,
+              0.2119,
+              0.225,
+              0.2134,
+              0.174,
+              0.1685
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0021,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.4969,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.749,
+              0.7821,
+              0.747,
+              0.6995,
+              0.7328,
+              0.6987,
+              0.7138,
+              0.7137,
+              0.7252,
+              0.8624
+            ],
+            "sandbox_true": [
+              0.0111,
+              0.0095,
+              0.0091,
+              0.0085,
+              0.0098,
+              0.0095,
+              0.0123,
+              0.009,
+              0.0087,
+              0.0105
+            ],
+            "python_startup": [
+              0.0212,
+              0.0148,
+              0.0155,
+              0.0198,
+              0.0149,
+              0.0151,
+              0.0148,
+              0.0153,
+              0.015,
+              0.0154
+            ],
+            "sandbox_pytest_version": [
+              0.1825,
+              0.1948,
+              0.2068,
+              0.1812,
+              0.175,
+              0.1653,
+              0.178,
+              0.1668,
+              0.1771,
+              0.176
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0022,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.8165,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.7542,
+              0.702,
+              0.7124,
+              0.7323,
+              0.7968,
+              0.7797,
+              0.8345,
+              0.8251,
+              0.8117,
+              0.8107
+            ],
+            "sandbox_true": [
+              0.0091,
+              0.0101,
+              0.0118,
+              0.0116,
+              0.0088,
+              0.0104,
+              0.0105,
+              0.0087,
+              0.0092,
+              0.0105
+            ],
+            "python_startup": [
+              0.0158,
+              0.0148,
+              0.0156,
+              0.0195,
+              0.0164,
+              0.0184,
+              0.0149,
+              0.0178,
+              0.0154,
+              0.0181
+            ],
+            "sandbox_pytest_version": [
+              0.1657,
+              0.1684,
+              0.2216,
+              0.1674,
+              0.1731,
+              0.1875,
+              0.1775,
+              0.1711,
+              0.1662,
+              0.178
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0022,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.3767,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.7561,
+              0.7803,
+              0.7122,
+              0.6934,
+              0.663,
+              0.6907,
+              0.6963,
+              0.7495,
+              0.7008,
+              0.8106
+            ],
+            "sandbox_true": [
+              0.0101,
+              0.0096,
+              0.0095,
+              0.0097,
+              0.0092,
+              0.0091,
+              0.0094,
+              0.0096,
+              0.0096,
+              0.0092
+            ],
+            "python_startup": [
+              0.0156,
+              0.0156,
+              0.0149,
+              0.0161,
+              0.0146,
+              0.015,
+              0.0148,
+              0.0145,
+              0.0151,
+              0.0158
+            ],
+            "sandbox_pytest_version": [
+              0.1902,
+              0.174,
+              0.1853,
+              0.203,
+              0.2262,
+              0.1969,
+              0.1652,
+              0.1811,
+              0.1715,
+              0.1727
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0026,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.438,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.7456,
+              0.7442,
+              0.808,
+              0.7699,
+              0.7338,
+              0.7101,
+              0.7448,
+              0.6789,
+              0.7226,
+              0.7121
+            ],
+            "sandbox_true": [
+              0.0097,
+              0.01,
+              0.009,
+              0.0092,
+              0.0095,
+              0.0115,
+              0.0093,
+              0.0111,
+              0.0094,
+              0.0093
+            ],
+            "python_startup": [
+              0.0148,
+              0.0149,
+              0.0148,
+              0.0147,
+              0.018,
+              0.0148,
+              0.0173,
+              0.0152,
+              0.0149,
+              0.0153
+            ],
+            "sandbox_pytest_version": [
+              0.1698,
+              0.1851,
+              0.1722,
+              0.1668,
+              0.196,
+              0.1608,
+              0.1826,
+              0.1974,
+              0.1766,
+              0.1987
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0018,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.2634,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.7493,
+              0.749,
+              0.7118,
+              0.7301,
+              0.709,
+              0.6646,
+              0.6658,
+              0.7039,
+              0.7137,
+              0.7811
+            ],
+            "sandbox_true": [
+              0.0109,
+              0.0096,
+              0.0094,
+              0.0093,
+              0.0097,
+              0.0098,
+              0.0095,
+              0.0085,
+              0.01,
+              0.0103
+            ],
+            "python_startup": [
+              0.0152,
+              0.0147,
+              0.0192,
+              0.0154,
+              0.0154,
+              0.0152,
+              0.018,
+              0.0187,
+              0.015,
+              0.0148
+            ],
+            "sandbox_pytest_version": [
+              0.1845,
+              0.1786,
+              0.176,
+              0.205,
+              0.163,
+              0.1612,
+              0.2042,
+              0.1675,
+              0.1909,
+              0.1857
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0016,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.9586,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.7047,
+              0.7737,
+              0.8079,
+              0.7585,
+              0.7785,
+              0.7727,
+              0.8153,
+              0.8438,
+              0.7926,
+              0.8318
+            ],
+            "sandbox_true": [
+              0.0087,
+              0.0084,
+              0.0085,
+              0.0085,
+              0.0105,
+              0.0114,
+              0.0094,
+              0.0095,
+              0.0094,
+              0.0098
+            ],
+            "python_startup": [
+              0.0148,
+              0.015,
+              0.0143,
+              0.0146,
+              0.0144,
+              0.0146,
+              0.0143,
+              0.0143,
+              0.0145,
+              0.0142
+            ],
+            "sandbox_pytest_version": [
+              0.1647,
+              0.1617,
+              0.1625,
+              0.1699,
+              0.1879,
+              0.2457,
+              0.1803,
+              0.1712,
+              0.202,
+              0.1842
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0026,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.7513,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.82,
+              0.795,
+              0.7224,
+              0.7277,
+              0.8479,
+              0.76,
+              0.6417,
+              0.8665,
+              0.7302,
+              0.7873
+            ],
+            "sandbox_true": [
+              0.0092,
+              0.009,
+              0.0093,
+              0.0094,
+              0.0108,
+              0.0116,
+              0.0095,
+              0.009,
+              0.01,
+              0.0073
+            ],
+            "python_startup": [
+              0.0149,
+              0.0166,
+              0.0209,
+              0.0205,
+              0.0151,
+              0.0237,
+              0.0163,
+              0.0148,
+              0.0165,
+              0.0148
+            ],
+            "sandbox_pytest_version": [
+              0.1621,
+              0.1759,
+              0.1903,
+              0.1654,
+              0.1937,
+              0.2027,
+              0.158,
+              0.1784,
+              0.1781,
+              0.1685
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.0022,
+          "container_seconds": null,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 9.6512,
+          "container_seconds": null,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.7459,
+              0.7713,
+              0.7376,
+              0.769,
+              0.7335,
+              0.7509,
+              0.742,
+              0.7554,
+              0.7029,
+              0.7492
+            ],
+            "sandbox_true": [
+              0.0101,
+              0.011,
+              0.0104,
+              0.0102,
+              0.0116,
+              0.0105,
+              0.0106,
+              0.0095,
+              0.0088,
+              0.0096
+            ],
+            "python_startup": [
+              0.0158,
+              0.0157,
+              0.0151,
+              0.0168,
+              0.0148,
+              0.0152,
+              0.019,
+              0.017,
+              0.0165,
+              0.0152
+            ],
+            "sandbox_pytest_version": [
+              0.1734,
+              0.1639,
+              0.197,
+              0.2214,
+              0.1927,
+              0.2179,
+              0.1739,
+              0.2357,
+              0.1675,
+              0.1769
+            ]
+          }
+        }
+      }
+    ],
+    "container": [
+      {
+        "nothing": {
+          "service_seconds": 0.6345,
+          "container_seconds": 0.553,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 12.1366,
+          "container_seconds": 12.058,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.9279,
+              0.9126,
+              0.9297,
+              0.8341,
+              0.8592,
+              0.9511,
+              0.9114,
+              0.9476,
+              0.8712,
+              0.7664
+            ],
+            "sandbox_true": [
+              0.0096,
+              0.007,
+              0.009,
+              0.0083,
+              0.0079,
+              0.0085,
+              0.0068,
+              0.0085,
+              0.0065,
+              0.0088
+            ],
+            "python_startup": [
+              0.0162,
+              0.0237,
+              0.0162,
+              0.0235,
+              0.0158,
+              0.0231,
+              0.0157,
+              0.02,
+              0.0224,
+              0.0171
+            ],
+            "sandbox_pytest_version": [
+              0.2336,
+              0.2146,
+              0.2229,
+              0.2221,
+              0.2354,
+              0.2281,
+              0.2303,
+              0.2218,
+              0.2182,
+              0.2161
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.6311,
+          "container_seconds": 0.558,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 11.7127,
+          "container_seconds": 11.627,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.8511,
+              0.9145,
+              0.8342,
+              0.8321,
+              0.8253,
+              0.7695,
+              0.7909,
+              0.8524,
+              0.8138,
+              0.868
+            ],
+            "sandbox_true": [
+              0.0142,
+              0.0096,
+              0.008,
+              0.0075,
+              0.0093,
+              0.0073,
+              0.0075,
+              0.0076,
+              0.0076,
+              0.0074
+            ],
+            "python_startup": [
+              0.0227,
+              0.0168,
+              0.0217,
+              0.017,
+              0.022,
+              0.0174,
+              0.0197,
+              0.0159,
+              0.0173,
+              0.0185
+            ],
+            "sandbox_pytest_version": [
+              0.2581,
+              0.2237,
+              0.2322,
+              0.2535,
+              0.2342,
+              0.2493,
+              0.2178,
+              0.2546,
+              0.2088,
+              0.2235
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.7074,
+          "container_seconds": 0.621,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 12.4823,
+          "container_seconds": 12.391,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.9052,
+              0.8809,
+              0.8754,
+              0.9137,
+              0.9035,
+              0.9178,
+              0.8833,
+              0.9552,
+              0.8724,
+              0.8767
+            ],
+            "sandbox_true": [
+              0.008,
+              0.0075,
+              0.0072,
+              0.0071,
+              0.007,
+              0.0068,
+              0.0064,
+              0.0069,
+              0.0076,
+              0.0066
+            ],
+            "python_startup": [
+              0.0234,
+              0.0248,
+              0.0159,
+              0.0249,
+              0.0168,
+              0.017,
+              0.0248,
+              0.0166,
+              0.0173,
+              0.0218
+            ],
+            "sandbox_pytest_version": [
+              0.2269,
+              0.2504,
+              0.2532,
+              0.2388,
+              0.2322,
+              0.2635,
+              0.286,
+              0.2466,
+              0.265,
+              0.2534
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.7294,
+          "container_seconds": 0.651,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 11.9883,
+          "container_seconds": 11.905,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.8947,
+              0.8478,
+              0.86,
+              0.8869,
+              0.869,
+              0.8987,
+              0.8188,
+              0.8467,
+              0.8216,
+              0.9127
+            ],
+            "sandbox_true": [
+              0.0077,
+              0.0105,
+              0.0075,
+              0.0075,
+              0.008,
+              0.0071,
+              0.0063,
+              0.0062,
+              0.0061,
+              0.0068
+            ],
+            "python_startup": [
+              0.0196,
+              0.0173,
+              0.0204,
+              0.0165,
+              0.0159,
+              0.0163,
+              0.0174,
+              0.0158,
+              0.0168,
+              0.0158
+            ],
+            "sandbox_pytest_version": [
+              0.2291,
+              0.2574,
+              0.2528,
+              0.2609,
+              0.248,
+              0.2727,
+              0.213,
+              0.2186,
+              0.2212,
+              0.2244
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.6383,
+          "container_seconds": 0.565,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 11.8078,
+          "container_seconds": 11.738,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.9132,
+              0.777,
+              0.8818,
+              0.8583,
+              0.8284,
+              0.8146,
+              0.8634,
+              0.8627,
+              0.8445,
+              0.8525
+            ],
+            "sandbox_true": [
+              0.0082,
+              0.0084,
+              0.008,
+              0.0085,
+              0.0088,
+              0.0082,
+              0.0077,
+              0.0097,
+              0.0083,
+              0.0078
+            ],
+            "python_startup": [
+              0.0236,
+              0.0182,
+              0.023,
+              0.0168,
+              0.0181,
+              0.0177,
+              0.0232,
+              0.0172,
+              0.0235,
+              0.016
+            ],
+            "sandbox_pytest_version": [
+              0.2406,
+              0.2231,
+              0.2414,
+              0.2323,
+              0.2474,
+              0.2101,
+              0.2301,
+              0.2383,
+              0.2275,
+              0.2584
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.6607,
+          "container_seconds": 0.584,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 12.4271,
+          "container_seconds": 12.341,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.8833,
+              0.8786,
+              0.9298,
+              0.9238,
+              0.9107,
+              0.8937,
+              0.8145,
+              0.8848,
+              0.9329,
+              0.9024
+            ],
+            "sandbox_true": [
+              0.0081,
+              0.0086,
+              0.0072,
+              0.0072,
+              0.0078,
+              0.0074,
+              0.0073,
+              0.007,
+              0.008,
+              0.008
+            ],
+            "python_startup": [
+              0.017,
+              0.0157,
+              0.0165,
+              0.0162,
+              0.0156,
+              0.0161,
+              0.0157,
+              0.0159,
+              0.0156,
+              0.0163
+            ],
+            "sandbox_pytest_version": [
+              0.2227,
+              0.2614,
+              0.23,
+              0.2627,
+              0.2298,
+              0.2487,
+              0.2385,
+              0.238,
+              0.2389,
+              0.3163
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.6387,
+          "container_seconds": 0.561,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 12.1012,
+          "container_seconds": 12.008,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.9152,
+              0.8405,
+              0.9361,
+              0.8744,
+              0.846,
+              0.8694,
+              0.8555,
+              0.8257,
+              0.8876,
+              0.9006
+            ],
+            "sandbox_true": [
+              0.008,
+              0.0078,
+              0.0093,
+              0.008,
+              0.0092,
+              0.01,
+              0.0074,
+              0.0076,
+              0.0106,
+              0.0108
+            ],
+            "python_startup": [
+              0.0194,
+              0.0168,
+              0.0181,
+              0.0255,
+              0.0202,
+              0.0187,
+              0.0244,
+              0.0188,
+              0.0229,
+              0.0172
+            ],
+            "sandbox_pytest_version": [
+              0.2363,
+              0.2472,
+              0.2221,
+              0.2849,
+              0.2231,
+              0.218,
+              0.222,
+              0.237,
+              0.2224,
+              0.2148
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.6549,
+          "container_seconds": 0.583,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 12.1148,
+          "container_seconds": 12.041,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.8426,
+              0.8308,
+              0.8426,
+              0.8327,
+              0.9487,
+              0.8073,
+              0.9142,
+              0.8762,
+              0.9307,
+              0.9157
+            ],
+            "sandbox_true": [
+              0.008,
+              0.0067,
+              0.0064,
+              0.0063,
+              0.0065,
+              0.0074,
+              0.0064,
+              0.0062,
+              0.0059,
+              0.0062
+            ],
+            "python_startup": [
+              0.0184,
+              0.0155,
+              0.0162,
+              0.0201,
+              0.0154,
+              0.0158,
+              0.0159,
+              0.0154,
+              0.0157,
+              0.0152
+            ],
+            "sandbox_pytest_version": [
+              0.2159,
+              0.2212,
+              0.2545,
+              0.2945,
+              0.2942,
+              0.2568,
+              0.2369,
+              0.228,
+              0.235,
+              0.2355
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.6645,
+          "container_seconds": 0.586,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 12.2611,
+          "container_seconds": 12.181,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.8503,
+              0.8492,
+              0.9278,
+              0.8653,
+              0.8909,
+              0.8804,
+              0.9658,
+              0.9145,
+              0.981,
+              0.8336
+            ],
+            "sandbox_true": [
+              0.0071,
+              0.0069,
+              0.0064,
+              0.0069,
+              0.0064,
+              0.0079,
+              0.0077,
+              0.0074,
+              0.0076,
+              0.0082
+            ],
+            "python_startup": [
+              0.0162,
+              0.0162,
+              0.0163,
+              0.0175,
+              0.0157,
+              0.0222,
+              0.0161,
+              0.0162,
+              0.0174,
+              0.017
+            ],
+            "sandbox_pytest_version": [
+              0.2211,
+              0.2667,
+              0.2355,
+              0.2257,
+              0.249,
+              0.2548,
+              0.248,
+              0.2284,
+              0.2081,
+              0.2129
+            ]
+          }
+        }
+      },
+      {
+        "nothing": {
+          "service_seconds": 0.7327,
+          "container_seconds": 0.654,
+          "body": {
+            "probe": "sleep",
+            "steps": 0
+          }
+        },
+        "timing": {
+          "service_seconds": 12.8654,
+          "container_seconds": 12.787,
+          "body": {
+            "probe": "overhead",
+            "import": [
+              0.9164,
+              1.0059,
+              0.8746,
+              0.9858,
+              1.0497,
+              0.8792,
+              0.8652,
+              0.961,
+              0.9607,
+              0.85
+            ],
+            "sandbox_true": [
+              0.0083,
+              0.0068,
+              0.007,
+              0.0067,
+              0.0063,
+              0.0063,
+              0.0069,
+              0.0065,
+              0.0066,
+              0.0085
+            ],
+            "python_startup": [
+              0.0228,
+              0.0189,
+              0.0172,
+              0.0198,
+              0.0185,
+              0.0175,
+              0.0291,
+              0.0226,
+              0.0166,
+              0.0169
+            ],
+            "sandbox_pytest_version": [
+              0.2381,
+              0.2477,
+              0.2523,
+              0.2636,
+              0.259,
+              0.2187,
+              0.2514,
+              0.2523,
+              0.2588,
+              0.2387
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

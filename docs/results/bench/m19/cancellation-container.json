@@ -1,0 +1,437 @@
+{
+  "config": {
+    "execution": "container",
+    "rounds": 20,
+    "seed": 1,
+    "lease_seconds": 30.0,
+    "heartbeat_seconds": 10.0,
+    "cancel_point": "uniform over 5-95% of the first heartbeat interval",
+    "image": "fleet-task:local",
+    "image_id": "sha256:c883aebc434b660390febb2671185976a11078de4036790955763bccd2371f3d",
+    "database": "PostgreSQL 16.13",
+    "topology": "single host: the fleet api, one worker process and Postgres"
+  },
+  "environment": {
+    "git_sha": "bbc8f6fdaf1e4aa2b4aa20863df9569dd47386a1",
+    "git_dirty": false,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "logical_cpus": 4,
+    "usable_cpus": 4,
+    "cpu_quota_cores": null,
+    "memory_total_gib": 15.72,
+    "memory_limit_gib": null,
+    "virtualized": true,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.18.44-fc-v50",
+    "python": "3.13.12",
+    "sandbox_network_isolated": true
+  },
+  "checks": {
+    "invariant_violations": [],
+    "containers_left": 0,
+    "running_jobs_cancelled_on_first_attempt": true,
+    "queued_jobs_never_claimed": true
+  },
+  "summary": {
+    "running_latency_seconds": {
+      "median": 5.3389,
+      "p95": 9.3403,
+      "min": 1.0673,
+      "max": 9.5747
+    },
+    "running_stop_seconds": {
+      "median": 0.0985,
+      "p95": 0.1106,
+      "min": 0.0848,
+      "max": 0.1174
+    },
+    "queued_api_round_trip_seconds": {
+      "median": 0.0052,
+      "p95": 0.0059,
+      "min": 0.0041,
+      "max": 0.0082
+    }
+  },
+  "rounds": [
+    {
+      "job_ids": [
+        1,
+        2
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0082
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 1.7153,
+        "latency_seconds": 8.3802,
+        "until_heartbeat_seconds": 8.2847,
+        "stop_seconds": 0.0955
+      }
+    },
+    {
+      "job_ids": [
+        3,
+        4
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0051
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 8.1371,
+        "latency_seconds": 1.9803,
+        "until_heartbeat_seconds": 1.8629,
+        "stop_seconds": 0.1174
+      }
+    },
+    {
+      "job_ids": [
+        5,
+        6
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0058
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 7.3817,
+        "latency_seconds": 2.7186,
+        "until_heartbeat_seconds": 2.6183,
+        "stop_seconds": 0.1003
+      }
+    },
+    {
+      "job_ids": [
+        7,
+        8
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.005
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 2.8025,
+        "latency_seconds": 7.3025,
+        "until_heartbeat_seconds": 7.1975,
+        "stop_seconds": 0.105
+      }
+    },
+    {
+      "job_ids": [
+        9,
+        10
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0058
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 4.9682,
+        "latency_seconds": 5.1332,
+        "until_heartbeat_seconds": 5.0318,
+        "stop_seconds": 0.1014
+      }
+    },
+    {
+      "job_ids": [
+        11,
+        12
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0059
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 4.5539,
+        "latency_seconds": 5.5445,
+        "until_heartbeat_seconds": 5.4461,
+        "stop_seconds": 0.0984
+      }
+    },
+    {
+      "job_ids": [
+        13,
+        14
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.005
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 6.3754,
+        "latency_seconds": 3.7094,
+        "until_heartbeat_seconds": 3.6246,
+        "stop_seconds": 0.0848
+      }
+    },
+    {
+      "job_ids": [
+        15,
+        16
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0044
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 7.6122,
+        "latency_seconds": 2.496,
+        "until_heartbeat_seconds": 2.3878,
+        "stop_seconds": 0.1082
+      }
+    },
+    {
+      "job_ids": [
+        17,
+        18
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0043
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 1.3502,
+        "latency_seconds": 8.7413,
+        "until_heartbeat_seconds": 8.6498,
+        "stop_seconds": 0.0916
+      }
+    },
+    {
+      "job_ids": [
+        19,
+        20
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0042
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 0.7595,
+        "latency_seconds": 9.3403,
+        "until_heartbeat_seconds": 9.2405,
+        "stop_seconds": 0.0998
+      }
+    },
+    {
+      "job_ids": [
+        21,
+        22
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0053
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 8.0349,
+        "latency_seconds": 2.0623,
+        "until_heartbeat_seconds": 1.9651,
+        "stop_seconds": 0.0972
+      }
+    },
+    {
+      "job_ids": [
+        23,
+        24
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0049
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 4.4031,
+        "latency_seconds": 5.7028,
+        "until_heartbeat_seconds": 5.5969,
+        "stop_seconds": 0.1058
+      }
+    },
+    {
+      "job_ids": [
+        25,
+        26
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0059
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 7.3744,
+        "latency_seconds": 2.7126,
+        "until_heartbeat_seconds": 2.6256,
+        "stop_seconds": 0.087
+      }
+    },
+    {
+      "job_ids": [
+        27,
+        28
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0053
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 0.524,
+        "latency_seconds": 9.5747,
+        "until_heartbeat_seconds": 9.476,
+        "stop_seconds": 0.0987
+      }
+    },
+    {
+      "job_ids": [
+        29,
+        30
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0041
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 4.5162,
+        "latency_seconds": 5.5745,
+        "until_heartbeat_seconds": 5.4838,
+        "stop_seconds": 0.0908
+      }
+    },
+    {
+      "job_ids": [
+        31,
+        32
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0044
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 7.0048,
+        "latency_seconds": 3.0885,
+        "until_heartbeat_seconds": 2.9952,
+        "stop_seconds": 0.0933
+      }
+    },
+    {
+      "job_ids": [
+        33,
+        34
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0053
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 2.5674,
+        "latency_seconds": 7.5254,
+        "until_heartbeat_seconds": 7.4326,
+        "stop_seconds": 0.0928
+      }
+    },
+    {
+      "job_ids": [
+        35,
+        36
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0042
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 9.0217,
+        "latency_seconds": 1.0673,
+        "until_heartbeat_seconds": 0.9783,
+        "stop_seconds": 0.089
+      }
+    },
+    {
+      "job_ids": [
+        37,
+        38
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0053
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 8.627,
+        "latency_seconds": 1.4836,
+        "until_heartbeat_seconds": 1.373,
+        "stop_seconds": 0.1106
+      }
+    },
+    {
+      "job_ids": [
+        39,
+        40
+      ],
+      "queued": {
+        "answer": "cancelled",
+        "attempts": 0,
+        "api_round_trip_seconds": 0.0053
+      },
+      "running": {
+        "attempts": 1,
+        "lease_released": true,
+        "requested_into_run_seconds": 0.7802,
+        "latency_seconds": 9.3194,
+        "until_heartbeat_seconds": 9.2198,
+        "stop_seconds": 0.0995
+      }
+    }
+  ]
+}
