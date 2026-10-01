@@ -1,6 +1,8 @@
 import asyncio
 import contextlib
+import json
 import time
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -35,6 +37,20 @@ async def test_the_worker_runs_every_job_and_publishes_its_result(
     assert await worker.run(exit_when_idle=True) == 3
     results = [await job_result(fleet_engine, job_id) for job_id in submission.job_ids]
     assert [result.body["doubled"] for result in results if result is not None] == [2, 4, 8]
+
+
+async def test_the_worker_times_each_kind_of_store_call(fleet_engine: AsyncEngine) -> None:
+    jobs = [NewJob(name=f"j{n}", payload={"n": n}) for n in (1, 2, 4)]
+    await submit_batch(fleet_engine, label="b", jobs=jobs)
+    worker = _worker(fleet_engine)
+    await worker.run(exit_when_idle=True)
+    calls = {name: stats.calls for name, stats in worker.database.items()}
+    # each job is claimed, started and published once; a claim that finds nothing counts apart
+    assert (calls["claim"], calls["start"], calls["publish"]) == (3, 3, 3)
+    assert calls["claim_empty"] >= 1 and calls["reap"] >= 1 and calls["unfinished_jobs"] >= 1
+    for stats in worker.database.values():
+        assert 0 < stats.max_seconds <= stats.seconds
+    assert worker.stats()["database"]["publish"]["calls"] == 3
 
 
 async def _endings(engine: AsyncEngine, job_id: int) -> list[str]:
@@ -240,6 +256,23 @@ async def test_the_worker_command_drains_a_batch(
     assert "w0: 4 published, 0 rejected, 0 lost, 0 released, 0 cancelled" in output
     states = {job.state for job in await batch_jobs(fleet_engine, submission.batch_id)}
     assert states == {"succeeded"}
+
+
+async def test_the_worker_command_writes_its_counts_and_store_call_times_at_exit(
+    fleet_engine: AsyncEngine, fleet_database_url: str, tmp_path: Path
+) -> None:
+    jobs = [NewJob(name=f"j{n}", payload={"sleep_ms": 10}) for n in range(2)]
+    await submit_batch(fleet_engine, label="b", jobs=jobs)
+    out = tmp_path / "w0.json"
+    process = start_worker(
+        fleet_database_url, exit_when_idle=True, extra_args=("--stats-out", str(out))
+    )
+    output, _ = await asyncio.to_thread(process.communicate, timeout=60)
+    assert process.returncode == 0, output
+    stats = json.loads(out.read_text())
+    assert (stats["worker_id"], stats["published"], stats["lost"]) == ("w0", 2, 0)
+    assert stats["database"]["publish"]["calls"] == 2
+    assert stats["database"]["claim"]["seconds"] > 0
 
 
 async def test_a_cancelled_running_job_stops_and_releases_its_lease_at_once(

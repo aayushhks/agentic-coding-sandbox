@@ -2,14 +2,18 @@
 
 import argparse
 import asyncio
+import json
 import logging
 import os
 import signal
 import socket
 import sys
 import time
+from collections import defaultdict
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
@@ -43,6 +47,20 @@ Clock = Callable[[], float]
 @dataclass(frozen=True, slots=True)
 class Cancelled:
     """A heartbeat found the job's cancel requested, so the run was stopped."""
+
+
+@dataclass(slots=True)
+class CallStats:
+    """How often the worker waited on one kind of store call, and for how long in all."""
+
+    calls: int = 0
+    seconds: float = 0.0
+    max_seconds: float = 0.0
+
+    def add(self, seconds: float) -> None:
+        self.calls += 1
+        self.seconds += seconds
+        self.max_seconds = max(self.max_seconds, seconds)
 
 
 class Worker:
@@ -88,17 +106,34 @@ class Worker:
         self.released = 0
         # jobs stopped and ended because their cancel was requested
         self.cancelled = 0
+        # time spent waiting on each kind of store call, ride-through retries included
+        self.database: defaultdict[str, CallStats] = defaultdict(CallStats)
 
-    async def _db[T](self, call: Callable[[], Awaitable[T]]) -> T:
+    async def _db[T](self, name: str, call: Callable[[], Awaitable[T]]) -> T:
         """A store call that outlasts a dropped connection, for as long as the worker allows."""
-        return await ride_through(call, seconds=self._db_retry)
+        started = time.perf_counter()
+        try:
+            return await ride_through(call, seconds=self._db_retry)
+        finally:
+            self.database[name].add(time.perf_counter() - started)
+
+    def stats(self) -> dict[str, Any]:
+        return {
+            "worker_id": self.worker_id,
+            "published": self.published,
+            "rejected": self.rejected,
+            "lost": self.lost,
+            "released": self.released,
+            "cancelled": self.cancelled,
+            "database": {name: asdict(stats) for name, stats in sorted(self.database.items())},
+        }
 
     async def _reap(self, *, orphans: bool = False) -> None:
-        await self._db(lambda: reap(self._engine, retry=self._retry))
+        await self._db("reap", lambda: reap(self._engine, retry=self._retry))
         if orphans:
             self._reaped_at = self._clock()
             await self._execution.reap_orphans(
-                lambda: self._db(lambda: live_attempts(self._engine))
+                lambda: self._db("live_attempts", lambda: live_attempts(self._engine))
             )
 
     async def _run(self, job: ClaimedJob) -> Attempted | Cancelled | None:
@@ -110,9 +145,10 @@ class Worker:
                 if done:
                     return work.result()
                 beat = await self._db(
+                    "heartbeat",
                     lambda: heartbeat(
                         self._engine, job_id=job.id, attempt=job.attempt, lease_seconds=self._lease
-                    )
+                    ),
                 )
                 if beat is None:
                     return None
@@ -134,7 +170,9 @@ class Worker:
             job = await self._claim()
         if job is None:
             return False
-        if not await self._db(lambda: start(self._engine, job_id=job.id, attempt=job.attempt)):
+        if not await self._db(
+            "start", lambda: start(self._engine, job_id=job.id, attempt=job.attempt)
+        ):
             # cancelled before it started, or its lease lapsed and it is no longer this worker's
             if not await self._cancel(job):
                 self.lost += 1
@@ -154,19 +192,21 @@ class Worker:
         if outcome.execution is not None:
             execution, logs = outcome.execution, outcome.logs
             await self._db(
+                "record_execution",
                 lambda: record_execution(
                     self._engine,
                     job_id=job.id,
                     attempt=job.attempt,
                     execution=execution,
                     logs=logs,
-                )
+                ),
             )
         if isinstance(outcome.result, RunnerError):
             await self._release(job, outcome.result.error)
             return True
         result = outcome.result
         accepted = await self._db(
+            "publish",
             lambda: publish(
                 self._engine,
                 job_id=job.id,
@@ -174,9 +214,13 @@ class Worker:
                 worker_id=self.worker_id,
                 outcome=result.outcome,
                 body=result.body,
-            )
+            ),
         )
-        status = None if accepted else await self._db(lambda: job_status(self._engine, job.id))
+        status = (
+            None
+            if accepted
+            else await self._db("job_status", lambda: job_status(self._engine, job.id))
+        )
         if accepted:
             self.published += 1
         elif status is not None and status.state == "cancelled":
@@ -194,14 +238,20 @@ class Worker:
         return True
 
     async def _claim(self) -> ClaimedJob | None:
-        return await self._db(
-            lambda: claim(self._engine, worker_id=self.worker_id, lease_seconds=self._lease)
+        started = time.perf_counter()
+        job = await ride_through(
+            lambda: claim(self._engine, worker_id=self.worker_id, lease_seconds=self._lease),
+            seconds=self._db_retry,
         )
+        # a claim that found nothing is the idle poll, kept apart from the per-job path
+        self.database["claim" if job else "claim_empty"].add(time.perf_counter() - started)
+        return job
 
     async def _cancel(self, job: ClaimedJob) -> bool:
         """End a job whose cancel was requested, releasing its lease at once."""
         if not await self._db(
-            lambda: finish_cancelled(self._engine, job_id=job.id, attempt=job.attempt)
+            "finish_cancelled",
+            lambda: finish_cancelled(self._engine, job_id=job.id, attempt=job.attempt),
         ):
             return False
         self.cancelled += 1
@@ -210,9 +260,10 @@ class Worker:
 
     async def _release(self, job: ClaimedJob, error: str) -> None:
         state = await self._db(
+            "release",
             lambda: release(
                 self._engine, job_id=job.id, attempt=job.attempt, error=error, retry=self._retry
-            )
+            ),
         )
         if state is None:
             # too late to give it back: the lease ran out, and a reaper ends the attempt instead
@@ -236,7 +287,10 @@ class Worker:
             if await self.step():
                 delay = self._min_poll
                 continue
-            if exit_when_idle and await self._db(lambda: unfinished_jobs(self._engine)) == 0:
+            if (
+                exit_when_idle
+                and await self._db("unfinished_jobs", lambda: unfinished_jobs(self._engine)) == 0
+            ):
                 break
             await self._sleep(delay)
             delay = min(delay * 2, self._max_poll)
@@ -322,6 +376,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--task-image", default=settings.task_image)
     parser.add_argument("--deployment", default=settings.deployment)
     parser.add_argument("--exit-when-idle", action="store_true")
+    parser.add_argument(
+        "--stats-out",
+        type=Path,
+        default=None,
+        help="write the worker's counts here as json at exit",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     run: Runner | Execution = load_runner(args.runner)
@@ -350,6 +410,8 @@ def main(argv: list[str] | None = None) -> int:
             exit_when_idle=args.exit_when_idle,
         )
     )
+    if args.stats_out is not None:
+        args.stats_out.write_text(json.dumps(worker.stats(), indent=2))
     print(
         f"worker {worker.worker_id}: {worker.published} published, {worker.rejected} rejected, "
         f"{worker.lost} lost, {worker.released} released, {worker.cancelled} cancelled",
