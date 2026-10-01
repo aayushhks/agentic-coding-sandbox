@@ -29,19 +29,34 @@ class FleetClient:
         idempotency_key: str | None = None,
         max_attempts: int = DEFAULT_MAX_ATTEMPTS,
         policy: ExecutionPolicy = DEFAULT_POLICY,
+        retry_seconds: float = 0.0,
     ) -> Submission:
-        response = await self._http.post(
-            "/batches",
-            json={
-                "label": label,
-                "idempotency_key": idempotency_key,
-                "max_attempts": max_attempts,
-                "policy": policy.model_dump(mode="json"),
-                "jobs": [job.model_dump(mode="json") for job in jobs],
-            },
-        )
-        response.raise_for_status()
-        return Submission.model_validate(response.json())
+        """Submit a batch; a keyed one is sent again while the api is unreachable or failing."""
+        body = {
+            "label": label,
+            "idempotency_key": idempotency_key,
+            "max_attempts": max_attempts,
+            "policy": policy.model_dump(mode="json"),
+            "jobs": [job.model_dump(mode="json") for job in jobs],
+        }
+        deadline = time.monotonic() + retry_seconds
+        delay = 0.05
+        while True:
+            try:
+                response = await self._http.post("/batches", json=body)
+                if response.status_code < 500:
+                    response.raise_for_status()
+                    return Submission.model_validate(response.json())
+                response.raise_for_status()
+            except (httpx.TransportError, httpx.HTTPStatusError) as exc:
+                server_side = isinstance(exc, httpx.TransportError) or (
+                    exc.response.status_code >= 500
+                )
+                # only a key makes sending it again safe: a repeat returns the batch it made first
+                if not server_side or idempotency_key is None or time.monotonic() > deadline:
+                    raise
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 1.0)
 
     async def batch(self, batch_id: int) -> BatchStatus:
         response = await self._http.get(f"/batches/{batch_id}")
