@@ -338,6 +338,14 @@ def replay_passed(summary: SummaryRecord) -> bool:
 
 
 @dataclass(slots=True)
+class Interleaved:
+    # one per arm, in the order the arms were given
+    summaries: list[SummaryRecord]
+    # every trial of every arm produced the same outcome for every job
+    outcomes_match: bool
+
+
+@dataclass(slots=True)
 class AbResult:
     first: SummaryRecord
     second: SummaryRecord
@@ -345,12 +353,79 @@ class AbResult:
     outcomes_match: bool
 
 
-def arm_label(executor: Executor | FleetExecutor, latency: LatencyProfile) -> str:
-    """ab-sequential-replay-zero, ab-fleet-1w-replay-zero, ab-fleet-1w-container-replay-zero"""
+def arm_label(
+    executor: Executor | FleetExecutor, latency: LatencyProfile, prefix: str = "ab"
+) -> str:
+    """ab-sequential-replay-zero, ab-fleet-1w-replay-zero, scale-fleet-4w-container-replay-zero"""
     name = executor.name
     if isinstance(executor, FleetExecutor):
         name = f"fleet-{executor.workers}w" + ("-container" if executor.mode == "container" else "")
-    return f"ab-{name}-replay-{latency.value}"
+    return f"{prefix}-{name}-replay-{latency.value}"
+
+
+def trial_order(arms: int, trial: int) -> list[int]:
+    """The arms in the order they were given on odd trials, and reversed on even ones."""
+    # each arm then sits at the same average position, so warm-up and drift favor none of them
+    order = list(range(arms))
+    return order if trial % 2 else order[::-1]
+
+
+async def interleave_trials(
+    *,
+    taskset: TaskSet,
+    recordings: dict[str, Recording],
+    latency: LatencyProfile,
+    trials: int,
+    count: int,
+    seed: int,
+    out_root: Path,
+    arms: Sequence[Executor | FleetExecutor],
+    prefix: str,
+    verbose: bool = True,
+) -> Interleaved:
+    """Run every arm's trials in one session, each trial of each arm in turn."""
+    used = _replayable(taskset, recordings, count, seed)
+    planned: list[tuple[str, BenchConfig, BatchRun]] = [
+        (
+            arm_label(executor, latency, prefix),
+            _replay_config(taskset, executor, used, latency=latency, count=count, seed=seed),
+            _replay_batch(executor, taskset, used, latency),
+        )
+        for executor in arms
+    ]
+    if len({label for label, _, _ in planned}) != len(planned):
+        raise ValueError("every arm needs a label of its own")
+    records: list[list[TrialRecord]] = [[] for _ in planned]
+    for trial in range(1, trials + 1):
+        for index in trial_order(len(planned), trial):
+            label, config, execute = planned[index]
+            record = await run_trial(
+                label=label,
+                trial=trial,
+                taskset=taskset,
+                count=count,
+                seed=seed,
+                execute=execute,
+                config=config,
+            )
+            write_record(record, trial_path(out_root / label, trial))
+            records[index].append(record)
+            if verbose:
+                wall = record.metrics.batch_wall_clock_seconds
+                busy = record.resources.host_busy_fraction if record.resources else None
+                cpu = "" if busy is None else f"  host cpu busy {busy:6.1%}"
+                print(f"trial {trial}/{trials} {label:<40} batch {wall:7.2f}s{cpu}", flush=True)
+    summaries = []
+    for (label, _config, _execute), arm_records in zip(planned, records, strict=True):
+        summary = summarize(label, arm_records)
+        write_record(summary, summary_path(out_root / label))
+        summaries.append(summary)
+    reference = outcome_vector(records[0][0])
+    every = [record for arm_records in records for record in arm_records]
+    return Interleaved(
+        summaries=summaries,
+        outcomes_match=all(outcome_vector(record) == reference for record in every),
+    )
 
 
 async def ab_trials(
@@ -367,45 +442,22 @@ async def ab_trials(
     verbose: bool = True,
 ) -> AbResult:
     """Interleave two arms' trials in one session, alternating which arm goes first."""
-    used = _replayable(taskset, recordings, count, seed)
-    arms: dict[str, tuple[str, BenchConfig, BatchRun]] = {
-        arm: (
-            arm_label(executor, latency),
-            _replay_config(taskset, executor, used, latency=latency, count=count, seed=seed),
-            _replay_batch(executor, taskset, used, latency),
-        )
-        for arm, executor in (("first", first), ("second", second))
-    }
-    records: dict[str, list[TrialRecord]] = {arm: [] for arm in arms}
-    for trial in range(1, trials + 1):
-        # alternating the order keeps warm-up and drift from favoring one arm
-        order = ("first", "second") if trial % 2 else ("second", "first")
-        for arm in order:
-            label, config, execute = arms[arm]
-            record = await run_trial(
-                label=label,
-                trial=trial,
-                taskset=taskset,
-                count=count,
-                seed=seed,
-                execute=execute,
-                config=config,
-            )
-            write_record(record, trial_path(out_root / label, trial))
-            records[arm].append(record)
-            if verbose:
-                wall = record.metrics.batch_wall_clock_seconds
-                print(f"trial {trial}/{trials} {label:<36} batch {wall:6.2f}s", flush=True)
-    summaries = {}
-    for arm, (label, _config, _execute) in arms.items():
-        summaries[arm] = summarize(label, records[arm])
-        write_record(summaries[arm], summary_path(out_root / label))
-    reference = outcome_vector(records["first"][0])
-    every = records["first"] + records["second"]
+    result = await interleave_trials(
+        taskset=taskset,
+        recordings=recordings,
+        latency=latency,
+        trials=trials,
+        count=count,
+        seed=seed,
+        out_root=out_root,
+        arms=[first, second],
+        prefix="ab",
+        verbose=verbose,
+    )
     return AbResult(
-        first=summaries["first"],
-        second=summaries["second"],
-        outcomes_match=all(outcome_vector(record) == reference for record in every),
+        first=result.summaries[0],
+        second=result.summaries[1],
+        outcomes_match=result.outcomes_match,
     )
 
 

@@ -8,7 +8,15 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.llm.base import CompletionResult, LLMProvider, Message
-from bench.cli import AbResult, ab_trials, main, record_trial, replay_passed, replay_trials
+from bench.cli import (
+    AbResult,
+    ab_trials,
+    main,
+    record_trial,
+    replay_passed,
+    replay_trials,
+    trial_order,
+)
 from bench.executor import SequentialExecutor
 from bench.fleet_executor import FleetExecutor
 from bench.jobs import FailureKind, Outcome
@@ -228,6 +236,15 @@ async def test_ab_trials_interleave_two_arms_that_differ_only_in_the_executor(
     assert result.second.config.execution["mode"] == "process"
     assert (tmp_path / "ab-fleet-1w-replay-zero" / "summary.json").is_file()
     assert (tmp_path / "ab-sequential-replay-zero" / "trial-2.json").is_file()
+
+
+def test_trial_order_reverses_every_other_trial_so_no_arm_always_goes_first() -> None:
+    assert trial_order(2, 1) == [0, 1]
+    assert trial_order(2, 2) == [1, 0]
+    assert trial_order(3, 2) == [2, 1, 0]
+    # over a pair of trials every arm sits at the same average position
+    positions = [trial_order(3, 1).index(arm) + trial_order(3, 2).index(arm) for arm in range(3)]
+    assert positions == [2, 2, 2]
 
 
 def _differing(result: AbResult) -> set[str]:
