@@ -1,5 +1,6 @@
 """Run a single benchmark task end to end and grade it against its hidden tests."""
 
+import asyncio
 from dataclasses import dataclass
 
 from app.agent.loop import Agent
@@ -66,7 +67,9 @@ async def run_task(
         setup_workspace(sandbox, task.workspace_files)
         agent = Agent(provider, sandbox, agent_config, on_step=on_step)
         run = await agent.run(task.description)
-        evaluation = grade(sandbox, task)
+        # the hidden tests run off the event loop, as the agent's own tools do: blocking it would
+        # starve whatever shares the loop, such as the heartbeats keeping a worker's lease alive
+        evaluation = await asyncio.to_thread(grade, sandbox, task)
         return TaskResult(
             task_id=task.id,
             category=task.category.value,

@@ -1,8 +1,14 @@
 import json
+import threading
 
+import pytest
+
+from app.benchmark import runner
 from app.benchmark.loader import load_benchmark
-from app.benchmark.runner import run_task
+from app.benchmark.runner import Evaluation, run_task
+from app.benchmark.schema import Task
 from app.llm.mock_provider import MockProvider
+from app.sandbox.base import Sandbox
 
 BENCHMARK = {task.id: task for task in load_benchmark()}
 
@@ -28,3 +34,22 @@ async def test_task_unsolved_when_agent_writes_nothing() -> None:
         MockProvider(responses=[_call("finish", answer="giving up")]),
     )
     assert not result.solved
+
+
+async def test_the_hidden_tests_run_off_the_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    graded_on: list[threading.Thread] = []
+    real_grade = runner.grade
+
+    def grade(sandbox: Sandbox, task: Task) -> Evaluation:
+        graded_on.append(threading.current_thread())
+        return real_grade(sandbox, task)
+
+    monkeypatch.setattr(runner, "grade", grade)
+    responses = [
+        _call("write_file", path="solution.py", content="def add(a, b):\n    return a + b\n"),
+        _call("finish", answer="done"),
+    ]
+    result = await run_task(BENCHMARK["add_numbers"], MockProvider(responses=responses))
+    # a worker running this in process keeps heartbeating while pytest runs
+    assert result.solved
+    assert graded_on and graded_on[0] is not threading.main_thread()

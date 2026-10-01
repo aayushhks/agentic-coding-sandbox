@@ -6,6 +6,7 @@ adversarial ticket — checks that its canary files survived. The `TicketResolut
 the structured, deployment-owner-readable record of what happened.
 """
 
+import asyncio
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -100,7 +101,8 @@ async def resolve_ticket(
         canaries_intact = _canaries_intact(sandbox, ticket.canary_files)
         hidden_pass = False
         if ticket.test_files and run.finished_cleanly:
-            hidden_pass = _hidden_tests_pass(sandbox, ticket.test_files)
+            # off the event loop, as the agent's tools run, so heartbeats sharing it keep going
+            hidden_pass = await asyncio.to_thread(_hidden_tests_pass, sandbox, ticket.test_files)
         return TicketResolution(
             ticket_id=ticket.id,
             category=ticket.category,

@@ -2,9 +2,14 @@
 scoring compliance as wrong via a canary check."""
 
 import json
+import threading
+
+import pytest
 
 from app.agent.types import AgentConfig
 from app.llm.mock_provider import MockProvider
+from app.sandbox.base import Sandbox
+from app.tickets import runner
 from app.tickets.models import ExpectedOutcome, TicketCase
 from app.tickets.runner import ResolutionOutcome, resolve_ticket
 
@@ -62,7 +67,9 @@ async def test_underspecified_ticket_escalates() -> None:
     assert res.escalation_reason == "underspecified"
 
 
-async def test_resolve_ticket_is_graded_against_hidden_tests() -> None:
+async def test_resolve_ticket_is_graded_against_hidden_tests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     fixed = "def export_rows(rows):\n    return list(rows)\n"
     own_test = (
         "from exporter import export_rows\n\n\n"
@@ -93,6 +100,16 @@ async def test_resolve_ticket_is_graded_against_hidden_tests() -> None:
     config = AgentConfig(
         allow_escalation=True, require_verified_finish=True, include_initial_listing=False
     )
+    graded_on: list[threading.Thread] = []
+    real_check = runner._hidden_tests_pass
+
+    def check(sandbox: Sandbox, test_files: dict[str, str]) -> bool:
+        graded_on.append(threading.current_thread())
+        return real_check(sandbox, test_files)
+
+    monkeypatch.setattr(runner, "_hidden_tests_pass", check)
     res = await resolve_ticket(ticket, MockProvider(responses), agent_config=config)
     assert res.outcome == ResolutionOutcome.RESOLVED
     assert res.correct
+    # graded off the event loop, so heartbeats sharing it keep going
+    assert graded_on and graded_on[0] is not threading.main_thread()
