@@ -1,0 +1,62 @@
+{
+  "scenario": "claim-before-commit-hang",
+  "seed": 2,
+  "point": "claim.before_commit",
+  "action": "hang",
+  "summary": "a worker hangs for good with its claim written but not committed",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "unblocked"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 1,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "claim.before_commit",
+      "action": "stop",
+      "pid": 10027,
+      "at": 0.518,
+      "job": 2,
+      "attempt": 1,
+      "process": "w0"
+    }
+  ],
+  "faults_injected": 1,
+  "drained": true,
+  "wall_seconds": 8.1,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "published": 30
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 3,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

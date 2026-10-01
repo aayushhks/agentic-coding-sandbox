@@ -1,0 +1,87 @@
+{
+  "scenario": "reap-before-commit-kill",
+  "seed": 7,
+  "point": "reap.before_commit",
+  "action": "kill",
+  "summary": "a worker is killed reaping lapsed leases, before the commit",
+  "workload": "ghost",
+  "execution": "process",
+  "effects": [
+    "died",
+    "reaped_once"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "reap.before_commit",
+      "action": "kill",
+      "pid": 12183,
+      "at": 0.512,
+      "jobs": [
+        1
+      ],
+      "process": "w2"
+    },
+    {
+      "point": "reap.before_commit",
+      "action": "kill",
+      "pid": 12181,
+      "at": 0.568,
+      "jobs": [
+        1
+      ],
+      "process": "w0"
+    },
+    {
+      "point": "reap.before_commit",
+      "action": "kill",
+      "pid": 12182,
+      "at": 1.288,
+      "jobs": [
+        1,
+        2,
+        4
+      ],
+      "process": "w1"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 7.36,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "lease_expired": 3,
+      "published": 30
+    },
+    "jobs_run_more_than_once": 3,
+    "processes_started": 6,
+    "ghost_claims": 3,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

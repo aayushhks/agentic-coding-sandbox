@@ -1,0 +1,82 @@
+{
+  "scenario": "container-heartbeat-before-kill",
+  "seed": 2,
+  "point": "heartbeat.before",
+  "action": "kill",
+  "summary": "a worker is killed mid-task while its job runs in a container of its own",
+  "workload": "sleep",
+  "execution": "container",
+  "effects": [
+    "died",
+    "retried"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": "fleet-task:local",
+    "image_id": "sha256:ebcbd20435677a7a1cdd6156bdf389c19c2e72f7202c6a437b5e549cbf2edee2"
+  },
+  "faults": [
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 21364,
+      "at": 1.423,
+      "job": 1,
+      "attempt": 1,
+      "process": "w0"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 21366,
+      "at": 1.474,
+      "job": 2,
+      "attempt": 1,
+      "process": "w2"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 21365,
+      "at": 1.474,
+      "job": 3,
+      "attempt": 1,
+      "process": "w1"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 15.93,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "lease_expired": 3,
+      "published": 30
+    },
+    "jobs_run_more_than_once": 3,
+    "processes_started": 6,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

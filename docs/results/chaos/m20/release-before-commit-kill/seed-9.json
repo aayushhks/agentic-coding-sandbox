@@ -1,0 +1,84 @@
+{
+  "scenario": "release-before-commit-kill",
+  "seed": 9,
+  "point": "release.before_commit",
+  "action": "kill",
+  "summary": "a worker is killed giving back a job whose runner crashed, before the commit",
+  "workload": "crash",
+  "execution": "process",
+  "effects": [
+    "died",
+    "retried"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "release.before_commit",
+      "action": "kill",
+      "pid": 12048,
+      "at": 1.566,
+      "job": 4,
+      "attempt": 1,
+      "process": "w1"
+    },
+    {
+      "point": "release.before_commit",
+      "action": "kill",
+      "pid": 12047,
+      "at": 2.192,
+      "job": 7,
+      "attempt": 1,
+      "process": "w0"
+    },
+    {
+      "point": "release.before_commit",
+      "action": "kill",
+      "pid": 12049,
+      "at": 2.739,
+      "job": 9,
+      "attempt": 1,
+      "process": "w2"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 19.86,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "dead_lettered": 14,
+      "succeeded": 16
+    },
+    "attempt_endings": {
+      "lease_expired": 3,
+      "published": 16,
+      "released": 67
+    },
+    "jobs_run_more_than_once": 14,
+    "processes_started": 6,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

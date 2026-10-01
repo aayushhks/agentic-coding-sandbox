@@ -1,0 +1,81 @@
+{
+  "scenario": "publish-before-commit-stop",
+  "seed": 9,
+  "point": "publish.before_commit",
+  "action": "stop",
+  "summary": "a worker is paused well past its lease with its result written but not committed",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "retried"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "publish.before_commit",
+      "action": "stop",
+      "pid": 11348,
+      "at": 1.185,
+      "job": 2,
+      "attempt": 1,
+      "process": "w0"
+    },
+    {
+      "point": "publish.before_commit",
+      "action": "stop",
+      "pid": 11350,
+      "at": 1.204,
+      "job": 3,
+      "attempt": 1,
+      "process": "w2"
+    },
+    {
+      "point": "publish.before_commit",
+      "action": "stop",
+      "pid": 11349,
+      "at": 1.546,
+      "job": 4,
+      "attempt": 1,
+      "process": "w1"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 9.73,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "lease_expired": 3,
+      "published": 30
+    },
+    "jobs_run_more_than_once": 3,
+    "processes_started": 3,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

@@ -1,0 +1,84 @@
+{
+  "scenario": "cancel-before-commit-kill",
+  "seed": 3,
+  "point": "cancel.before_commit",
+  "action": "kill",
+  "summary": "a worker is killed ending a cancelled job, before the commit",
+  "workload": "cancel",
+  "execution": "process",
+  "effects": [
+    "died",
+    "cancelled"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "cancel.before_commit",
+      "action": "kill",
+      "pid": 12278,
+      "at": 0.86,
+      "job": 1,
+      "attempt": 1,
+      "process": "w1"
+    },
+    {
+      "point": "cancel.before_commit",
+      "action": "kill",
+      "pid": 12277,
+      "at": 1.116,
+      "job": 4,
+      "attempt": 1,
+      "process": "w0"
+    },
+    {
+      "point": "cancel.before_commit",
+      "action": "kill",
+      "pid": 12279,
+      "at": 2.853,
+      "job": 7,
+      "attempt": 1,
+      "process": "w2"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 7.27,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "cancelled": 10,
+      "succeeded": 20
+    },
+    "attempt_endings": {
+      "cancelled": 7,
+      "lease_expired": 3,
+      "published": 20
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 6,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 10
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

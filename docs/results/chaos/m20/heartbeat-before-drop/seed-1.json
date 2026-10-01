@@ -1,0 +1,81 @@
+{
+  "scenario": "heartbeat-before-drop",
+  "seed": 1,
+  "point": "heartbeat.before",
+  "action": "drop",
+  "summary": "the connection drops mid-task, as the lease is extended",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "survived",
+    "same_attempt"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "heartbeat.before",
+      "action": "drop",
+      "pid": 10817,
+      "at": 1.008,
+      "job": 3,
+      "attempt": 1,
+      "process": "w2"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "drop",
+      "pid": 10816,
+      "at": 1.133,
+      "job": 4,
+      "attempt": 1,
+      "process": "w1"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "drop",
+      "pid": 10815,
+      "at": 1.236,
+      "job": 1,
+      "attempt": 1,
+      "process": "w0"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 5.96,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "published": 30
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 3,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

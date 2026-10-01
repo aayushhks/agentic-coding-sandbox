@@ -1,0 +1,257 @@
+{
+  "scenarios": {
+    "claim-before-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "claim.before",
+      "action": "kill",
+      "summary": "a worker is killed as it is about to claim"
+    },
+    "claim-before-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "claim.before_commit",
+      "action": "kill",
+      "summary": "a worker is killed with its claim written but not committed"
+    },
+    "claim-before-commit-drop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "claim.before_commit",
+      "action": "drop",
+      "summary": "the connection drops with a claim written but not committed"
+    },
+    "claim-before-commit-hang": {
+      "trials": 10,
+      "faults_injected": 10,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "claim.before_commit",
+      "action": "hang",
+      "summary": "a worker hangs for good with its claim written but not committed"
+    },
+    "claim-after-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "claim.after_commit",
+      "action": "kill",
+      "summary": "a worker is killed just after its claim commits"
+    },
+    "claim-after-commit-drop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "claim.after_commit",
+      "action": "drop",
+      "summary": "a claim commits, but its answer never reaches the worker"
+    },
+    "start-after-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "start.after_commit",
+      "action": "kill",
+      "summary": "a worker is killed just after it marks the job running"
+    },
+    "heartbeat-before-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "heartbeat.before",
+      "action": "kill",
+      "summary": "a worker is killed mid-task"
+    },
+    "heartbeat-before-stop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "heartbeat.before",
+      "action": "stop",
+      "summary": "a worker is paused mid-task until well past its lease"
+    },
+    "heartbeat-before-drop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "heartbeat.before",
+      "action": "drop",
+      "summary": "the connection drops mid-task, as the lease is extended"
+    },
+    "publish-before-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.before_commit",
+      "action": "kill",
+      "summary": "a worker is killed with its result written but not committed"
+    },
+    "publish-before-stop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.before",
+      "action": "stop",
+      "summary": "a worker is paused well past its lease after its job ran, before it publishes"
+    },
+    "publish-before-commit-stop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.before_commit",
+      "action": "stop",
+      "summary": "a worker is paused well past its lease with its result written but not committed"
+    },
+    "publish-before-commit-hang": {
+      "trials": 10,
+      "faults_injected": 10,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.before_commit",
+      "action": "hang",
+      "summary": "a worker hangs for good with its result written but not committed"
+    },
+    "publish-before-commit-drop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.before_commit",
+      "action": "drop",
+      "summary": "the connection drops with a result written but not committed"
+    },
+    "publish-after-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.after_commit",
+      "action": "kill",
+      "summary": "a worker is killed just after its result commits"
+    },
+    "publish-after-commit-drop": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.after_commit",
+      "action": "drop",
+      "summary": "a result commits, but its answer never reaches the worker"
+    },
+    "release-before-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "release.before_commit",
+      "action": "kill",
+      "summary": "a worker is killed giving back a job whose runner crashed, before the commit"
+    },
+    "reap-before-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "reap.before_commit",
+      "action": "kill",
+      "summary": "a worker is killed reaping lapsed leases, before the commit"
+    },
+    "cancel-before-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "cancel.before_commit",
+      "action": "kill",
+      "summary": "a worker is killed ending a cancelled job, before the commit"
+    },
+    "api-submit-after-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "api.submit.after_commit",
+      "action": "kill",
+      "summary": "the api is killed after a batch commits, before it answers"
+    },
+    "postgres-restart": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "postgres.restart",
+      "action": "restart",
+      "summary": "Postgres stops the way a crash would and starts again, mid-batch"
+    },
+    "agent-heartbeat-before-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "heartbeat.before",
+      "action": "kill",
+      "summary": "a worker is killed mid-task, running the real agent on recorded tasks"
+    },
+    "agent-publish-before-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.before_commit",
+      "action": "kill",
+      "summary": "a worker is killed with an agent's result written but not committed"
+    },
+    "container-heartbeat-before-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "heartbeat.before",
+      "action": "kill",
+      "summary": "a worker is killed mid-task while its job runs in a container of its own"
+    },
+    "container-publish-before-commit-kill": {
+      "trials": 10,
+      "faults_injected": 30,
+      "violations": 0,
+      "failed_seeds": [],
+      "point": "publish.before_commit",
+      "action": "kill",
+      "summary": "a worker is killed with a container's result written but not committed"
+    }
+  },
+  "trials": 260,
+  "faults_injected": 740,
+  "violations": 0,
+  "failed_runs": 0,
+  "environment": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "logical_cpus": 4,
+    "usable_cpus": 4,
+    "cpu_quota_cores": null,
+    "memory_total_gib": 15.72,
+    "memory_limit_gib": null,
+    "virtualized": true,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.18.44-fc-v50",
+    "python": "3.13.12",
+    "sandbox_network_isolated": true
+  }
+}

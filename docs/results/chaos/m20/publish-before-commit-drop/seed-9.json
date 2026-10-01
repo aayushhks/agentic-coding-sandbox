@@ -1,0 +1,81 @@
+{
+  "scenario": "publish-before-commit-drop",
+  "seed": 9,
+  "point": "publish.before_commit",
+  "action": "drop",
+  "summary": "the connection drops with a result written but not committed",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "survived",
+    "same_attempt"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "publish.before_commit",
+      "action": "drop",
+      "pid": 11587,
+      "at": 1.576,
+      "job": 4,
+      "attempt": 1,
+      "process": "w0"
+    },
+    {
+      "point": "publish.before_commit",
+      "action": "drop",
+      "pid": 11588,
+      "at": 1.653,
+      "job": 5,
+      "attempt": 1,
+      "process": "w1"
+    },
+    {
+      "point": "publish.before_commit",
+      "action": "drop",
+      "pid": 11589,
+      "at": 1.855,
+      "job": 6,
+      "attempt": 1,
+      "process": "w2"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 6.15,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "published": 30
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 3,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

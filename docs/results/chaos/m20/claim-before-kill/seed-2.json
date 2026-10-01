@@ -1,0 +1,77 @@
+{
+  "scenario": "claim-before-kill",
+  "seed": 2,
+  "point": "claim.before",
+  "action": "kill",
+  "summary": "a worker is killed as it is about to claim",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "died"
+  ],
+  "build": {
+    "git_sha": "b64c1fdf69716dcd5c07c512e20aaea3edabb198",
+    "git_dirty": false
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "claim.before",
+      "action": "kill",
+      "pid": 9534,
+      "at": 0.574,
+      "worker": "w2",
+      "process": "w2"
+    },
+    {
+      "point": "claim.before",
+      "action": "kill",
+      "pid": 9532,
+      "at": 1.172,
+      "worker": "w0",
+      "process": "w0"
+    },
+    {
+      "point": "claim.before",
+      "action": "kill",
+      "pid": 9533,
+      "at": 1.185,
+      "worker": "w1",
+      "process": "w1"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 7.42,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "published": 30
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 6,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}
