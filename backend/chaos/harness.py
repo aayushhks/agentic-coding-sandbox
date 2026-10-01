@@ -290,6 +290,7 @@ class Run:
         self.cluster = cluster
         self.workdir = workdir
         self.image = image
+        self.image_id: str | None = None
         self.deployment = f"chaos-{uuid.uuid4().hex[:8]}"
         self.fault_log = workdir / "faults.jsonl"
         self.arms = scenario.arms(self.rng)
@@ -590,6 +591,12 @@ async def run_scenario(
                 )
                 run.job_ids += submission.job_ids
                 run.batches += 1
+        if scenario.execution == "container":
+            docker = Docker()
+            try:
+                run.image_id = await docker.image_id(image)
+            finally:
+                await docker.aclose()
         for _ in range(WORKERS + scenario.spares):
             run.start_worker()
         drained = False
@@ -708,6 +715,9 @@ def _record(
             "reap_every_seconds": REAP_EVERY_SECONDS,
             "max_attempts": MAX_ATTEMPTS,
             "faults_planned": run.planned,
+            # the image every task ran in, when tasks ran in containers
+            "image": run.image if run.image_id else None,
+            "image_id": run.image_id,
         },
         "faults": run.faults,
         "faults_injected": len(own),
