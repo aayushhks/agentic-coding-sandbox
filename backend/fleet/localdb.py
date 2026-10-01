@@ -60,21 +60,30 @@ class LocalPostgres:
         cluster = cls(root=root, port=_free_port(), bin_dir=bin_dir, run_as=run_as)
         try:
             cluster._run("initdb", "-D", str(root / "data"), "-U", "postgres", "--auth=trust")
-            cluster._run(
-                "pg_ctl",
-                "-D",
-                str(root / "data"),
-                "-l",
-                str(root / "server.log"),
-                "-o",
-                f"-p {cluster.port} -k {root} -c listen_addresses=127.0.0.1",
-                "-w",
-                "start",
-            )
+            cluster._serve()
         except (OSError, subprocess.CalledProcessError) as exc:
             shutil.rmtree(root, ignore_errors=True)
             raise PostgresUnavailableError(f"could not start a local cluster: {exc}") from exc
         return cluster
+
+    def _serve(self) -> None:
+        self._run(
+            "pg_ctl",
+            "-D",
+            str(self.root / "data"),
+            "-l",
+            str(self.root / "server.log"),
+            "-o",
+            f"-p {self.port} -k {self.root} -c listen_addresses=127.0.0.1",
+            "-w",
+            "start",
+        )
+
+    def restart(self) -> None:
+        """Stop the server the way a crash would, then start it again on the same port and data."""
+        # immediate: no checkpoint, so committed work survives only through the write-ahead log
+        self._run("pg_ctl", "-D", str(self.root / "data"), "-m", "immediate", "stop")
+        self._serve()
 
     def _run(self, binary: str, *args: str) -> None:
         command = [*self.run_as, str(self.bin_dir / binary), *args]
