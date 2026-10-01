@@ -93,6 +93,14 @@ class LocalPostgres:
     def url(self) -> str:
         return f"postgresql+asyncpg://postgres@127.0.0.1:{self.port}/postgres"
 
+    @property
+    def pid(self) -> int | None:
+        """The server's main process, whose children are its sessions; None when it is down."""
+        try:
+            return int((self.root / "data" / "postmaster.pid").read_text().split()[0])
+        except (OSError, IndexError, ValueError):
+            return None
+
     def stop(self) -> None:
         # immediate: the data is thrown away, so there's nothing to flush
         stop = [*self.run_as, str(self.bin_dir / "pg_ctl"), "-D", str(self.root / "data")]
