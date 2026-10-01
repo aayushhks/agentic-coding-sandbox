@@ -731,6 +731,12 @@ def _record(
             ),
             "jobs_run_more_than_once": sum(job.attempt > 1 for job in seen.jobs.values()),
             "processes_started": len(run.processes),
+            # healthy attempts fenced out: results that came back after their lease, and runs
+            # stopped because a heartbeat found the lease gone
+            "late_results_refused": sum(
+                log.count(" refused, its lease ran out") for log in seen.logs.values()
+            ),
+            "leases_lost": sum(log.count("lost the lease on job") for log in seen.logs.values()),
             "ghost_claims": run.ghost_claims,
             "postgres_restarts": run.restarts,
             "cancels": len(run.cancelled),
