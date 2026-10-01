@@ -80,6 +80,50 @@ jobs:
       - name: bench replay (every recorded task, two trials, fails on divergence)
         run: uv run python -m bench.cli replay --label ci-replay --trials 2 --out "$RUNNER_TEMP/bench-ci"
 
+  chaos:
+    # every fault scenario on every push, each seed its own job; a run fails on any invariant
+    # violation, any fault that didn't leave its effects behind, or any fault that never happened
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0, 1, 2]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: install python 3.13
+        run: uv python install 3.13
+
+      - name: install dependencies
+        run: uv sync
+
+      - name: allow unprivileged user namespaces (the agent scenarios run its sandbox)
+        run: |
+          if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+
+      - name: build the task image the container scenarios run in
+        run: ../scripts/build-task-image.sh
+
+      - name: chaos (every scenario at seed ${{ matrix.seed }}, on a local postgres it can restart)
+        run: uv run python -m chaos run --scenarios all --seeds ${{ matrix.seed }} --out "$RUNNER_TEMP/chaos"
+
+      - name: keep the run records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-seed-${{ matrix.seed }}
+          path: ${{ runner.temp }}/chaos
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
