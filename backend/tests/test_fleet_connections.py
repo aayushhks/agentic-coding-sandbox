@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -13,8 +14,8 @@ from fleet.connections import connection_lost, ride_through
 from fleet.failpoints import arm
 from fleet.models import NewJob
 from fleet.runners import RunnerOutcome
-from fleet.store import batch_jobs, cancel, job_result, job_status, submit_batch
-from fleet.worker import Worker
+from fleet.store import batch_jobs, cancel, claim, job_result, job_status, submit_batch
+from fleet.worker import Worker, worker_engine
 from tests.fleet_helpers import NO_BACKOFF, sleep_runner
 
 
@@ -189,3 +190,26 @@ async def test_a_cancel_finished_over_a_dropped_connection_counts_once(
     await asyncio.wait_for(working, timeout=30)
     (job,) = await batch_jobs(fleet_engine, submission.batch_id)
     assert (job.state, worker.cancelled, worker.lost) == ("cancelled", 1, 0)
+
+
+async def test_a_worker_frozen_inside_a_transaction_lets_go_of_its_job_after_a_lease(
+    fleet_engine: AsyncEngine, fleet_database_url: str
+) -> None:
+    submission = await submit_batch(
+        fleet_engine, label="frozen", jobs=[NewJob(name="j", payload={})]
+    )
+    frozen = worker_engine(fleet_database_url, lease_seconds=0.5)
+    try:
+        with pytest.raises(DBAPIError) as ended:
+            async with frozen.begin() as holding:
+                await holding.execute(text("select id from fleet_jobs for update"))
+                # while the frozen worker holds the job's row, every claim passes it by
+                assert await claim(fleet_engine, worker_id="other", lease_seconds=5) is None
+                await asyncio.sleep(1.0)
+                # half a second idle in its transaction, and Postgres ended the session
+                taken = await claim(fleet_engine, worker_id="other", lease_seconds=5)
+        assert taken is not None and taken.id == submission.job_ids[0]
+        # and the frozen worker, if it ever wakes, finds a dropped connection to ride through
+        assert connection_lost(ended.value)
+    finally:
+        await frozen.dispose()

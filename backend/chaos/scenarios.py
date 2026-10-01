@@ -119,7 +119,8 @@ SCENARIOS = [
         "publish.before_commit",
         "stop",
         "a worker is paused well past its lease with its result written but not committed",
-        ("stands",),
+        # past a lease idle in its transaction, Postgres ends the session: the result never lands
+        ("retried",),
     ),
     Scenario(
         "publish-before-commit-hang",

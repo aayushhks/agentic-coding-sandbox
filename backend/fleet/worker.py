@@ -243,6 +243,17 @@ class Worker:
         return self.published
 
 
+def worker_engine(url: str, *, lease_seconds: float) -> AsyncEngine:
+    """A worker's engine, whose sessions Postgres ends once idle in a transaction for a lease."""
+    # a worker frozen mid-transaction holds its rows' locks, and with SKIP LOCKED no other worker
+    # would ever take those jobs back; ending its session rolls the transaction back and lets go
+    idle = str(max(1, round(lease_seconds * 1000)))
+    return create_async_engine(
+        async_url(url),
+        connect_args={"server_settings": {"idle_in_transaction_session_timeout": idle}},
+    )
+
+
 async def serve(
     *,
     url: str,
@@ -255,7 +266,7 @@ async def serve(
     db_retry_seconds: float,
     exit_when_idle: bool,
 ) -> Worker:
-    engine = create_async_engine(async_url(url))
+    engine = worker_engine(url, lease_seconds=lease_seconds)
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     # a terminate request lets the current job finish and publish before the worker exits
