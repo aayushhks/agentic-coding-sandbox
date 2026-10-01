@@ -8,6 +8,8 @@ Run them through the fleet like any job (runner fleet.probes:run). Each reports 
 - sandbox: runs commands in the agent's sandbox, as generated code would, and reports what they
   could reach: the network, the job, the task process and its channel;
 - orphans: leaves processes behind for the container's pid 1 to adopt, and counts the zombies;
+- overhead: times what every task pays wherever it runs: starting python, importing a module, and
+  sandboxed commands;
 - raise: fails underneath the task.
 """
 
@@ -15,7 +17,11 @@ import asyncio
 import os
 import resource
 import socket
+import subprocess
+import sys
 import time
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -62,6 +68,34 @@ def _zombies() -> int:
     return count
 
 
+def _timed(action: Callable[[], object], repeat: int) -> list[float]:
+    seconds = []
+    for _ in range(repeat):
+        started = time.perf_counter()
+        action()
+        seconds.append(round(time.perf_counter() - started, 4))
+    return seconds
+
+
+def _overhead(module: str, commands: dict[str, str], repeat: int) -> dict[str, list[float]]:
+    from app.sandbox.subprocess_sandbox import SubprocessSandbox
+    from app.sandbox.tools import ToolCall, ToolName
+
+    python = [sys.executable, "-c"]
+    timings = {
+        "python_startup": _timed(lambda: subprocess.run([*python, "pass"], check=True), repeat),
+        "import": _timed(lambda: subprocess.run([*python, f"import {module}"], check=True), repeat),
+    }
+    sandbox = SubprocessSandbox()
+    try:
+        for name, command in commands.items():
+            call = ToolCall(ToolName.RUN_COMMAND, {"command": command})
+            timings[name] = _timed(partial(sandbox.execute, call), repeat)
+    finally:
+        sandbox.cleanup()
+    return timings
+
+
 def _sandbox(commands: dict[str, str]) -> dict[str, str]:
     # imported here: only this probe needs the agent's sandbox
     from app.sandbox.subprocess_sandbox import SubprocessSandbox
@@ -106,6 +140,8 @@ async def run(name: str, payload: dict[str, Any]) -> RunnerOutcome:
         body |= {"direct": _connect(host, port), "proxy": _through_proxy(host, port)}
     elif probe == "sandbox":
         body |= _sandbox(payload["commands"])
+    elif probe == "overhead":
+        body |= _overhead(payload["module"], payload["commands"], payload["repeat"])
     elif probe == "orphans":
         # each shell exits at once, so its sleep is adopted by pid 1 and exits there
         for _ in range(payload["count"]):
