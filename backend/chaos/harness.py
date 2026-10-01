@@ -53,6 +53,8 @@ REAP_EVERY_SECONDS = 0.5
 MAX_ATTEMPTS = 5
 # how long a paused worker stays stopped: well past its lease, so its job is taken back meanwhile
 PAUSE_SECONDS = (2.0, 2.5)
+# the longest a worker waits to be overtaken before it is woken anyway, which fails the run
+OVERTAKE_SECONDS = 15.0
 # a worker that never comes back holds each job it claims this long
 GHOST_LEASE_SECONDS = 0.3
 # Postgres restarts once this share of the jobs has finished, and again, and again
@@ -298,6 +300,8 @@ class Run:
         self.faults: list[dict[str, Any]] = []
         self._read = 0
         self.resume_at: dict[int, float] = {}
+        # paused workers to wake once a later attempt holds their job: pid to fault and deadline
+        self.overtake: dict[int, tuple[dict[str, Any], float]] = {}
         self.hung: set[int] = set()
         self.started = time.time()
         # the build this run tested, read before anything runs
@@ -371,6 +375,8 @@ class Run:
             if fault["action"] == "stop":
                 if self.scenario.action == "hang":
                     self.hung.add(fault["pid"])
+                elif self.scenario.wake == "overtaken":
+                    self.overtake[fault["pid"]] = (fault, time.monotonic() + OVERTAKE_SECONDS)
                 else:
                     pause = self.rng.uniform(*PAUSE_SECONDS)
                     self.resume_at[fault["pid"]] = time.monotonic() + pause
@@ -475,13 +481,28 @@ async def _containers_left(run: Run) -> int:
         await docker.aclose()
 
 
+async def _wake_overtaken(run: Run, engine: AsyncEngine) -> None:
+    for pid, (fault, deadline) in list(run.overtake.items()):
+        held = await _rows(
+            engine,
+            "select 1 from fleet_jobs where id = :job and attempt > :attempt "
+            "and state in ('claimed', 'running')",
+            job=fault["job"],
+            attempt=fault["attempt"],
+        )
+        if held or time.monotonic() > deadline:
+            fault["woke"] = "overtaken" if held else "never overtaken"
+            os.kill(pid, signal.SIGCONT)
+            del run.overtake[pid]
+
+
 def _stop_all(run: Run) -> set[str]:
     """Stop every process, and say which were still alive, and had been all along, at the end."""
     alive = {name for name, process in run.processes.items() if process.popen.poll() is None}
     for pid in run.hung:
         # a hung worker is gone for good: nothing it holds is ever let go by it
         os.kill(pid, signal.SIGKILL)
-    for pid in run.resume_at:
+    for pid in [*run.resume_at, *run.overtake]:
         os.kill(pid, signal.SIGCONT)
     for process in run.processes.values():
         if process.popen.poll() is None:
@@ -564,19 +585,21 @@ async def run_scenario(
                 )
                 run.job_ids += submission.job_ids
                 run.batches += 1
-        for _ in range(WORKERS):
+        for _ in range(WORKERS + scenario.spares):
             run.start_worker()
         drained = False
         deadline = time.monotonic() + TIMEOUT_SECONDS
         while time.monotonic() < deadline:
             run.read_faults()
             run.resume_due()
+            await _wake_overtaken(run, engine)
             run.replace_the_dead()
             if submitting is not None and submitting.done():
                 submitting.result()
             await _drive(run, engine, plan_)
             done, total = await _finished(engine, run.job_ids)
-            if run.batches == len(plan_.batches) and done == total and not run.resume_at:
+            waking = run.resume_at or run.overtake
+            if run.batches == len(plan_.batches) and done == total and not waking:
                 drained = True
                 break
             await asyncio.sleep(0.05)
@@ -630,6 +653,11 @@ def _record(
     chaos = []
     if len(own) != run.planned:
         chaos.append(f"{len(own)} of the {run.planned} planned faults happened")
+    chaos += [
+        f"{fault['process']} woke before a later attempt took job {fault['job']} over"
+        for fault in own
+        if scenario.wake == "overtaken" and fault.get("woke") != "overtaken"
+    ]
     if not drained:
         chaos.append(f"the batch did not drain within {TIMEOUT_SECONDS:.0f} s")
     if containers_left:
@@ -652,7 +680,7 @@ def _record(
         "build": run.build,
         "config": {
             "jobs": len(run.job_ids),
-            "workers": WORKERS,
+            "workers": WORKERS + scenario.spares,
             "lease_seconds": LEASE_SECONDS,
             "heartbeat_seconds": round(LEASE_SECONDS / 3, 3),
             "reap_every_seconds": REAP_EVERY_SECONDS,

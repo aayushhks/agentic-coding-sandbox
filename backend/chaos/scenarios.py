@@ -43,6 +43,11 @@ class Scenario:
     execution: str = "process"
     # the hits each armed process may fire on, so a fault lands on a different job each time
     hits: tuple[int, int] = (1, 3)
+    # when a paused worker is woken: after a pause well past its lease, or only once a later
+    # attempt holds its job, the moment a late write would do the most harm
+    wake: str = "timer"
+    # unarmed workers besides the armed ones, to take over the jobs of workers that are paused
+    spares: int = 0
 
     def arms(self, rng: random.Random) -> list[str]:
         """The failpoint each worker started gets, in order, until the faults are spent."""
@@ -123,8 +128,10 @@ SCENARIOS = [
         "stop",
         "a worker is paused well past its lease after its job ran, before it publishes",
         ("retried", "refused"),
-        # long jobs, so the attempt that took the job over is still running when the late one wakes
+        # woken while a later attempt is running the job, which its late result must not overwrite
         workload="long",
+        wake="overtaken",
+        spares=2,
     ),
     Scenario(
         "publish-before-commit-stop",
