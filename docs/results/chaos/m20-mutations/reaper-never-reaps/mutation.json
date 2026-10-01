@@ -1,5 +1,8 @@
 {
   "why": "recovery: lapsed leases are never ended, so a dead worker's job is never taken back",
   "scenarios": "heartbeat-before-kill",
-  "seeds": "0-1"
+  "seeds": "0-1",
+  "file": "fleet/store.py",
+  "old": "    \"\"\"End every attempt whose lease ran out, returning its job to the queue or dead letters.\"\"\"\n",
+  "new": "    \"\"\"End every attempt whose lease ran out, returning its job to the queue or dead letters.\"\"\"\n    return []\n"
 }

@@ -1,5 +1,8 @@
 {
   "why": "claiming: the oldest queued job is picked without locking it, so two workers can take it at once",
   "scenarios": "claim-before-kill",
-  "seeds": "0-9"
+  "seeds": "0-9",
+  "file": "fleet/store.py",
+  "old": "\"order by id limit 1 for update skip locked) \"",
+  "new": "\"order by id limit 1) \""
 }

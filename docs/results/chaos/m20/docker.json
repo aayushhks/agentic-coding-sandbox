@@ -1,0 +1,16 @@
+{
+  "captured": "docker info, on the machine the m20 records were made, after the runs",
+  "ServerVersion": "29.3.1",
+  "DefaultRuntime": "runc",
+  "Driver": "overlayfs",
+  "CgroupDriver": "cgroupfs",
+  "CgroupVersion": "1",
+  "SecurityOptions": [
+    "name=seccomp,profile=builtin"
+  ],
+  "KernelVersion": "6.18.44-fc-v50",
+  "OperatingSystem": "Ubuntu 24.04.4 LTS",
+  "Architecture": "x86_64",
+  "NCPU": 4,
+  "MemTotal": 16876515328
+}

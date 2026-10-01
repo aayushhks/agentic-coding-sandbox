@@ -1,5 +1,8 @@
 {
   "why": "fencing: a publish no longer checks that it is for the attempt that holds the job",
   "scenarios": "publish-before-stop",
-  "seeds": "0-4"
+  "seeds": "0-4",
+  "file": "fleet/store.py",
+  "old": "\"where id = :job and attempt = :attempt \"\n                    \"and state in ('claimed', 'running') for update\"",
+  "new": "\"where id = :job \"\n                    \"and state in ('claimed', 'running') for update\""
 }

@@ -1,5 +1,8 @@
 {
   "why": "the fix undone: a worker's session is never ended for idling in a transaction",
   "scenarios": "claim-before-commit-hang,publish-before-commit-hang",
-  "seeds": "0-1"
+  "seeds": "0-1",
+  "file": "fleet/worker.py",
+  "old": "        connect_args={\"server_settings\": {\"idle_in_transaction_session_timeout\": idle}},\n",
+  "new": ""
 }
