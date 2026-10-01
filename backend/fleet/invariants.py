@@ -1,7 +1,7 @@
 """Check a drained run against the fleet's invariants, using only what the database recorded."""
 
 from collections import Counter, defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from itertools import pairwise
@@ -46,6 +46,8 @@ class ResultRow(BaseModel):
     worker_id: str
     published_at: datetime
     outcome: str
+    # the key a job's payload asked its result to carry, when it asked for one
+    result_key: str | None = None
 
 
 class Snapshot(BaseModel):
@@ -86,8 +88,8 @@ async def snapshot(engine: AsyncEngine, job_ids: Sequence[int]) -> Snapshot:
             )
             results = await consistent.execute(
                 text(
-                    "select id, job_id, attempt, worker_id, published_at, outcome "
-                    "from fleet_results where job_id = any(:ids)"
+                    "select id, job_id, attempt, worker_id, published_at, outcome, "
+                    "body->>'result_key' as result_key from fleet_results where job_id = any(:ids)"
                 ),
                 ids,
             )
@@ -98,8 +100,14 @@ async def snapshot(engine: AsyncEngine, job_ids: Sequence[int]) -> Snapshot:
             )
 
 
-def check(run: Snapshot, submitted: Sequence[int]) -> list[Violation]:
-    """Every broken invariant in a drained run; an empty list means all four hold."""
+def check(
+    run: Snapshot, submitted: Sequence[int], keys: Mapping[int, str] | None = None
+) -> list[Violation]:
+    """Every broken invariant in a drained run; an empty list means all four hold.
+
+    Given each job's result key, exactly-once is also checked end to end: every result carries
+    its own job's key, and no key is published twice.
+    """
     jobs = {job.id: job for job in run.jobs}
     logs: dict[int, list[AttemptRow]] = defaultdict(list)
     for attempt in sorted(run.attempts, key=lambda row: row.attempt):
@@ -119,6 +127,7 @@ def check(run: Snapshot, submitted: Sequence[int]) -> list[Violation]:
             )
         ),
         *_totals(jobs, submitted),
+        *([] if keys is None else _result_keys(run.results, keys)),
     ]
 
 
@@ -216,6 +225,25 @@ def _accounting(job: JobRow, log: list[AttemptRow]) -> list[Violation]:
     elif last == "cancelled":
         found.append(f"{job.state}, but its last attempt ended cancelled")
     return [Violation("accounting", job.id, detail) for detail in found]
+
+
+def _result_keys(results: list[ResultRow], keys: Mapping[int, str]) -> list[Violation]:
+    found = [
+        Violation(
+            "one_result",
+            result.job_id,
+            f"its result carries {result.result_key!r}, not its own {keys.get(result.job_id)!r}",
+        )
+        for result in results
+        if result.result_key != keys.get(result.job_id)
+    ]
+    published = Counter(result.result_key for result in results if result.result_key is not None)
+    found += [
+        Violation("one_result", None, f"key {key!r} was published {count} times")
+        for key, count in sorted(published.items())
+        if count > 1
+    ]
+    return found
 
 
 def _totals(jobs: dict[int, JobRow], submitted: Sequence[int]) -> list[Violation]:

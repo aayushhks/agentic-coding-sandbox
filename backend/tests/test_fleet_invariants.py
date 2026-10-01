@@ -225,6 +225,30 @@ def test_every_invariant_has_a_corruption_that_breaks_it() -> None:
     }
 
 
+KEYS = {1: "key-1", 2: "key-2"}
+
+
+def _keyed(run: Snapshot, *keys: str | None) -> Snapshot:
+    results = [
+        result.model_copy(update={"result_key": key})
+        for result, key in zip(run.results, keys, strict=True)
+    ]
+    return run.model_copy(update={"results": results})
+
+
+def test_each_result_carries_its_own_jobs_key_and_no_key_appears_twice() -> None:
+    assert check(_keyed(_clean(), "key-1", "key-2"), SUBMITTED, KEYS) == []
+    # one job's result published under another's key: crossed, and a key seen twice
+    crossed = check(_keyed(_clean(), "key-1", "key-1"), SUBMITTED, KEYS)
+    assert [(v.invariant, v.job_id) for v in crossed] == [("one_result", 2), ("one_result", None)]
+    assert "published 2 times" in str(crossed[1])
+    # a result that carries no key at all
+    unkeyed = check(_keyed(_clean(), None, "key-2"), SUBMITTED, KEYS)
+    assert [(v.invariant, v.job_id) for v in unkeyed] == [("one_result", 1)]
+    # without keys to check against, the key goes unchecked
+    assert check(_keyed(_clean(), "key-2", "key-1"), SUBMITTED) == []
+
+
 def test_totals_that_do_not_add_up_are_caught() -> None:
     violations = check(_clean(), [*SUBMITTED, 6])
     assert [(v.invariant, v.job_id) for v in violations] == [
@@ -277,3 +301,21 @@ async def test_corruption_written_to_the_database_is_caught(fleet_engine: AsyncE
     violations = check(await snapshot(fleet_engine, job_ids), job_ids)
     assert {violation.invariant for violation in violations} == {"no_stale_write"}
     assert len({violation.job_id for violation in violations}) == 3
+
+
+async def test_a_real_result_is_checked_against_the_key_its_job_asked_for(
+    fleet_engine: AsyncEngine,
+) -> None:
+    async def keyed(name: str, payload: dict[str, Any]) -> RunnerOutcome:
+        return RunnerOutcome(outcome="succeeded", body={"result_key": payload["key"]})
+
+    submission = await submit_batch(
+        fleet_engine, label="keyed", jobs=[NewJob(name="j", payload={"key": "abc"})]
+    )
+    worker = Worker(fleet_engine, keyed, worker_id="w", lease_seconds=5)
+    await asyncio.wait_for(worker.run(exit_when_idle=True), timeout=20)
+    job_id = submission.job_ids[0]
+    run = await snapshot(fleet_engine, [job_id])
+    assert run.results[0].result_key == "abc"
+    assert check(run, [job_id], {job_id: "abc"}) == []
+    assert [v.invariant for v in check(run, [job_id], {job_id: "xyz"})] == ["one_result"]
