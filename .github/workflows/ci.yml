@@ -80,6 +80,9 @@ jobs:
       - name: bench replay (every recorded task, two trials, fails on divergence)
         run: uv run python -m bench.cli replay --label ci-replay --trials 2 --out "$RUNNER_TEMP/bench-ci"
 
+      - name: bench scale (every recorded task on one and two fleet workers, interleaved, fails on divergence)
+        run: uv run python -m bench.cli scale --workers 1 2 --trials 2 --out-root "$RUNNER_TEMP/bench-scale"
+
   chaos:
     # every fault scenario on every push, each seed its own job; a run fails on any invariant
     # violation, any fault that didn't leave its effects behind, or any fault that never happened

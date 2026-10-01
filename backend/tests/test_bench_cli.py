@@ -301,3 +301,33 @@ async def test_the_replay_command_runs_trials_on_a_pool_of_fleet_workers(
     )
     assert "2 fleet worker processes" in trial.config.topology
     assert {job.worker for job in trial.jobs} <= {"w0", "w1"}
+
+
+def test_the_scale_command_needs_distinct_worker_counts_of_at_least_one() -> None:
+    for counts in (["2", "2"], ["0", "1"]):
+        with pytest.raises(SystemExit):
+            main(["scale", "--workers", *counts])
+
+
+async def test_the_scale_command_interleaves_pools_that_differ_only_in_their_size(
+    tmp_path: Path, fleet_engine: AsyncEngine, fleet_database_url: str
+) -> None:
+    argv = [
+        *("scale", "--workers", "1", "2", "--trials", "2", "--tasks", "4"),
+        *("--database-url", fleet_database_url, "--out-root", str(tmp_path)),
+    ]
+    # the command runs its own event loop, so it gets a thread of its own
+    assert await asyncio.to_thread(main, argv) == 0
+    one = load_trials(tmp_path / "scale-fleet-1w-replay-zero")
+    two = load_trials(tmp_path / "scale-fleet-2w-replay-zero")
+    assert [trial.trial for trial in one] == [trial.trial for trial in two] == [1, 2]
+    differing = {
+        field
+        for field in BenchConfig.model_fields
+        if getattr(one[0].config, field) != getattr(two[0].config, field)
+    }
+    assert differing == {"workers", "topology"}
+    for trial in one + two:
+        assert trial.resources is not None and trial.database is not None
+        assert trial.database["publish"].calls == 4
+    assert (tmp_path / "scale-fleet-2w-replay-zero" / "summary.json").is_file()

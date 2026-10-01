@@ -477,10 +477,12 @@ async def _image_id(image: str) -> str | None:
         await docker.aclose()
 
 
+# a worker pool's size and where its jobs run
+Pool = tuple[int, Literal["process", "container"]]
+
+
 @contextmanager
-def _fleet(
-    database_url: str | None, workers: int, modes: Sequence[Literal["process", "container"]]
-) -> Iterator[list[FleetExecutor]]:
+def _fleet(database_url: str | None, pools: Sequence[Pool]) -> Iterator[list[FleetExecutor]]:
     """Fleets on the given database, or on a throwaway local Postgres when there is none."""
     cluster = None if database_url else LocalPostgres.start()
     url: str = database_url or (cluster.url if cluster else "")
@@ -488,7 +490,7 @@ def _fleet(
         migrate(url)
         version = asyncio.run(_server_version(url))
         fleets = []
-        for mode in modes:
+        for workers, mode in pools:
             image = FleetSettings().task_image
             image_id = asyncio.run(_image_id(image)) if mode == "container" else None
             if mode == "container" and image_id is None:
@@ -516,7 +518,7 @@ def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
     modes: list[Literal["process", "container"]] = (
         ["process"] if args.arms == "sequential-fleet" else ["process", "container"]
     )
-    with _fleet(args.database_url, 1, modes) as fleets:
+    with _fleet(args.database_url, [(1, mode) for mode in modes]) as fleets:
         first: Executor | FleetExecutor = fleets[0] if len(fleets) == 2 else SequentialExecutor()
         result = asyncio.run(
             ab_trials(
@@ -536,6 +538,32 @@ def _run_ab(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
     print(f"per-job outcomes match across both arms: {result.outcomes_match}")
     both = replay_passed(result.first) and replay_passed(result.second)
     return 0 if result.outcomes_match and both else 1
+
+
+def _run_scale(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
+    # one pool per worker count, every other setting the same
+    with _fleet(
+        args.database_url, [(workers, args.execution) for workers in args.workers]
+    ) as pools:
+        result = asyncio.run(
+            interleave_trials(
+                taskset=taskset,
+                recordings=load_recordings(args.recordings or RECORDINGS_ROOT / taskset.version),
+                latency=LatencyProfile(args.latency),
+                trials=args.trials,
+                count=count,
+                seed=args.seed,
+                out_root=args.out_root or RESULTS_ROOT,
+                arms=pools,
+                prefix="scale",
+            )
+        )
+    for summary in result.summaries:
+        print_summary(summary)
+    print_scaling(result.summaries)
+    print(f"per-job outcomes match across every worker count: {result.outcomes_match}")
+    passed = all(replay_passed(summary) for summary in result.summaries)
+    return 0 if result.outcomes_match and passed else 1
 
 
 def _replay(
@@ -583,6 +611,38 @@ def print_summary(summary: SummaryRecord) -> None:
     counts = ("solved", "escalated", "failed_task", "failed_infra", "failed_harness")
     print("  " + "  ".join(f"{name} {stat(f'counts.{name}', 0)}" for name in counts))
     print(f"  outcomes identical across trials: {summary.outcomes_identical}")
+
+
+def print_scaling(summaries: Sequence[SummaryRecord]) -> None:
+    """Medians per worker count: throughput against the smallest pool, and the host's cpu."""
+    ordered = sorted(summaries, key=lambda summary: summary.config.workers)
+    base = ordered[0]
+    base_rate = base.metrics["tasks_per_minute"].median
+    print(
+        f"{'workers':>7}  {'tasks/min':>9}  {'speedup':>7}  {'efficiency':>10}  "
+        f"{'queue p50 s':>11}  {'queue p95 s':>11}  {'utilization':>11}  {'host busy':>9}  "
+        f"{'cpu s/job':>9}  {'cpu ceiling':>11}"
+    )
+    for summary in ordered:
+        metrics, workers = summary.metrics, summary.config.workers
+        rate = metrics["tasks_per_minute"].median
+        speedup = rate / base_rate
+        efficiency = speedup * base.config.workers / workers
+        busy = metrics.get("resources.host_busy_fraction")
+        spent = metrics.get("resources.host_busy_cpu_seconds")
+        cpus = metrics.get("resources.cpus")
+        per_job = spent.median / summary.config.tasks if spent else None
+        # the rate at which the host's cpus would be busy all the time, at this cpu per job
+        ceiling = 60 * cpus.median / per_job if per_job and cpus else None
+        print(
+            f"{workers:>7}  {rate:>9.1f}  {speedup:>7.2f}  {efficiency:>10.2f}  "
+            f"{metrics['queue_wait_seconds.p50'].median:>11.2f}  "
+            f"{metrics['queue_wait_seconds.p95'].median:>11.2f}  "
+            f"{metrics['utilization'].median:>11.3f}  "
+            f"{'-' if busy is None else format(busy.median, '.1%'):>9}  "
+            f"{'-' if per_job is None else format(per_job, '.2f'):>9}  "
+            f"{'-' if ceiling is None else format(ceiling, '.1f'):>11}"
+        )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -638,6 +698,22 @@ def _parser() -> argparse.ArgumentParser:
     ab.add_argument("--recordings", type=Path, default=None)
     ab.add_argument("--out-root", type=Path, default=None)
     ab.add_argument("--database-url", default=None, help="default: a throwaway local Postgres")
+
+    scale = commands.add_parser("scale", help="interleave fleet replays at several worker counts")
+    scale.add_argument("--workers", type=int, nargs="+", default=[1, 2, 4])
+    scale.add_argument(
+        "--execution",
+        choices=["process", "container"],
+        default="process",
+        help="run each job in the worker's process or in a container of its own",
+    )
+    scale.add_argument("--latency", choices=[p.value for p in LatencyProfile], default="zero")
+    scale.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
+    scale.add_argument("--tasks", type=int, default=None, help="jobs (default: each task once)")
+    scale.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    scale.add_argument("--recordings", type=Path, default=None)
+    scale.add_argument("--out-root", type=Path, default=None)
+    scale.add_argument("--database-url", default=None, help="default: a throwaway local Postgres")
     return parser
 
 
@@ -652,6 +728,10 @@ def main(argv: list[str] | None = None) -> int:
     count = args.tasks or len(taskset.tasks)
     if args.command == "ab":
         return _run_ab(args, taskset, count)
+    if args.command == "scale":
+        if min(args.workers) < 1 or len(set(args.workers)) != len(args.workers):
+            parser.error("worker counts must be distinct and at least one")
+        return _run_scale(args, taskset, count)
     if args.command == "record":
         api_key = get_settings().groq_api_key
         if not api_key:
@@ -681,7 +761,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.executor == "fleet":
         if args.workers < 1:
             parser.error("the fleet needs at least one worker")
-        with _fleet(args.database_url, args.workers, [args.execution]) as (fleet,):
+        with _fleet(args.database_url, [(args.workers, args.execution)]) as (fleet,):
             suffix = "-container" if args.execution == "container" else ""
             summary = _replay(args, taskset, count, fleet, f"fleet-{args.workers}w{suffix}")
     else:
