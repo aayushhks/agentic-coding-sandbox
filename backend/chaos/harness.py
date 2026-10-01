@@ -103,7 +103,7 @@ def plan(scenario: Scenario, rng: random.Random) -> Plan:
     jobs, keys, long_jobs = [], {}, set()
     for n in range(LONG_JOBS if scenario.workload == "long" else JOBS):
         name, key = f"job-{n}", uuid.UUID(int=rng.getrandbits(128)).hex
-        kind, sleep_ms = "ok", rng.randint(50, 600)
+        kind, sleep_ms = "ok", rng.randint(200, 800)
         if scenario.workload == "long":
             sleep_ms = rng.randint(1200, 2000)
         if scenario.workload == "crash" and rng.random() < 0.3:

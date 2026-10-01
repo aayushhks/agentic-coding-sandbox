@@ -36,13 +36,13 @@ class Scenario:
     summary: str
     effects: tuple[str, ...]
     faults: int = 3
-    # sleep: keyed jobs of 50-600 ms; long: of 1.2-2 s; crash, cancel: some of them crash, or
-    # run until cancelled; ghost: a worker claims some and vanishes; api: submitted through an
-    # api that dies; agent: the bench's recorded tasks, replayed
+    # sleep: keyed jobs of 200-800 ms, most long enough to heartbeat; long: of 1.2-2 s; crash,
+    # cancel: some of them crash, or run until cancelled; ghost: a worker claims some and
+    # vanishes; api: submitted through an api that dies; agent: the bench's recorded tasks
     workload: str = "sleep"
     execution: str = "process"
     # the hits each armed process may fire on, so a fault lands on a different job each time
-    hits: tuple[int, int] = (1, 3)
+    hits: tuple[int, int] = (1, 2)
     # when a paused worker is woken: after a pause well past its lease, or only once a later
     # attempt holds its job, the moment a late write would do the most harm
     wake: str = "timer"
@@ -65,7 +65,7 @@ def _kill(
     summary: str,
     *effects: str,
     workload: str = "sleep",
-    hits: tuple[int, int] = (1, 3),
+    hits: tuple[int, int] = (1, 2),
     replace: str = "at_once",
 ) -> Scenario:
     name = point.replace(".", "-").replace("_", "-") + "-kill"
