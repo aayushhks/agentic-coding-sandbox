@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from itertools import pairwise
 from pathlib import Path
 from types import TracebackType
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel
 
@@ -232,3 +232,29 @@ class Sampler:
             processes=used,
             timeline=timeline,
         )
+
+
+class DatabaseCalls(BaseModel):
+    """One kind of store call the workers waited on, added up over the whole pool."""
+
+    calls: int
+    seconds: float
+    max_seconds: float
+
+
+def combine_calls(reports: Iterable[Mapping[str, Any]]) -> dict[str, DatabaseCalls]:
+    """Each kind of store call's count and time, summed over the workers' own reports."""
+    calls: dict[str, int] = defaultdict(int)
+    seconds: dict[str, float] = defaultdict(float)
+    longest: dict[str, float] = defaultdict(float)
+    for report in reports:
+        for name, stats in report["database"].items():
+            calls[name] += stats["calls"]
+            seconds[name] += stats["seconds"]
+            longest[name] = max(longest[name], stats["max_seconds"])
+    return {
+        name: DatabaseCalls(
+            calls=calls[name], seconds=round(seconds[name], 6), max_seconds=round(longest[name], 6)
+        )
+        for name in sorted(calls)
+    }

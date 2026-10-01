@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from bench.environment import REPO_ROOT, Environment
 from bench.jobs import JobResult
 from bench.metrics import TrialMetrics
+from bench.resources import BatchResources, DatabaseCalls
 
 RECORD_SCHEMA_VERSION = 1
 RESULTS_ROOT = REPO_ROOT / "docs" / "results" / "bench"
@@ -49,6 +50,9 @@ class TrialRecord(BaseModel):
     environment: Environment
     metrics: TrialMetrics
     jobs: list[JobResult]
+    # the cpu the batch used and the time its workers waited on the database; fleet runs only
+    resources: BatchResources | None = None
+    database: dict[str, DatabaseCalls] | None = None
 
 
 class Stat(BaseModel):
@@ -90,6 +94,17 @@ def flatten_scalars(value: Any, prefix: str = "") -> dict[str, float]:
     return {}
 
 
+def trial_scalars(trial: TrialRecord) -> dict[str, float]:
+    """A trial's metrics, and its resources and database time when it has them, as dotted names."""
+    flat = flatten_scalars(trial.metrics.model_dump(mode="json"))
+    if trial.resources is not None:
+        flat |= flatten_scalars(trial.resources.model_dump(mode="json"), "resources")
+    if trial.database is not None:
+        calls = {name: stats.model_dump() for name, stats in trial.database.items()}
+        flat |= flatten_scalars(calls, "database")
+    return flat
+
+
 def summarize(label: str, trials: list[TrialRecord]) -> SummaryRecord:
     """Median and range of every scalar metric across the complete trials of one config."""
     complete = [trial for trial in trials if trial.interrupted is None]
@@ -98,14 +113,16 @@ def summarize(label: str, trials: list[TrialRecord]) -> SummaryRecord:
     config = complete[0].config
     if any(trial.config != config for trial in complete):
         raise ValueError("trials with different configurations cannot be summarized together")
-    samples = [flatten_scalars(trial.metrics.model_dump(mode="json")) for trial in complete]
+    samples = [trial_scalars(trial) for trial in complete]
+    # only what every trial measured, since a process tree can go unmeasured in one of them
+    names = set(samples[0]).intersection(*samples[1:])
     metrics = {
         name: Stat(
             median=statistics.median(sample[name] for sample in samples),
             min=min(sample[name] for sample in samples),
             max=max(sample[name] for sample in samples),
         )
-        for name in sorted(samples[0])
+        for name in sorted(names)
     }
     first_outcomes = outcome_vector(complete[0])
     return SummaryRecord(

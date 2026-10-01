@@ -11,6 +11,7 @@ from bench.records import (
     trial_path,
     write_record,
 )
+from bench.resources import BatchResources, DatabaseCalls
 from tests.bench_helpers import make_config, make_job, make_trial
 
 
@@ -33,6 +34,41 @@ def test_summary_reports_median_and_range_per_metric() -> None:
     assert (wall.median, wall.min, wall.max) == (3.0, 2.0, 4.0)
     assert summary.trials == [1, 2, 3]
     assert summary.outcomes_identical
+
+
+def _resources(busy: float, postgres: float | None) -> BatchResources:
+    return BatchResources(
+        window_seconds=10.0,
+        cpus=4,
+        sample_seconds=0.5,
+        host_busy_cpu_seconds=busy,
+        host_busy_fraction=busy / 40,
+        host_steal_fraction=0.0,
+        cpu_wait_fraction=None,
+        processes={"workers": busy / 2, "postgres": postgres},
+        timeline=[(0.5, 0.25, 2)],
+    )
+
+
+def test_a_trial_with_resources_round_trips_and_summarizes_what_every_trial_measured(
+    tmp_path: Path,
+) -> None:
+    calls = {"publish": DatabaseCalls(calls=3, seconds=0.03, max_seconds=0.02)}
+    trials = [
+        make_trial(1, [make_job(0, 1)], resources=_resources(8.0, 1.0), database=calls),
+        # postgres went unmeasured in this one, so its cpu is left out of the summary
+        make_trial(2, [make_job(0, 1)], resources=_resources(6.0, None), database=calls),
+    ]
+    write_record(trials[0], trial_path(tmp_path, 1))
+    assert load_trials(tmp_path) == [trials[0]]
+    metrics = summarize("demo", trials).metrics
+    busy = metrics["resources.host_busy_cpu_seconds"]
+    assert (busy.median, busy.min, busy.max) == (7.0, 6.0, 8.0)
+    assert metrics["resources.processes.workers"].median == 3.5
+    assert "resources.processes.postgres" not in metrics
+    # the timeline is a series, not a scalar to summarize
+    assert not any(name.startswith("resources.timeline") for name in metrics)
+    assert metrics["database.publish.calls"].median == 3
 
 
 def test_summary_detects_outcomes_that_differ_between_trials() -> None:

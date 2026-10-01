@@ -14,6 +14,7 @@ from app.llm.base import LLMProvider
 from app.tickets.runner import ResolutionOutcome, TicketResolution, resolve_ticket
 from bench.jobs import FailureKind, JobResult, Outcome
 from bench.replay import RecordingProvider, ReplayProvider
+from bench.resources import BatchResources, DatabaseCalls
 from bench.taskset import BenchTask, Expectation, Job, TaskKind, TaskSet
 
 # the m7 settings that took the benchmark to 15/15; tickets also get the escalate tool
@@ -35,6 +36,9 @@ Clock = Callable[[], float]
 class BatchResult:
     results: list[JobResult]
     interrupted: str | None
+    # the cpu the batch used and the time its workers waited on the database, when measured
+    resources: BatchResources | None = None
+    database: dict[str, DatabaseCalls] | None = None
 
 
 class Executor(Protocol):

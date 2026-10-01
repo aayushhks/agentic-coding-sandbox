@@ -6,7 +6,9 @@ import pytest
 
 from bench.resources import (
     TICKS_PER_SECOND,
+    DatabaseCalls,
     Sampler,
+    combine_calls,
     named,
     parse_pressure,
     parse_process,
@@ -167,3 +169,20 @@ async def test_a_tree_counts_children_it_waited_for_and_children_still_running()
         parent.stdin.write(b"stop\n")
         await parent.stdin.drain()
         await parent.wait()
+
+
+def test_the_pool_s_store_calls_add_up_over_its_workers_reports() -> None:
+    reports = [
+        {"database": {"claim": {"calls": 2, "seconds": 0.5, "max_seconds": 0.3}}},
+        {
+            "database": {
+                "claim": {"calls": 3, "seconds": 0.25, "max_seconds": 0.1},
+                "publish": {"calls": 1, "seconds": 0.125, "max_seconds": 0.125},
+            }
+        },
+    ]
+    assert combine_calls(reports) == {
+        "claim": DatabaseCalls(calls=5, seconds=0.75, max_seconds=0.3),
+        "publish": DatabaseCalls(calls=1, seconds=0.125, max_seconds=0.125),
+    }
+    assert combine_calls([]) == {}

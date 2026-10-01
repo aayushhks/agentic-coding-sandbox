@@ -31,6 +31,17 @@ async def test_the_fleet_path_reproduces_the_recorded_outcomes(
         assert (result.attempts, result.divergence) == (1, None)
         # every timestamp is Postgres's, measured from the moment the batch was inserted
         assert 0.0 == result.submitted_at <= result.claimed_at <= result.finished_at
+    # the agent ran in the workers' processes, so their trees used cpu the host saw
+    used = batch.resources
+    assert used is not None and used.window_seconds > 0
+    workers_cpu = used.processes["workers"]
+    assert workers_cpu is not None and 0 < workers_cpu <= used.host_busy_cpu_seconds + 0.1
+    assert used.processes["api"] is not None
+    # the database's server pid was not given, so its cpu goes unmeasured
+    assert used.processes["postgres"] is None
+    assert batch.database is not None
+    assert batch.database["publish"].calls == 3
+    assert batch.database["claim"].calls == 3
 
 
 def test_a_fleet_needs_a_worker_and_describes_its_pool() -> None:

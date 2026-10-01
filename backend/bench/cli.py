@@ -156,6 +156,8 @@ async def run_trial(
         environment=environment,
         metrics=compute_metrics(batch.results, workers=config.workers),
         jobs=batch.results,
+        resources=batch.resources,
+        database=batch.database,
     )
 
 
@@ -448,6 +450,7 @@ def _fleet(
                     mode=mode,
                     task_image=image,
                     image_id=image_id,
+                    postgres_pid=cluster.pid if cluster else None,
                 )
             )
         yield fleets

@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import json
 import os
 import signal
 import socket
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from bench.executor import BatchResult, job_result
 from bench.jobs import JobResult
+from bench.resources import Sampler, combine_calls, named
 from bench.runner import execution_from_body
 from bench.taskset import BenchTask, Job, TaskSet
 from fleet.client import FleetClient
@@ -52,6 +54,11 @@ def tail(log: IO[bytes]) -> str:
     return log.read().decode(errors="replace")[-2000:]
 
 
+def worker_reports(folder: Path) -> list[dict[str, Any]]:
+    """What each worker wrote as it exited; one that had to be killed wrote nothing."""
+    return [json.loads(path.read_text()) for path in sorted(folder.glob("w*.json"))]
+
+
 def pool_topology(workers: int, database: str = "Postgres", *, containers: bool = False) -> str:
     processes = "one fleet worker process" if workers == 1 else f"{workers} fleet worker processes"
     where = "; each job in a container of its own" if containers else ""
@@ -74,6 +81,7 @@ class FleetExecutor:
         task_image: str = "fleet-task:local",
         image_id: str | None = None,
         policy: ExecutionPolicy = DEFAULT_POLICY,
+        postgres_pid: int | None = None,
     ) -> None:
         if workers < 1:
             raise ValueError("the fleet needs at least one worker")
@@ -92,6 +100,8 @@ class FleetExecutor:
         self._policy = policy
         # its own label, so its workers only ever reap the containers this run started
         self._deployment = f"bench-{uuid.uuid4().hex[:8]}"
+        # the database server's main process, when it runs on this host where its cpu can be read
+        self._postgres_pid = postgres_pid
 
     async def run(
         self, taskset: TaskSet, jobs: Sequence[Job], payload_for: PayloadFactory
@@ -107,6 +117,7 @@ class FleetExecutor:
             worker_logs = [
                 logs.enter_context(tempfile.TemporaryFile()) for _ in range(self.workers)
             ]
+            stats = Path(logs.enter_context(tempfile.TemporaryDirectory()))
             # no access log: the status polling below would otherwise write a line per request
             api = spawn(
                 [
@@ -122,6 +133,7 @@ class FleetExecutor:
                     [
                         *("-m", "fleet.worker", "--runner", "bench.runner:run_job"),
                         *("--worker-id", f"w{index}", "--database-url", self._url, *options),
+                        *("--stats-out", str(stats / f"w{index}.json")),
                     ],
                     env,
                     log,
@@ -135,20 +147,28 @@ class FleetExecutor:
                     if api.poll() is not None or time.monotonic() > deadline:
                         raise RuntimeError(f"the fleet api never came up:\n{tail(api_log)}")
                     await asyncio.sleep(0.1)
-                submission = await client.submit(
-                    label="bench",
-                    jobs=[
-                        NewJob(name=job.id, payload=payload_for(taskset.get(job.task_id)))
-                        for job in jobs
-                    ],
-                    idempotency_key=uuid.uuid4().hex,
-                    policy=self._policy,
-                )
-                while not (await client.batch(submission.batch_id)).done:
-                    for worker, log in zip(workers, worker_logs, strict=True):
-                        if worker.poll() is not None:
-                            raise RuntimeError(f"a fleet worker exited early:\n{tail(log)}")
-                    await asyncio.sleep(0.1)
+                groups = {
+                    "workers": [worker.pid for worker in workers],
+                    "api": [api.pid],
+                    "postgres": [] if self._postgres_pid is None else [self._postgres_pid],
+                    "docker": named(["dockerd", "containerd"]),
+                }
+                # from just before the submit until the batch is seen to be done
+                async with Sampler(groups) as sampler:
+                    submission = await client.submit(
+                        label="bench",
+                        jobs=[
+                            NewJob(name=job.id, payload=payload_for(taskset.get(job.task_id)))
+                            for job in jobs
+                        ],
+                        idempotency_key=uuid.uuid4().hex,
+                        policy=self._policy,
+                    )
+                    while not (await client.batch(submission.batch_id)).done:
+                        for worker, log in zip(workers, worker_logs, strict=True):
+                            if worker.poll() is not None:
+                                raise RuntimeError(f"a fleet worker exited early:\n{tail(log)}")
+                        await asyncio.sleep(0.1)
             finally:
                 await client.aclose()
                 for process in (*workers, api):
@@ -158,7 +178,14 @@ class FleetExecutor:
                         await asyncio.to_thread(process.wait, 30)
                     except subprocess.TimeoutExpired:
                         process.kill()
-        return BatchResult(await self._results(taskset, jobs, submission.batch_id), None)
+            reports = worker_reports(stats)
+            database = combine_calls(reports) if len(reports) == self.workers else None
+        return BatchResult(
+            await self._results(taskset, jobs, submission.batch_id),
+            None,
+            resources=sampler.result,
+            database=database,
+        )
 
     async def _results(
         self, taskset: TaskSet, jobs: Sequence[Job], batch_id: int
