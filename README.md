@@ -53,11 +53,13 @@ flowchart TB
 | **Execution baseline** | a bench harness that records model responses once and replays them deterministically; today's single-process path measured over 5-trial replays and a real-model trial | [m16](docs/m16-bench-harness.md) |
 | **Durable execution** | a Postgres job queue with leases and atomic publishes; a worker killed mid-batch loses and duplicates nothing, checked on every push | [m17](docs/m17-job-store.md) · [design](docs/design.md) |
 | **Many workers** | heartbeats, fencing (a worker whose lease lapsed can never write), bounded retries with a dead letter, and an invariant checker run after an 8-worker kill-and-pause stress test on every push | [m18](docs/m18-worker-pool.md) · [design](docs/design.md) |
+| **Controlled execution** | each attempt in a locked-down container of its own: CPU, memory, process, scratch and time limits, no network unless a destination is granted through a proxy, and cancellation that releases the lease; every limit tested by a job that tries to break it, on every push | [m19](docs/m19-controlled-execution.md) · [policy model](docs/design.md#controlled-execution-the-policy-model) |
 
 ## Tech stack
 
 - **Backend:** Python 3.13, FastAPI, SQLAlchemy 2 (async), Pydantic v2, Alembic, structlog, Groq SDK, `uv`
-- **Sandbox:** subprocess + Linux namespaces — network-isolated via `unshare --net`, rlimit CPU/memory/file-size caps, wall-clock timeout, output cap; built behind a `Sandbox` interface so a Docker backend can drop in
+- **Sandbox:** subprocess + Linux namespaces — each command in its own network and PID namespaces (inside a user namespace when not root), rlimit CPU/memory/file-size caps, wall-clock timeout, output cap; fails closed when isolation is required
+- **Task containers:** Docker, driven through its Engine API — one locked-down container per attempt, with the sandbox inside it
 - **Frontend:** React 19, Vite, Tailwind v4, TypeScript — a read-only dashboard over the eval runs
 - **Database:** Postgres 16
 
@@ -192,8 +194,13 @@ eval harness and the trace viewer. Malformed tool calls are a first-class, recor
 The agent's file writes and commands run inside a `Sandbox` (`backend/app/sandbox/`). The
 default `SubprocessSandbox` enforces, per command:
 
-- **Network isolation** via a private network namespace (`unshare --net`), so sandboxed code
-  has no egress — verified by a test that asserts an outbound connection fails.
+- **Network isolation** via a private network namespace, so sandboxed code has no egress —
+  verified by a test that asserts an outbound connection fails, which CI runs on every push.
+- **Process isolation** via a private PID namespace where the host allows one, so sandboxed code
+  can't see or signal the agent's processes. Without root, both namespaces live inside a user
+  namespace of the sandbox's own.
+- **Failing closed:** with `SANDBOX_REQUIRE_ISOLATION=1`, a host that can't create the namespaces
+  gets a refusal that says why, never a less isolated command. The fleet's task containers set it.
 - **Resource limits** via POSIX rlimits: CPU seconds, address space (memory), file size, and
   no core dumps.
 - **A wall-clock timeout** — the whole process group is killed on expiry.
@@ -201,11 +208,12 @@ default `SubprocessSandbox` enforces, per command:
 - **A scrubbed environment** (no host secrets leak in) and **workspace confinement** (paths
   that escape the temp workspace are rejected).
 
-**Honest boundary:** this is process-level isolation, not a container — it does not virtualize
-the filesystem or PID namespace, so it protects the host far less than Docker would. It is sized
-for running the benchmark's own task code, not genuinely hostile programs. The `Sandbox`
-interface lets a Docker-backed implementation drop in where a daemon is available (the preferred
-option on a normal machine).
+**Honest boundary:** on its own this is process-level isolation, not a container — it does not
+virtualize the filesystem, so it protects the host far less than a container would. It is sized for
+running the benchmark's own task code, not genuinely hostile programs. The fleet adds the container
+around it: each attempt runs in a locked-down container of its own, with the sandbox inside, so
+generated code sits behind both ([m19](docs/m19-controlled-execution.md)). Both share the host's
+kernel.
 
 ## MCP servers (Model Context Protocol)
 
@@ -318,20 +326,31 @@ nothing lost, no stale writes, accounting that adds up — after a worker is kil
 after workers are paused past their lease, and after 8 workers on 1 s leases are killed and paused at
 random through a 300-job batch.
 
+With `--execution container`, a worker runs each attempt in a locked-down container of its own,
+under its batch's execution policy: CPU, memory, processes, scratch space and a timeout, enforced by
+the container runtime, and no network unless the operator has made a destination grantable and the
+batch asks for it. A running job can be cancelled; its worker stops it at the next heartbeat and
+releases its lease at once.
+
 ```bash
+scripts/build-task-image.sh                                         # the image tasks run in
 cd backend
 uv run python -m fleet.migrate                                      # schema (FLEET_DATABASE_URL)
 uv run uvicorn fleet.api:app                                        # the submission api
 uv run python -m fleet.worker --runner bench.runner:run_job         # a worker (run several)
+uv run python -m fleet.worker --runner bench.runner:run_job --execution container
 uv run python -m bench.cli ab --trials 5                            # sequential vs fleet a/b
+uv run python -m bench.cli ab --arms process-container --trials 5  # in process vs containers
 uv run python -m bench.cli replay --executor fleet --workers 4      # replay on a worker pool
 ```
 
 Measured cost of durability with one worker and restart testing:
 [docs/m17-job-store.md](docs/m17-job-store.md). Heartbeats, fencing, retries, the invariant checker
-and the stress test: [docs/m18-worker-pool.md](docs/m18-worker-pool.md). The design (why Postgres
-over Redis or a broker, the lease and fencing model, what the checker proves and doesn't):
-[docs/design.md](docs/design.md).
+and the stress test: [docs/m18-worker-pool.md](docs/m18-worker-pool.md). Containers, limits,
+egress grants and cancellation, and what they cost:
+[docs/m19-controlled-execution.md](docs/m19-controlled-execution.md). The design (why Postgres over
+Redis or a broker, the lease and fencing model, what the checker proves and doesn't, the execution
+policy model): [docs/design.md](docs/design.md).
 
 ## Honest limitations
 
@@ -344,9 +363,10 @@ over Redis or a broker, the lease and fencing model, what the checker proves and
 - **Single attempt per ticket**, temperature 0 — no best-of-N or reflection beyond the loop.
 - **Small dataset.** Ten tickets — and injection resistance over one adversarial case — characterize
   behavior and cost, not a statistical capability claim.
-- **The sandbox is process-level** (subprocess + Linux namespaces), not a container — see
-  [Sandbox](#sandbox) for the exact boundary. Production concerns are demonstrated, not
-  enterprise-hardened.
+- **The sandbox alone is process-level** (subprocess + Linux namespaces); the fleet runs it
+  inside a container per attempt, and both share the host's kernel — see [Sandbox](#sandbox) and
+  the [policy model](docs/design.md#controlled-execution-the-policy-model) for the exact boundary.
+  Production concerns are demonstrated, not enterprise-hardened.
 - **The MCP servers run locally, not on the public internet.** The deployed demo shows their
   recorded results (the report), not a live tool endpoint.
 - **The execution numbers are from one machine.** Replay numbers are medians over several trials
