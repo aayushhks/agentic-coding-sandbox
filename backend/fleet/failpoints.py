@@ -33,6 +33,7 @@ POINTS = {
     "claim.after_commit": "a claim is committed, and the worker hasn't started the job",
     "start.after_commit": "a job is marked running, and its run hasn't begun",
     "heartbeat.before": "a job is running, and its lease is about to be extended",
+    "publish.before": "a job has run, and its result is about to be published",
     "publish.before_commit": "a result is written, not yet committed",
     "publish.after_commit": "a result is committed, and the worker hasn't moved on",
     "release.before_commit": "a job is given back after a failure, not yet committed",

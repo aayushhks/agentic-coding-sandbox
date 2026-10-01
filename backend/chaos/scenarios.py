@@ -18,6 +18,8 @@ EFFECTS = {
     "same_attempt": "the attempt the fault hit went on to publish the job's result",
     "stands": "the result the attempt published before the fault stands, and nothing ran again",
     "fenced": "the paused worker woke to find its lease gone, and stopped the run",
+    "refused": "the paused worker woke and tried to publish, and its late result was refused",
+    "counted": "the worker counted the result it had committed as published, not refused",
     "unblocked": "the job a hung worker held mid-transaction was finished by another attempt",
     "reaped_once": "each lapsed attempt the fault interrupted was ended once, by a later reap",
     "cancelled": "the job ended cancelled with no result, its attempt ended by the reaper",
@@ -115,6 +117,13 @@ SCENARIOS = [
         "retried",
     ),
     Scenario(
+        "publish-before-stop",
+        "publish.before",
+        "stop",
+        "a worker is paused well past its lease after its job ran, before it publishes",
+        ("retried", "refused"),
+    ),
+    Scenario(
         "publish-before-commit-stop",
         "publish.before_commit",
         "stop",
@@ -144,7 +153,7 @@ SCENARIOS = [
         "publish.after_commit",
         "drop",
         "a result commits, but its answer never reaches the worker",
-        ("survived", "stands"),
+        ("survived", "stands", "counted"),
     ),
     _kill(
         "release.before_commit",

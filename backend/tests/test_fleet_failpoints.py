@@ -153,6 +153,7 @@ async def test_a_job_meets_the_points_in_protocol_order(
         "claim.after_commit",
         "start.after_commit",
         *["heartbeat.before"] * beats,
+        "publish.before",
         "publish.before_commit",
         "publish.after_commit",
     ]

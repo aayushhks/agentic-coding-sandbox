@@ -185,6 +185,23 @@ def _fenced(fault: dict[str, Any], seen: Evidence) -> str | None:
     return f"{fault['process']} never reported losing the lease on job {fault['job']}"
 
 
+def _refusal(fault: dict[str, Any], seen: Evidence) -> bool:
+    line = f"result for job {fault['job']} attempt {fault['attempt']} refused"
+    return line in seen.logs.get(fault["process"], "")
+
+
+def _refused(fault: dict[str, Any], seen: Evidence) -> str | None:
+    if _refusal(fault, seen):
+        return None
+    return f"{fault['process']}'s late result for job {fault['job']} was never refused"
+
+
+def _counted(fault: dict[str, Any], seen: Evidence) -> str | None:
+    if not _refusal(fault, seen):
+        return None
+    return f"{fault['process']} counted its own committed result for job {fault['job']} as refused"
+
+
 def _unblocked(fault: dict[str, Any], seen: Evidence) -> str | None:
     job, result = seen.jobs.get(fault["job"]), seen.results.get(fault["job"])
     if job is None or job.state in UNFINISHED_STATES:
@@ -239,6 +256,8 @@ EFFECT_CHECKS: dict[str, Callable[[dict[str, Any], Evidence], str | None]] = {
     "same_attempt": _same_attempt,
     "stands": _stands,
     "fenced": _fenced,
+    "refused": _refused,
+    "counted": _counted,
     "unblocked": _unblocked,
     "reaped_once": _reaped_once,
     "cancelled": _cancelled,

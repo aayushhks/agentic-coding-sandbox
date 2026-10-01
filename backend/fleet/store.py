@@ -354,6 +354,7 @@ async def publish(
     body: dict[str, Any],
 ) -> bool:
     """Publish a result and finish the job atomically; False unless this attempt's lease is live."""
+    await failpoint("publish.before", job=job_id, attempt=attempt)
     async with engine.begin() as connection:
         # the row lock makes the ownership check and the write a single step
         held = (
