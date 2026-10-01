@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings, async_url
+from fleet.connections import ride_through
 from fleet.docker import Docker
 from fleet.execution import Attempted, Execution, InContainer, InProcess
 from fleet.models import DEFAULT_RETRY, ClaimedJob, RetryPolicy
@@ -55,6 +56,7 @@ class Worker:
         heartbeat_seconds: float | None = None,
         reap_every_seconds: float = 5.0,
         retry: RetryPolicy = DEFAULT_RETRY,
+        db_retry_seconds: float = 60.0,
         min_poll_seconds: float = 0.05,
         max_poll_seconds: float = 0.5,
         sleep: Sleep = asyncio.sleep,
@@ -71,6 +73,7 @@ class Worker:
         self._heartbeat = beat
         self._reap_every = reap_every_seconds
         self._retry = retry
+        self._db_retry = db_retry_seconds
         self._min_poll = min_poll_seconds
         self._max_poll = max_poll_seconds
         self._sleep = sleep
@@ -86,11 +89,17 @@ class Worker:
         # jobs stopped and ended because their cancel was requested
         self.cancelled = 0
 
+    async def _db[T](self, call: Callable[[], Awaitable[T]]) -> T:
+        """A store call that outlasts a dropped connection, for as long as the worker allows."""
+        return await ride_through(call, seconds=self._db_retry)
+
     async def _reap(self, *, orphans: bool = False) -> None:
-        await reap(self._engine, retry=self._retry)
+        await self._db(lambda: reap(self._engine, retry=self._retry))
         if orphans:
             self._reaped_at = self._clock()
-            await self._execution.reap_orphans(lambda: live_attempts(self._engine))
+            await self._execution.reap_orphans(
+                lambda: self._db(lambda: live_attempts(self._engine))
+            )
 
     async def _run(self, job: ClaimedJob) -> Attempted | Cancelled | None:
         """Run a job while extending its lease; None when the lease was lost and the run stopped."""
@@ -100,8 +109,10 @@ class Worker:
                 done, _ = await asyncio.wait({work}, timeout=self._heartbeat)
                 if done:
                     return work.result()
-                beat = await heartbeat(
-                    self._engine, job_id=job.id, attempt=job.attempt, lease_seconds=self._lease
+                beat = await self._db(
+                    lambda: heartbeat(
+                        self._engine, job_id=job.id, attempt=job.attempt, lease_seconds=self._lease
+                    )
                 )
                 if beat is None:
                     return None
@@ -117,13 +128,13 @@ class Worker:
         # reaping on a timer keeps it off the per-job path while busy
         if self._clock() - self._reaped_at >= self._reap_every:
             await self._reap(orphans=True)
-        job = await claim(self._engine, worker_id=self.worker_id, lease_seconds=self._lease)
+        job = await self._claim()
         if job is None:
             await self._reap()
-            job = await claim(self._engine, worker_id=self.worker_id, lease_seconds=self._lease)
+            job = await self._claim()
         if job is None:
             return False
-        if not await start(self._engine, job_id=job.id, attempt=job.attempt):
+        if not await self._db(lambda: start(self._engine, job_id=job.id, attempt=job.attempt)):
             # cancelled before it started, or its lease lapsed and it is no longer this worker's
             if not await self._cancel(job):
                 self.lost += 1
@@ -141,27 +152,34 @@ class Worker:
             logger.info("%s: lost the lease on job %s, run stopped", self.worker_id, job.id)
             return True
         if outcome.execution is not None:
-            await record_execution(
-                self._engine,
-                job_id=job.id,
-                attempt=job.attempt,
-                execution=outcome.execution,
-                logs=outcome.logs,
+            execution, logs = outcome.execution, outcome.logs
+            await self._db(
+                lambda: record_execution(
+                    self._engine,
+                    job_id=job.id,
+                    attempt=job.attempt,
+                    execution=execution,
+                    logs=logs,
+                )
             )
         if isinstance(outcome.result, RunnerError):
             await self._release(job, outcome.result.error)
             return True
-        accepted = await publish(
-            self._engine,
-            job_id=job.id,
-            attempt=job.attempt,
-            worker_id=self.worker_id,
-            outcome=outcome.result.outcome,
-            body=outcome.result.body,
+        result = outcome.result
+        accepted = await self._db(
+            lambda: publish(
+                self._engine,
+                job_id=job.id,
+                attempt=job.attempt,
+                worker_id=self.worker_id,
+                outcome=result.outcome,
+                body=result.body,
+            )
         )
+        status = None if accepted else await self._db(lambda: job_status(self._engine, job.id))
         if accepted:
             self.published += 1
-        elif (status := await job_status(self._engine, job.id)) and status.state == "cancelled":
+        elif status is not None and status.state == "cancelled":
             # a cancel requested before the result arrived ended the job instead
             self.cancelled += 1
             logger.info("%s: job %s was cancelled before its result landed", self.worker_id, job.id)
@@ -175,17 +193,26 @@ class Worker:
             )
         return True
 
+    async def _claim(self) -> ClaimedJob | None:
+        return await self._db(
+            lambda: claim(self._engine, worker_id=self.worker_id, lease_seconds=self._lease)
+        )
+
     async def _cancel(self, job: ClaimedJob) -> bool:
         """End a job whose cancel was requested, releasing its lease at once."""
-        if not await finish_cancelled(self._engine, job_id=job.id, attempt=job.attempt):
+        if not await self._db(
+            lambda: finish_cancelled(self._engine, job_id=job.id, attempt=job.attempt)
+        ):
             return False
         self.cancelled += 1
         logger.info("%s: job %s cancelled, lease released", self.worker_id, job.id)
         return True
 
     async def _release(self, job: ClaimedJob, error: str) -> None:
-        state = await release(
-            self._engine, job_id=job.id, attempt=job.attempt, error=error, retry=self._retry
+        state = await self._db(
+            lambda: release(
+                self._engine, job_id=job.id, attempt=job.attempt, error=error, retry=self._retry
+            )
         )
         if state is None:
             # too late to give it back: the lease ran out, and a reaper ends the attempt instead
@@ -209,7 +236,7 @@ class Worker:
             if await self.step():
                 delay = self._min_poll
                 continue
-            if exit_when_idle and await unfinished_jobs(self._engine) == 0:
+            if exit_when_idle and await self._db(lambda: unfinished_jobs(self._engine)) == 0:
                 break
             await self._sleep(delay)
             delay = min(delay * 2, self._max_poll)
@@ -225,6 +252,7 @@ async def serve(
     heartbeat_seconds: float | None,
     reap_every_seconds: float,
     retry: RetryPolicy,
+    db_retry_seconds: float,
     exit_when_idle: bool,
 ) -> Worker:
     engine = create_async_engine(async_url(url))
@@ -243,6 +271,7 @@ async def serve(
         heartbeat_seconds=heartbeat_seconds,
         reap_every_seconds=reap_every_seconds,
         retry=retry,
+        db_retry_seconds=db_retry_seconds,
     )
     try:
         await worker.run(exit_when_idle=exit_when_idle, stop=stop)
@@ -270,6 +299,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--retry-backoff-cap-seconds", type=float, default=settings.retry_backoff_cap_seconds
+    )
+    parser.add_argument(
+        "--db-retry-seconds",
+        type=float,
+        default=settings.db_retry_seconds,
+        help="how long to keep retrying a call whose database connection dropped",
     )
     parser.add_argument("--database-url", default=settings.database_url)
     parser.add_argument("--execution", choices=["process", "container"], default=settings.execution)
@@ -300,6 +335,7 @@ def main(argv: list[str] | None = None) -> int:
                 backoff_seconds=args.retry_backoff_seconds,
                 backoff_cap_seconds=args.retry_backoff_cap_seconds,
             ),
+            db_retry_seconds=args.db_retry_seconds,
             exit_when_idle=args.exit_when_idle,
         )
     )

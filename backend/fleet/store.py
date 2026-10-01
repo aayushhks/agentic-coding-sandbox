@@ -79,6 +79,17 @@ _FINISH_CANCELLED = (
 )
 
 
+# whether an attempt already ended the given way, for a call made again after a lost answer
+_ENDED_BY = (
+    "select exists (select 1 from fleet_attempts where job_id = :job and attempt = :attempt "
+    "and ended_by = :ending)"
+)
+
+
+def _ended_by(job_id: int, attempt: int, ending: str) -> dict[str, Any]:
+    return {"job": job_id, "attempt": attempt, "ending": ending}
+
+
 class Beat(BaseModel):
     """A heartbeat's answer: the lease now runs until here, and whether to stop."""
 
@@ -250,6 +261,18 @@ async def start(engine: AsyncEngine, *, job_id: int, attempt: int) -> bool:
             {"job": job_id, "attempt": attempt},
         )
         started = result.rowcount == 1
+        if not started:
+            # asked again after an answer that never arrived: the first ask may have started it
+            started = bool(
+                await connection.scalar(
+                    text(
+                        "select exists (select 1 from fleet_jobs where id = :job "
+                        "and attempt = :attempt and state = 'running' "
+                        "and lease_expires_at > clock_timestamp() and cancel_requested_at is null)"
+                    ),
+                    {"job": job_id, "attempt": attempt},
+                )
+            )
     if started:
         await failpoint("start.after_commit", job=job_id, attempt=attempt)
     return started
@@ -311,9 +334,14 @@ async def finish_cancelled(engine: AsyncEngine, *, job_id: int, attempt: int) ->
         ended = await connection.scalar(
             text(_FINISH_CANCELLED), {"job": job_id, "attempt": attempt}
         )
-        if ended is not None:
-            await failpoint("cancel.before_commit", connection, job=job_id, attempt=attempt)
-    return ended is not None
+        if ended is None:
+            # asked again after an answer that never arrived: the first ask may have ended it
+            return bool(
+                await connection.scalar(text(_ENDED_BY), _ended_by(job_id, attempt, "cancelled"))
+            )
+        await failpoint("cancel.before_commit", connection, job=job_id, attempt=attempt)
+    await failpoint("cancel.after_commit", job=job_id, attempt=attempt)
+    return True
 
 
 async def publish(
@@ -339,7 +367,24 @@ async def publish(
             )
         ).first()
         if held is None:
-            return False
+            # asked again after an answer that never arrived: the first ask may have published
+            # this very result; anything different from it is refused
+            return bool(
+                await connection.scalar(
+                    text(
+                        "select exists (select 1 from fleet_results where job_id = :job "
+                        "and attempt = :attempt and worker_id = :worker and outcome = :outcome "
+                        "and body = CAST(:body AS jsonb))"
+                    ),
+                    {
+                        "job": job_id,
+                        "attempt": attempt,
+                        "worker": worker_id,
+                        "outcome": outcome,
+                        "body": json.dumps(body, sort_keys=True),
+                    },
+                )
+            )
         if held.cancel_requested_at is not None:
             # a cancel requested before the result arrived wins: the job ends cancelled instead
             await connection.execute(text(_FINISH_CANCELLED), {"job": job_id, "attempt": attempt})
@@ -416,9 +461,17 @@ async def release(
                 },
             )
         ).first()
-        if row is not None:
-            await failpoint("release.before_commit", connection, job=job_id, attempt=attempt)
-    return None if row is None else cast(JobState, row.state)
+        if row is None:
+            # asked again after an answer that never arrived: the first ask may have given it back
+            if not await connection.scalar(text(_ENDED_BY), _ended_by(job_id, attempt, "released")):
+                return None
+            state = await connection.scalar(
+                text("select state from fleet_jobs where id = :job"), {"job": job_id}
+            )
+            return cast(JobState, state)
+        await failpoint("release.before_commit", connection, job=job_id, attempt=attempt)
+    await failpoint("release.after_commit", job=job_id, attempt=attempt)
+    return cast(JobState, row.state)
 
 
 async def reap(engine: AsyncEngine, *, retry: RetryPolicy = DEFAULT_RETRY) -> list[int]:

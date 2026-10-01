@@ -35,9 +35,11 @@ POINTS = {
     "heartbeat.before": "a job is running, and its lease is about to be extended",
     "publish.before_commit": "a result is written, not yet committed",
     "publish.after_commit": "a result is committed, and the worker hasn't moved on",
-    "release.before_commit": "a job given back after a failure, not yet committed",
+    "release.before_commit": "a job is given back after a failure, not yet committed",
+    "release.after_commit": "a job given back is committed, and the worker hasn't moved on",
     "reap.before_commit": "lapsed leases are ended, not yet committed",
     "cancel.before_commit": "a cancelled job is ended, not yet committed",
+    "cancel.after_commit": "a cancelled job's end is committed, and the worker hasn't moved on",
 }
 
 

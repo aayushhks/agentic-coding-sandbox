@@ -29,6 +29,8 @@ class FleetSettings(BaseSettings):
     heartbeat_seconds: float | None = None
     # how often a busy worker returns lapsed leases to the queue; an idle one does it every poll
     reap_every_seconds: float = 5.0
+    # how long a worker keeps retrying a call whose database connection dropped, before it exits
+    db_retry_seconds: float = 60.0
     # the wait before retrying after an infrastructure failure, doubling up to the cap
     retry_backoff_seconds: float = DEFAULT_RETRY.backoff_seconds
     retry_backoff_cap_seconds: float = DEFAULT_RETRY.backoff_cap_seconds
