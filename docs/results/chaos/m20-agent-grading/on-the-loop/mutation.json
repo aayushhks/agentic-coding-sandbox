@@ -1,0 +1,3 @@
+{
+  "why": "the fix undone: the agent runners run their hidden tests on the worker's event loop again"
+}

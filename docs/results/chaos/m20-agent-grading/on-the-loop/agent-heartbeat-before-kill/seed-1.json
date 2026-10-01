@@ -1,0 +1,86 @@
+{
+  "scenario": "agent-heartbeat-before-kill",
+  "seed": 1,
+  "point": "heartbeat.before",
+  "action": "kill",
+  "summary": "a worker is killed mid-task, running the real agent on recorded tasks",
+  "workload": "agent",
+  "execution": "process",
+  "effects": [
+    "died",
+    "retried"
+  ],
+  "build": {
+    "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+    "git_dirty": true
+  },
+  "config": {
+    "jobs": 18,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 1754,
+      "at": 1.646,
+      "job": 1,
+      "attempt": 1,
+      "process": "w0"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 1756,
+      "at": 1.815,
+      "job": 2,
+      "attempt": 1,
+      "process": "w2"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 1755,
+      "at": 2.411,
+      "job": 3,
+      "attempt": 1,
+      "process": "w1"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 10.68,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "escalated": 2,
+      "failed": 1,
+      "succeeded": 15
+    },
+    "attempt_endings": {
+      "lease_expired": 5,
+      "published": 18
+    },
+    "jobs_run_more_than_once": 4,
+    "processes_started": 6,
+    "late_results_refused": 2,
+    "leases_lost": 0,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": true,
+  "troubled_jobs": {}
+}

@@ -1,0 +1,26 @@
+diff --git a/backend/app/benchmark/runner.py b/backend/app/benchmark/runner.py
+index 315e2dd..cece485 100644
+--- a/backend/app/benchmark/runner.py
++++ b/backend/app/benchmark/runner.py
+@@ -69,7 +69,7 @@ async def run_task(
+         run = await agent.run(task.description)
+         # the hidden tests run off the event loop, as the agent's own tools do: blocking it would
+         # starve whatever shares the loop, such as the heartbeats keeping a worker's lease alive
+-        evaluation = await asyncio.to_thread(grade, sandbox, task)
++        evaluation = grade(sandbox, task)
+         return TaskResult(
+             task_id=task.id,
+             category=task.category.value,
+diff --git a/backend/app/tickets/runner.py b/backend/app/tickets/runner.py
+index c946514..4cf3905 100644
+--- a/backend/app/tickets/runner.py
++++ b/backend/app/tickets/runner.py
+@@ -102,7 +102,7 @@ async def resolve_ticket(
+         hidden_pass = False
+         if ticket.test_files and run.finished_cleanly:
+             # off the event loop, as the agent's tools run, so heartbeats sharing it keep going
+-            hidden_pass = await asyncio.to_thread(_hidden_tests_pass, sandbox, ticket.test_files)
++            hidden_pass = _hidden_tests_pass(sandbox, ticket.test_files)
+         return TicketResolution(
+             ticket_id=ticket.id,
+             category=ticket.category,
