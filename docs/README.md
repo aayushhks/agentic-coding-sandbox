@@ -22,6 +22,7 @@ analysis, and the systems built on top of them.
 | [m17-job-store.md](m17-job-store.md) | The durable job store and submission API: a Postgres queue, kill-and-restart testing, and the measured cost of durability with one worker |
 | [m18-worker-pool.md](m18-worker-pool.md) | Many workers safely: heartbeats, fencing, bounded retries with a dead letter, an invariant checker that can fail, and an 8-worker kill-and-pause stress test |
 | [m19-controlled-execution.md](m19-controlled-execution.md) | Each attempt in a locked-down container: limits, egress grants through a proxy, cancellation, the tests that try to break each limit, and the measured cost |
+| [m20-fault-injection.md](m20-fault-injection.md) | Seeded faults at twelve named points in the job protocol plus Postgres restarts, the 26-scenario matrix with the checks after every run, the two bugs it found, and the broken builds it catches |
 | [design.md](design.md) | The execution platform's design: why Postgres and `SKIP LOCKED`, the job lifecycle, database-enforced invariants, leases, heartbeats and fencing, the retry policy, what the invariant checker proves and doesn't, cancellation, and the execution policy model |
 
 ## Results
@@ -30,4 +31,5 @@ Raw per-run results referenced by the write-ups live in [`results/`](results/):
 
 - [`groq-llama-3.3-70b-v1.json`](results/groq-llama-3.3-70b-v1.json) — the M6 baseline (86.7%)
 - [`groq-llama-3.3-70b-v2.json`](results/groq-llama-3.3-70b-v2.json) — the M7 hardened run (100%), and the committed baseline the CI gate enforces
-- [`bench/`](results/bench/) — the bench trial and summary records: the M16 replay baselines, the real-model trial and superseded runs, the M17 A/B, the M18 regression checks in [`bench/m18/`](results/bench/m18/), and the M19 container measurements in [`bench/m19/`](results/bench/m19/)
+- [`bench/`](results/bench/) — the bench trial and summary records: the M16 replay baselines, the real-model trial and superseded runs, the M17 A/B, the M18 regression checks in [`bench/m18/`](results/bench/m18/), the M19 container measurements in [`bench/m19/`](results/bench/m19/), and the M20 build comparison in [`bench/m20/`](results/bench/m20/)
+- [`chaos/`](results/chaos/) — the M20 fault-injection records: the matrix, the hung-transaction runs before their fix, the agent's grading on and off the event loop, and the deliberately broken builds

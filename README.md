@@ -54,6 +54,7 @@ flowchart TB
 | **Durable execution** | a Postgres job queue with leases and atomic publishes; a worker killed mid-batch loses and duplicates nothing, checked on every push | [m17](docs/m17-job-store.md) · [design](docs/design.md) |
 | **Many workers** | heartbeats, fencing (a worker whose lease lapsed can never write), bounded retries with a dead letter, and an invariant checker run after an 8-worker kill-and-pause stress test on every push | [m18](docs/m18-worker-pool.md) · [design](docs/design.md) |
 | **Controlled execution** | each attempt in a locked-down container of its own: CPU, memory, process, scratch and time limits, no network unless a destination is granted through a proxy, and cancellation that releases the lease; every limit tested by a job that tries to break it, on every push | [m19](docs/m19-controlled-execution.md) · [policy model](docs/design.md#controlled-execution-the-policy-model) |
+| **Fault injection** | seeded faults at twelve named points in the job protocol — kills, pauses, hangs and dropped connections, including the api killed mid-request — plus Postgres restarts: 740 faults over 260 runs, zero invariant violations, with the checker and each fault's expected effects checked after every run; every scenario runs in CI on every push | [m20](docs/m20-fault-injection.md) · [design](docs/design.md) |
 
 ## Tech stack
 
@@ -342,13 +343,16 @@ uv run python -m fleet.worker --runner bench.runner:run_job --execution containe
 uv run python -m bench.cli ab --trials 5                            # sequential vs fleet a/b
 uv run python -m bench.cli ab --arms process-container --trials 5  # in process vs containers
 uv run python -m bench.cli replay --executor fleet --workers 4      # replay on a worker pool
+uv run python -m chaos run --scenarios all --seeds 0-2              # every fault scenario
 ```
 
 Measured cost of durability with one worker and restart testing:
 [docs/m17-job-store.md](docs/m17-job-store.md). Heartbeats, fencing, retries, the invariant checker
 and the stress test: [docs/m18-worker-pool.md](docs/m18-worker-pool.md). Containers, limits,
 egress grants and cancellation, and what they cost:
-[docs/m19-controlled-execution.md](docs/m19-controlled-execution.md). The design (why Postgres over
+[docs/m19-controlled-execution.md](docs/m19-controlled-execution.md). Seeded faults at twelve named
+points in the job protocol plus Postgres restarts, what they found and the matrix of runs:
+[docs/m20-fault-injection.md](docs/m20-fault-injection.md). The design (why Postgres over
 Redis or a broker, the lease and fencing model, what the checker proves and doesn't, the execution
 policy model): [docs/design.md](docs/design.md).
 
@@ -367,6 +371,11 @@ policy model): [docs/design.md](docs/design.md).
   inside a container per attempt, and both share the host's kernel — see [Sandbox](#sandbox) and
   the [policy model](docs/design.md#controlled-execution-the-policy-model) for the exact boundary.
   Production concerns are demonstrated, not enterprise-hardened.
+- **Faults are injected one kind at a time, at named points.** The chaos scenarios arm twelve of
+  the fourteen defined (plus Postgres restarts), and unit tests drop the connection at the other
+  two. Combinations, network partitions that leave a connection hanging, full disks and clock steps
+  aren't injected; see
+  [m20](docs/m20-fault-injection.md#what-the-checker-proves-and-what-it-doesnt).
 - **The MCP servers run locally, not on the public internet.** The deployed demo shows their
   recorded results (the report), not a live tool endpoint.
 - **The execution numbers are from one machine.** Replay numbers are medians over several trials
