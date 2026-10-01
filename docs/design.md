@@ -113,6 +113,19 @@ Rather than trusting the code, the schema makes the dangerous states impossible:
   idle one on every poll; reapers take the lapsed rows with `SKIP LOCKED`, so several of them split
   the work instead of queueing behind each other, and a reap and a publish of the same job still
   serialize on its row lock.
+- **A frozen worker can't keep a job.** A worker paused or hung in the middle of a transaction keeps
+  that transaction's rows locked, and `SKIP LOCKED` means every claim and every reap passes those
+  rows by — so the job would be stuck for as long as the worker stayed frozen. Worker sessions set
+  Postgres's `idle_in_transaction_session_timeout` to the lease: a session idle inside a transaction
+  for that long is ended by Postgres and its transaction rolls back. A claim that never committed
+  leaves its job queued for the next claim; a job whose lease lapsed meanwhile is reaped like any
+  other. The fault injection found this ([m20](m20-fault-injection.md)).
+- **A dropped connection is ridden through.** A worker retries a call whose connection dropped on a
+  fresh one, for up to a minute, rather than crashing. A write made twice is safe: marking a job
+  running, giving it back and ending a cancelled one each recognise their own committed first try,
+  and so does a publish, but only of the very same result. A claim whose answer was lost after it
+  committed is left to lapse: that job waits out the lease, then a reap and its retry backoff, before
+  another worker can take it, and the lost attempt counts against its retry budget.
 
 ## Retries and dead letters: the policy
 
@@ -143,7 +156,7 @@ every result, in one repeatable-read snapshot — and reports every violation of
 
 | Invariant | Checked as |
 |---|---|
-| **Exactly one result per job** | every job finished with an outcome has exactly one result, the one it points at, with the same outcome; no other job has one |
+| **Exactly one result per job** | every job finished with an outcome has exactly one result, the one it points at, with the same outcome; no other job has one; and, given the key each job's result must carry, every result carries its own job's key and no key is published twice |
 | **Nothing lost** | every submitted job is in the store and in a final state |
 | **No stale writes** | every result came from the job's last attempt, by the worker holding it, before that attempt's lease ran out, and closed that attempt; each attempt was claimed only after the one before it ended |
 | **Accounting adds up** | each job's attempt log runs 1…n with no gaps and every attempt ended; a reaped lease had run out and a released one hadn't; only the last attempt may have published; a dead letter used its whole budget; the final states sum to the jobs submitted |
@@ -152,6 +165,18 @@ every result, in one repeatable-read snapshot — and reports every violation of
 with an outcome has exactly one result and no other job has any, none is stranded, no attempt
 overlapped another of the same job, and every accepted result was written by the only attempt
 entitled to write it, while its lease was live.
+
+**When it runs:** after every fault-injection run, on every push. Each run injects its faults at
+named points in the protocol (or, for a Postgres restart, once set shares of the batch have
+finished), and the harness also checks that each fault left behind the effects
+it should — a killed attempt that lapsed and was retried, a late result refused, a paused worker
+fenced out — and that every planned fault happened, so a run where the fault missed can't pass as
+a clean one. Builds broken on purpose show what these checks catch: without fencing, reaping or the
+idle-transaction timeout, every run failed the invariants; without the idempotent publish, every run
+failed the effect checks alone, since the stored result was right and the invariants held; and
+without the claim's lock, only 3 runs in 10 failed — the store's concurrency test is what guards
+that one
+([m20](m20-fault-injection.md#is-the-harness-real)).
 
 **What it doesn't:**
 
@@ -168,9 +193,12 @@ entitled to write it, while its lease was live.
   enough to hide it.
 - **Anything mid-run.** It checks a drained run; "nothing lost" means nothing was left unfinished,
   not that anything finished quickly.
+- **Faults nobody injected.** The harness kills, pauses and hangs processes, drops connections, and
+  restarts the api and Postgres. It doesn't partition the network so that a connection hangs rather
+  than closes, fill a disk, or step a clock, and each run injects one kind of fault at a time.
 
-It can fail: its tests feed it a clean run and sixteen corruptions, one or more per invariant, and
-check each is caught under the invariant it breaks.
+It can fail: its tests feed it a clean run and twenty-one corruptions, one or more per invariant,
+plus results carrying the wrong key, and check each is caught under the invariant it breaks.
 
 ## Idempotent submission
 
@@ -299,7 +327,5 @@ reads.
 
 ## Still to come
 
-- The full fault matrix around the checker: kills at each exact point, dropped database
-  connections, API restarts — M20.
 - Where scaling stops being linear, measured — M21.
 - What would change at ten times the scale.
