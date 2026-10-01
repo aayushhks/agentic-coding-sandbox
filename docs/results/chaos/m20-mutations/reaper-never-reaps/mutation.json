@@ -1,0 +1,5 @@
+{
+  "why": "recovery: lapsed leases are never ended, so a dead worker's job is never taken back",
+  "scenarios": "heartbeat-before-kill",
+  "seeds": "0-1"
+}

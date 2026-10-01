@@ -1,0 +1,3 @@
+{"point": "heartbeat.before", "action": "kill", "pid": 8888, "at": 1790882118.6401203, "job": 4, "attempt": 1}
+{"point": "heartbeat.before", "action": "kill", "pid": 8887, "at": 1790882118.6992548, "job": 5, "attempt": 1}
+{"point": "heartbeat.before", "action": "kill", "pid": 8886, "at": 1790882119.2291467, "job": 7, "attempt": 1}

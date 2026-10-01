@@ -1,0 +1,98 @@
+{
+  "scenario": "publish-after-commit-drop",
+  "seed": 4,
+  "point": "publish.after_commit",
+  "action": "drop",
+  "summary": "a result commits, but its answer never reaches the worker",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "survived",
+    "stands",
+    "counted"
+  ],
+  "build": {
+    "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+    "git_dirty": true
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "publish.after_commit",
+      "action": "drop",
+      "pid": 8699,
+      "at": 1.176,
+      "job": 1,
+      "attempt": 1,
+      "process": "w2"
+    },
+    {
+      "point": "publish.after_commit",
+      "action": "drop",
+      "pid": 8697,
+      "at": 1.282,
+      "job": 5,
+      "attempt": 1,
+      "process": "w0"
+    },
+    {
+      "point": "publish.after_commit",
+      "action": "drop",
+      "pid": 8698,
+      "at": 1.41,
+      "job": 4,
+      "attempt": 1,
+      "process": "w1"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 6.52,
+  "violations": {
+    "invariants": [],
+    "outcomes": [],
+    "effects": [
+      "counted: w2 counted its own committed result for job 1 as refused",
+      "counted: w0 counted its own committed result for job 5 as refused",
+      "counted: w1 counted its own committed result for job 4 as refused"
+    ],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "published": 30
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 3,
+    "late_results_refused": 3,
+    "leases_lost": 0,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": false,
+  "troubled_jobs": {
+    "1": [
+      "attempt 1 by w2 ended published"
+    ],
+    "4": [
+      "attempt 1 by w1 ended published"
+    ],
+    "5": [
+      "attempt 1 by w0 ended published"
+    ]
+  }
+}

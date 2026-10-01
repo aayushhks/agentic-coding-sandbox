@@ -1,0 +1,5 @@
+{
+  "why": "claiming: the oldest queued job is picked without locking it, so two workers can take it at once",
+  "scenarios": "claim-before-kill",
+  "seeds": "0-9"
+}

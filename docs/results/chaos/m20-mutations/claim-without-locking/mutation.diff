@@ -1,0 +1,13 @@
+diff --git a/backend/fleet/store.py b/backend/fleet/store.py
+index 7796dc2..e6a4d01 100644
+--- a/backend/fleet/store.py
++++ b/backend/fleet/store.py
+@@ -214,7 +214,7 @@ async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) ->
+                     "updated_at = clock_timestamp() "
+                     "where id = (select id from fleet_jobs where state = 'queued' "
+                     "and available_at <= clock_timestamp() "
+-                    "order by id limit 1 for update skip locked) "
++                    "order by id limit 1) "
+                     "returning id, attempt, name, payload, claimed_at, lease_expires_at, policy"
+                 ),
+                 {"worker": worker_id, "lease": lease_seconds},

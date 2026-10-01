@@ -1,0 +1,126 @@
+{
+  "scenario": "publish-before-stop",
+  "seed": 3,
+  "point": "publish.before",
+  "action": "stop",
+  "summary": "a worker is paused well past its lease after its job ran, before it publishes",
+  "workload": "long",
+  "execution": "process",
+  "effects": [
+    "retried",
+    "refused"
+  ],
+  "build": {
+    "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+    "git_dirty": true
+  },
+  "config": {
+    "jobs": 18,
+    "workers": 5,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "publish.before",
+      "action": "stop",
+      "pid": 8813,
+      "at": 2.492,
+      "job": 2,
+      "attempt": 1,
+      "process": "w2",
+      "woke": "overtaken"
+    },
+    {
+      "point": "publish.before",
+      "action": "stop",
+      "pid": 8812,
+      "at": 4.176,
+      "job": 9,
+      "attempt": 1,
+      "process": "w1",
+      "woke": "overtaken"
+    },
+    {
+      "point": "publish.before",
+      "action": "stop",
+      "pid": 8811,
+      "at": 4.303,
+      "job": 8,
+      "attempt": 1,
+      "process": "w0",
+      "woke": "overtaken"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 8.94,
+  "violations": {
+    "invariants": [
+      "no_stale_write (job 9): published by attempt 1, but the last is 2",
+      "no_stale_write (job 9): published after attempt 1's lease ran out",
+      "no_stale_write (job 9): attempt 2 claimed while 1 still held it",
+      "accounting (job 9): attempt 2 never ended",
+      "accounting (job 9): attempt 1 ended published, yet the job ran again",
+      "accounting (job 9): succeeded, but its last attempt ended None",
+      "no_stale_write (job 2): published by attempt 1, but the last is 2",
+      "no_stale_write (job 2): published after attempt 1's lease ran out",
+      "no_stale_write (job 2): attempt 2 claimed while 1 still held it",
+      "accounting (job 2): attempt 2 never ended",
+      "accounting (job 2): attempt 1 ended published, yet the job ran again",
+      "accounting (job 2): succeeded, but its last attempt ended None",
+      "no_stale_write (job 8): published by attempt 1, but the last is 2",
+      "no_stale_write (job 8): published after attempt 1's lease ran out",
+      "no_stale_write (job 8): attempt 2 claimed while 1 still held it",
+      "accounting (job 8): attempt 2 never ended",
+      "accounting (job 8): attempt 1 ended published, yet the job ran again",
+      "accounting (job 8): succeeded, but its last attempt ended None"
+    ],
+    "outcomes": [],
+    "effects": [
+      "retried: job 2 attempt 1 ended published, not by its lease",
+      "refused: w2's late result for job 2 was never refused",
+      "retried: job 9 attempt 1 ended published, not by its lease",
+      "refused: w1's late result for job 9 was never refused",
+      "retried: job 8 attempt 1 ended published, not by its lease",
+      "refused: w0's late result for job 8 was never refused"
+    ],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 18
+    },
+    "attempt_endings": {
+      "None": 3,
+      "published": 18
+    },
+    "jobs_run_more_than_once": 3,
+    "processes_started": 5,
+    "late_results_refused": 0,
+    "leases_lost": 3,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": false,
+  "troubled_jobs": {
+    "2": [
+      "attempt 1 by w2 ended published",
+      "attempt 2 by w3 ended None"
+    ],
+    "8": [
+      "attempt 1 by w0 ended published",
+      "attempt 2 by w2 ended None"
+    ],
+    "9": [
+      "attempt 1 by w1 ended published",
+      "attempt 2 by w0 ended None"
+    ]
+  }
+}

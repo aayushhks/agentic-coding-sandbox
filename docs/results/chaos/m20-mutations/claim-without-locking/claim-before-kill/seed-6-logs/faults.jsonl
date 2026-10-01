@@ -1,0 +1,3 @@
+{"point": "claim.before", "action": "kill", "pid": 8529, "at": 1790882006.6881776, "worker": "w2"}
+{"point": "claim.before", "action": "kill", "pid": 8528, "at": 1790882006.6974747, "worker": "w1"}
+{"point": "claim.before", "action": "kill", "pid": 8527, "at": 1790882006.7217364, "worker": "w0"}

@@ -1,0 +1,5 @@
+{
+  "why": "the fix undone: a worker's session is never ended for idling in a transaction",
+  "scenarios": "claim-before-commit-hang,publish-before-commit-hang",
+  "seeds": "0-1"
+}

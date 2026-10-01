@@ -1,0 +1,12 @@
+diff --git a/backend/fleet/store.py b/backend/fleet/store.py
+index 7796dc2..40399bb 100644
+--- a/backend/fleet/store.py
++++ b/backend/fleet/store.py
+@@ -477,6 +477,7 @@ async def release(
+ 
+ async def reap(engine: AsyncEngine, *, retry: RetryPolicy = DEFAULT_RETRY) -> list[int]:
+     """End every attempt whose lease ran out, returning its job to the queue or dead letters."""
++    return []
+     async with engine.begin() as connection:
+         # skip locked lets concurrent reapers split the lapsed jobs instead of queueing on them
+         rows = await connection.execute(

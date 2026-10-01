@@ -1,0 +1,5 @@
+{
+  "why": "idempotence: a publish sent again after a lost answer no longer recognises its own result",
+  "scenarios": "publish-after-commit-drop",
+  "seeds": "0-4"
+}

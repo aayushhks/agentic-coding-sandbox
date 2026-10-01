@@ -1,0 +1,74 @@
+{
+  "scenario": "claim-before-commit-hang",
+  "seed": 0,
+  "point": "claim.before_commit",
+  "action": "hang",
+  "summary": "a worker hangs for good with its claim written but not committed",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "unblocked"
+  ],
+  "build": {
+    "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+    "git_dirty": true
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 1,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "claim.before_commit",
+      "action": "stop",
+      "pid": 9018,
+      "at": 0.519,
+      "job": 2,
+      "attempt": 1,
+      "process": "w0"
+    }
+  ],
+  "faults_injected": 1,
+  "drained": false,
+  "wall_seconds": 90.66,
+  "violations": {
+    "invariants": [
+      "nothing_lost (job 2): left queued",
+      "accounting (job None): 30 submitted, 29 in a final state: {'queued': 1, 'succeeded': 29}"
+    ],
+    "outcomes": [],
+    "effects": [
+      "unblocked: job 2 was never finished while w0 hung holding it"
+    ],
+    "chaos": [
+      "the batch did not drain within 90 s"
+    ]
+  },
+  "counts": {
+    "final_states": {
+      "queued": 1,
+      "succeeded": 29
+    },
+    "attempt_endings": {
+      "published": 29
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 3,
+    "late_results_refused": 0,
+    "leases_lost": 0,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": false,
+  "troubled_jobs": {
+    "2": []
+  }
+}

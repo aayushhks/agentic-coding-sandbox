@@ -1,0 +1,5 @@
+{
+  "why": "fencing: a publish no longer checks that it is for the attempt that holds the job",
+  "scenarios": "publish-before-stop",
+  "seeds": "0-4"
+}

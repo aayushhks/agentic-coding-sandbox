@@ -1,0 +1,109 @@
+{
+  "scenario": "heartbeat-before-kill",
+  "seed": 1,
+  "point": "heartbeat.before",
+  "action": "kill",
+  "summary": "a worker is killed mid-task",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "died",
+    "retried"
+  ],
+  "build": {
+    "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+    "git_dirty": true
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 8933,
+      "at": 0.815,
+      "job": 2,
+      "attempt": 1,
+      "process": "w2"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 8932,
+      "at": 0.857,
+      "job": 3,
+      "attempt": 1,
+      "process": "w1"
+    },
+    {
+      "point": "heartbeat.before",
+      "action": "kill",
+      "pid": 8931,
+      "at": 1.108,
+      "job": 4,
+      "attempt": 1,
+      "process": "w0"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": false,
+  "wall_seconds": 90.64,
+  "violations": {
+    "invariants": [
+      "nothing_lost (job 2): left running",
+      "nothing_lost (job 4): left running",
+      "nothing_lost (job 3): left running",
+      "accounting (job 2): attempt 1 never ended",
+      "accounting (job 4): attempt 1 never ended",
+      "accounting (job 3): attempt 1 never ended",
+      "accounting (job None): 30 submitted, 27 in a final state: {'running': 3, 'succeeded': 27}"
+    ],
+    "outcomes": [],
+    "effects": [
+      "retried: job 2 attempt 1 ended None, not by its lease",
+      "retried: job 3 attempt 1 ended None, not by its lease",
+      "retried: job 4 attempt 1 ended None, not by its lease"
+    ],
+    "chaos": [
+      "the batch did not drain within 90 s"
+    ]
+  },
+  "counts": {
+    "final_states": {
+      "running": 3,
+      "succeeded": 27
+    },
+    "attempt_endings": {
+      "None": 3,
+      "published": 27
+    },
+    "jobs_run_more_than_once": 0,
+    "processes_started": 6,
+    "late_results_refused": 0,
+    "leases_lost": 0,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": false,
+  "troubled_jobs": {
+    "2": [
+      "attempt 1 by w2 ended None"
+    ],
+    "3": [
+      "attempt 1 by w1 ended None"
+    ],
+    "4": [
+      "attempt 1 by w0 ended None"
+    ]
+  }
+}

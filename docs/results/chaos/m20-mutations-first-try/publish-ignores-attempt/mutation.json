@@ -1,0 +1,5 @@
+{
+  "why": "fencing: a publish no longer checks that it is for the attempt that holds the job; run against the first version of publish-before-stop, which woke paused workers on a timer, with three workers all armed",
+  "scenarios": "publish-before-stop",
+  "seeds": "0-1"
+}

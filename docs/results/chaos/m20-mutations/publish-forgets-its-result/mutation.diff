@@ -1,0 +1,14 @@
+diff --git a/backend/fleet/store.py b/backend/fleet/store.py
+index 7796dc2..97699ff 100644
+--- a/backend/fleet/store.py
++++ b/backend/fleet/store.py
+@@ -368,8 +368,7 @@ async def publish(
+             )
+         ).first()
+         if held is None:
+-            # asked again after an answer that never arrived: the first ask may have published
+-            # this very result; anything different from it is refused
++            return False
+             return bool(
+                 await connection.scalar(
+                     text(

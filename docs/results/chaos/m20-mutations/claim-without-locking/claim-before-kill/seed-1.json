@@ -1,0 +1,89 @@
+{
+  "scenario": "claim-before-kill",
+  "seed": 1,
+  "point": "claim.before",
+  "action": "kill",
+  "summary": "a worker is killed as it is about to claim",
+  "workload": "sleep",
+  "execution": "process",
+  "effects": [
+    "died"
+  ],
+  "build": {
+    "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+    "git_dirty": true
+  },
+  "config": {
+    "jobs": 30,
+    "workers": 3,
+    "lease_seconds": 1.0,
+    "heartbeat_seconds": 0.333,
+    "reap_every_seconds": 0.5,
+    "max_attempts": 5,
+    "faults_planned": 3,
+    "image": null,
+    "image_id": null
+  },
+  "faults": [
+    {
+      "point": "claim.before",
+      "action": "kill",
+      "pid": 8426,
+      "at": 0.632,
+      "worker": "w0",
+      "process": "w0"
+    },
+    {
+      "point": "claim.before",
+      "action": "kill",
+      "pid": 8427,
+      "at": 0.669,
+      "worker": "w1",
+      "process": "w1"
+    },
+    {
+      "point": "claim.before",
+      "action": "kill",
+      "pid": 8428,
+      "at": 1.235,
+      "worker": "w2",
+      "process": "w2"
+    }
+  ],
+  "faults_injected": 3,
+  "drained": true,
+  "wall_seconds": 6.86,
+  "violations": {
+    "invariants": [
+      "no_stale_write (job 16): attempt 2 claimed while 1 still held it",
+      "accounting (job 16): attempt 1 never ended",
+      "accounting (job 16): attempt 1 ended None, yet the job ran again"
+    ],
+    "outcomes": [],
+    "effects": [],
+    "chaos": []
+  },
+  "counts": {
+    "final_states": {
+      "succeeded": 30
+    },
+    "attempt_endings": {
+      "None": 1,
+      "published": 30
+    },
+    "jobs_run_more_than_once": 1,
+    "processes_started": 6,
+    "late_results_refused": 0,
+    "leases_lost": 1,
+    "ghost_claims": 0,
+    "postgres_restarts": 0,
+    "cancels": 0
+  },
+  "passed": false,
+  "troubled_jobs": {
+    "16": [
+      "attempt 1 by w5 ended None",
+      "attempt 2 by w3 ended published"
+    ]
+  }
+}

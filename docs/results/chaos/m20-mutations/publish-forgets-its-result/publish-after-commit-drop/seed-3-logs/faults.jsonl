@@ -1,0 +1,3 @@
+{"point": "publish.after_commit", "action": "drop", "pid": 8689, "at": 1790882054.972172, "job": 2, "attempt": 1}
+{"point": "publish.after_commit", "action": "drop", "pid": 8688, "at": 1790882055.1982915, "job": 4, "attempt": 1}
+{"point": "publish.after_commit", "action": "drop", "pid": 8687, "at": 1790882055.701795, "job": 6, "attempt": 1}

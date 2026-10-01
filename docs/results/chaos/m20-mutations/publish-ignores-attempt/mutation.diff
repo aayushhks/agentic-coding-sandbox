@@ -1,0 +1,13 @@
+diff --git a/backend/fleet/store.py b/backend/fleet/store.py
+index 7796dc2..71825d0 100644
+--- a/backend/fleet/store.py
++++ b/backend/fleet/store.py
+@@ -361,7 +361,7 @@ async def publish(
+             await connection.execute(
+                 text(
+                     "select lease_expires_at, cancel_requested_at from fleet_jobs "
+-                    "where id = :job and attempt = :attempt "
++                    "where id = :job "
+                     "and state in ('claimed', 'running') for update"
+                 ),
+                 {"job": job_id, "attempt": attempt},

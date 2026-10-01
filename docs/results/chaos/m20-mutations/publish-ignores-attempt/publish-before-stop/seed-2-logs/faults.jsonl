@@ -1,0 +1,3 @@
+{"point": "publish.before", "action": "stop", "pid": 8799, "at": 1790882090.4112463, "job": 2, "attempt": 1}
+{"point": "publish.before", "action": "stop", "pid": 8797, "at": 1790882091.1566992, "job": 6, "attempt": 1}
+{"point": "publish.before", "action": "stop", "pid": 8798, "at": 1790882091.7876384, "job": 7, "attempt": 1}
