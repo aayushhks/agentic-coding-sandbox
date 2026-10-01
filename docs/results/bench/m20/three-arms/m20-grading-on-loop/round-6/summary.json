@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "record": "summary",
+  "label": "seq-m20-grading-on-loop",
+  "trials": [
+    1,
+    2
+  ],
+  "interrupted_trials": [],
+  "config": {
+    "mode": "replay",
+    "latency": "zero",
+    "executor": "sequential",
+    "workers": 1,
+    "topology": "single host, one in-process worker",
+    "tasks": 18,
+    "seed": 1,
+    "taskset_version": "v1",
+    "taskset_digest": "207fa64b283eb781dbd0cc0f767089134f5f8d5bf1adbdeaaca576885ba95f3e",
+    "recordings_digest": "d5958d3fdd62ab5d4f4a84917e5557de723099940b9e46cc41f4cc47dbfe1574",
+    "provider": "replay",
+    "model": "qwen/qwen3.8-27b",
+    "agent_configs": {
+      "benchmark": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": false
+      },
+      "ticket": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": true
+      }
+    },
+    "sandbox_config": {
+      "timeout_seconds": 10.0,
+      "max_output_bytes": 10000,
+      "memory_mb": 4096,
+      "cpu_seconds": 15,
+      "max_file_size_mb": 64,
+      "network_disabled": true,
+      "require_isolation": false,
+      "hidden_paths": []
+    },
+    "tool_transport": "in_process",
+    "percentile_method": "linear interpolation between closest ranks (numpy's default)",
+    "execution": null
+  },
+  "environments": [
+    {
+      "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+      "git_dirty": true,
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+      "logical_cpus": 4,
+      "usable_cpus": 4,
+      "cpu_quota_cores": null,
+      "memory_total_gib": 15.72,
+      "memory_limit_gib": null,
+      "virtualized": true,
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "6.18.44-fc-v50",
+      "python": "3.13.12",
+      "sandbox_network_isolated": true
+    },
+    {
+      "git_sha": "8117d39247904f16844f9f490907568e2947a079",
+      "git_dirty": true,
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+      "logical_cpus": 4,
+      "usable_cpus": 4,
+      "cpu_quota_cores": null,
+      "memory_total_gib": 15.72,
+      "memory_limit_gib": null,
+      "virtualized": true,
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "6.18.44-fc-v50",
+      "python": "3.13.12",
+      "sandbox_network_isolated": true
+    }
+  ],
+  "outcomes_identical": true,
+  "metrics": {
+    "batch_wall_clock_seconds": {
+      "median": 11.689486495999972,
+      "min": 11.561394395999741,
+      "max": 11.817578596000203
+    },
+    "completion_tokens": {
+      "median": 17721.0,
+      "min": 17721.0,
+      "max": 17721.0
+    },
+    "counts.escalated": {
+      "median": 2.0,
+      "min": 2.0,
+      "max": 2.0
+    },
+    "counts.failed_harness": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "counts.failed_infra": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "counts.failed_task": {
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "counts.jobs": {
+      "median": 18.0,
+      "min": 18.0,
+      "max": 18.0
+    },
+    "counts.matched_expectation": {
+      "median": 18.0,
+      "min": 18.0,
+      "max": 18.0
+    },
+    "counts.retries": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "counts.solved": {
+      "median": 15.0,
+      "min": 15.0,
+      "max": 15.0
+    },
+    "llm_calls": {
+      "median": 92.0,
+      "min": 92.0,
+      "max": 92.0
+    },
+    "prompt_tokens": {
+      "median": 91083.0,
+      "min": 91083.0,
+      "max": 91083.0
+    },
+    "queue_wait_seconds.max": {
+      "median": 11.041418518499995,
+      "min": 10.915578068999821,
+      "max": 11.16725896800017
+    },
+    "queue_wait_seconds.mean": {
+      "median": 5.823693144138891,
+      "min": 5.822857482610996,
+      "max": 5.824528805666786
+    },
+    "queue_wait_seconds.n": {
+      "median": 18.0,
+      "min": 18.0,
+      "max": 18.0
+    },
+    "queue_wait_seconds.p50": {
+      "median": 6.067923516000064,
+      "min": 5.992212288000246,
+      "max": 6.143634743999883
+    },
+    "queue_wait_seconds.p95": {
+      "median": 10.465388195025014,
+      "min": 10.365065898549755,
+      "max": 10.56571049150027
+    },
+    "queue_wait_seconds.p99": {
+      "median": 10.926212453804997,
+      "min": 10.805475634909806,
+      "max": 11.04694927270019
+    },
+    "retry_wait_seconds": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "service_time_excluding_retry_waits_seconds.max": {
+      "median": 1.0493063444998825,
+      "min": 0.9878225749998819,
+      "max": 1.110790113999883
+    },
+    "service_time_excluding_retry_waits_seconds.mean": {
+      "median": 0.6493040475277718,
+      "min": 0.6421876664444679,
+      "max": 0.6564204286110756
+    },
+    "service_time_excluding_retry_waits_seconds.n": {
+      "median": 18.0,
+      "min": 18.0,
+      "max": 18.0
+    },
+    "service_time_excluding_retry_waits_seconds.p50": {
+      "median": 0.6884133437499713,
+      "min": 0.6808083040000383,
+      "max": 0.6960183834999043
+    },
+    "service_time_excluding_retry_waits_seconds.p95": {
+      "median": 0.9938782894748328,
+      "min": 0.9871529832497572,
+      "max": 1.0006035956999084
+    },
+    "service_time_excluding_retry_waits_seconds.p99": {
+      "median": 1.0382207334948725,
+      "min": 0.9876886566498569,
+      "max": 1.088752810339888
+    },
+    "service_time_seconds.max": {
+      "median": 1.0493063444998825,
+      "min": 0.9878225749998819,
+      "max": 1.110790113999883
+    },
+    "service_time_seconds.mean": {
+      "median": 0.6493040475277718,
+      "min": 0.6421876664444679,
+      "max": 0.6564204286110756
+    },
+    "service_time_seconds.n": {
+      "median": 18.0,
+      "min": 18.0,
+      "max": 18.0
+    },
+    "service_time_seconds.p50": {
+      "median": 0.6884133437499713,
+      "min": 0.6808083040000383,
+      "max": 0.6960183834999043
+    },
+    "service_time_seconds.p95": {
+      "median": 0.9938782894748328,
+      "min": 0.9871529832497572,
+      "max": 1.0006035956999084
+    },
+    "service_time_seconds.p99": {
+      "median": 1.0382207334948725,
+      "min": 0.9876886566498569,
+      "max": 1.088752810339888
+    },
+    "tasks_per_minute": {
+      "median": 92.4018088655981,
+      "min": 91.38928006499897,
+      "max": 93.41433766619721
+    },
+    "tokens_per_task.max": {
+      "median": 17375.0,
+      "min": 17375.0,
+      "max": 17375.0
+    },
+    "tokens_per_task.mean": {
+      "median": 6044.666666666667,
+      "min": 6044.666666666667,
+      "max": 6044.666666666667
+    },
+    "tokens_per_task.n": {
+      "median": 18.0,
+      "min": 18.0,
+      "max": 18.0
+    },
+    "tokens_per_task.p50": {
+      "median": 5081.0,
+      "min": 5081.0,
+      "max": 5081.0
+    },
+    "tokens_per_task.p95": {
+      "median": 13796.499999999995,
+      "min": 13796.499999999995,
+      "max": 13796.499999999995
+    },
+    "tokens_per_task.p99": {
+      "median": 16659.299999999992,
+      "min": 16659.299999999992,
+      "max": 16659.299999999992
+    },
+    "utilization": {
+      "median": 0.9998277159086251,
+      "min": 0.9998255919718457,
+      "max": 0.9998298398454043
+    },
+    "utilization_bucket_seconds": {
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    }
+  }
+}

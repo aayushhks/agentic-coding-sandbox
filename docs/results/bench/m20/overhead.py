@@ -1,10 +1,13 @@
-"""Did M20 cost anything? The one-worker a/b, run by the M19 and M20 code alternately.
+"""Did M20 cost anything? Three comparisons, all recomputed from the committed records.
 
     python3 docs/results/bench/m20/overhead.py
 
-Standard library only. For each build it prints the batch wall clock of both arms, the fleet's
-overhead over sequential per trial pair, worker utilization, the idle gap between one job's publish
-and the next claim, the wait before the first claim, and job service time.
+Standard library only. First, the one-worker a/b run by the M19 and M20 code alternately: for each
+build, the batch wall clock of both arms, the fleet's overhead over sequential per trial pair,
+worker utilization, the idle gap between one job's publish and the next claim, the wait before the
+first claim, and job service time. Then two sequential-replay follow-ups: three fresh worktrees side
+by side (M19, M20, and M20 with only its grading change undone), and the same code from the main
+checkout against a fresh worktree.
 """
 
 import json
@@ -12,7 +15,8 @@ import statistics
 from itertools import pairwise
 from pathlib import Path
 
-BUILDS = Path(__file__).resolve().parent / "builds"
+HERE = Path(__file__).resolve().parent
+BUILDS = HERE / "builds"
 SEQUENTIAL = "ab-sequential-replay-zero"
 FLEET = "ab-fleet-1w-replay-zero"
 
@@ -89,9 +93,72 @@ def _report(build: str) -> None:
     print(f"  outcomes identical across arms in every pair: {same}")
 
 
+def _graded(job: dict) -> bool:
+    # the two escalation tickets never reach their hidden tests
+    return not job["task_id"].startswith("TCK")
+
+
+def _sequential(folder: Path, arms: list[str]) -> None:
+    per: dict[tuple[str, str], list[float]] = {}
+    for arm in arms:
+        trials = [
+            json.loads(path.read_text())
+            for path in sorted((folder / arm).glob("round-*/trial-*.json"))
+        ]
+        walls = [trial["metrics"]["batch_wall_clock_seconds"] for trial in trials]
+        shas = ", ".join(sorted({trial["environment"]["git_sha"][:7] for trial in trials}))
+        dirty = any(trial["environment"]["git_dirty"] for trial in trials)
+        graded = [
+            job["finished_at"] - job["claimed_at"]
+            for trial in trials
+            for job in trial["jobs"]
+            if _graded(job)
+        ]
+        print(
+            f"  {arm:22} {len(trials)} trials, batch wall clock {_spread(walls)}, "
+            f"graded-task service median {statistics.median(graded) * 1000:.1f} ms "
+            f"(build {shas}{', plus the diff beside it' if dirty else ', clean'})"
+        )
+        for trial in trials:
+            for job in trial["jobs"]:
+                per.setdefault((arm, job["task_id"]), []).append(
+                    job["finished_at"] - job["claimed_at"]
+                )
+    _per_task(per, arms)
+
+
+def _per_task(per: dict[tuple[str, str], list[float]], arms: list[str]) -> None:
+    """Each task's median service time in one arm against another, for every pair of arms."""
+    tasks = sorted({task for _, task in per if not task.startswith("TCK")})
+    for index, arm in enumerate(arms):
+        for base in arms[:index]:
+            diffs = [
+                statistics.median(per[(arm, task)]) - statistics.median(per[(base, task)])
+                for task in tasks
+            ]
+            print(
+                f"  {arm} minus {base}, per graded task: "
+                f"{_spread(diffs, 'ms', 1000, 1, sign=True)}, "
+                f"slower in {sum(diff > 0 for diff in diffs)} of {len(diffs)}"
+            )
+
+
 def main() -> None:
     for build in ("m19", "m20"):
         _report(build)
+    per: dict[tuple[str, str], list[float]] = {}
+    for build in ("m19", "m20"):
+        for pair in _pairs(build):
+            for job in pair[0]["jobs"]:
+                per.setdefault((build, job["task_id"]), []).append(
+                    job["finished_at"] - job["claimed_at"]
+                )
+    print("the sequential arm, task by task:")
+    _per_task(per, ["m19", "m20"])
+    print("sequential replay from three fresh worktrees side by side, order rotating:")
+    _sequential(HERE / "three-arms", ["m19", "m20", "m20-grading-on-loop"])
+    print("the same code from the main checkout and from a fresh worktree, alternating:")
+    _sequential(HERE / "checkout", ["worktree", "main"])
 
 
 if __name__ == "__main__":
