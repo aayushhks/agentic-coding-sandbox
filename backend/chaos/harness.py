@@ -11,6 +11,7 @@ import asyncio
 import json
 import os
 import random
+import re
 import signal
 import socket
 import subprocess
@@ -637,6 +638,23 @@ def _outcomes(plan_: Plan, seen: Evidence) -> list[str]:
     return found
 
 
+def _troubled(violations: dict[str, list[str]], seen: Evidence) -> dict[str, list[str]]:
+    named = {
+        int(match)
+        for found in violations.values()
+        for problem in found
+        for match in re.findall(r"job (\d+)", problem)
+    }
+    return {
+        str(job_id): [
+            f"attempt {row.attempt} by {row.worker_id} ended {row.ended_by}"
+            for (job, _), row in sorted(seen.attempts.items())
+            if job == job_id
+        ]
+        for job_id in sorted(named)[:5]
+    }
+
+
 def _record(
     run: Run, plan_: Plan, seen: Evidence, *, drained: bool, containers_left: int
 ) -> dict[str, Any]:
@@ -704,4 +722,6 @@ def _record(
             "cancels": len(run.cancelled),
         },
         "passed": not any(violations.values()),
+        # how each job a violation names ran, so a failure can be read from the record alone
+        "troubled_jobs": _troubled(violations, seen),
     }

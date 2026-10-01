@@ -106,7 +106,12 @@ async def _run(
                 for kind, found in record["violations"].items():
                     for problem in found[:5]:
                         print(f"    {kind}: {problem}")
+                for job_id, attempts in record["troubled_jobs"].items():
+                    print(f"    job {job_id}: {'; '.join(attempts) or 'never claimed'}")
                 print(f"    logs kept in {workdir}")
+                if out is not None:
+                    # the worker logs travel with the records, for runs that failed somewhere else
+                    shutil.copytree(workdir, out / scenario.name / f"seed-{seed}-logs")
             elif not keep:
                 shutil.rmtree(workdir, ignore_errors=True)
             if out is not None:
