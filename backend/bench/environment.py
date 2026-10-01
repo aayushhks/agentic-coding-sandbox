@@ -102,9 +102,10 @@ def _git(repo: Path, *args: str) -> str | None:
 
 
 def git_dirty(repo: Path) -> bool:
-    """True when anything but the bench's own output records differs from the commit."""
+    """True when anything but the bench's or chaos runs' own records differs from the commit."""
     # a batch writes each trial's record before the next trial starts, so outputs are excluded
-    return bool(_git(repo, "status", "--porcelain", "--", ".", ":(exclude)docs/results/bench"))
+    outputs = (":(exclude)docs/results/bench", ":(exclude)docs/results/chaos")
+    return bool(_git(repo, "status", "--porcelain", "--", ".", *outputs))
 
 
 def _os_name(os_release: str) -> str:

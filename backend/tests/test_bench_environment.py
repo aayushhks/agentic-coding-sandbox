@@ -66,7 +66,7 @@ def test_cgroup_v1_unlimited_and_missing(tmp_path: Path) -> None:
     assert cpu_quota_cores(tmp_path) is None
 
 
-def test_git_dirty_ignores_the_bench_output_records(tmp_path: Path) -> None:
+def test_git_dirty_ignores_the_bench_and_chaos_output_records(tmp_path: Path) -> None:
     def git(*args: str) -> None:
         subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
 
@@ -86,6 +86,7 @@ def test_git_dirty_ignores_the_bench_output_records(tmp_path: Path) -> None:
     )
     assert not git_dirty(tmp_path)
     _write(tmp_path, "docs/results/bench/demo/trial-1.json", "{}")
+    _write(tmp_path, "docs/results/chaos/claim-before-kill/seed-0.json", "{}")
     assert not git_dirty(tmp_path)
     _write(tmp_path, "code.py", "x = 2\n")
     assert git_dirty(tmp_path)
