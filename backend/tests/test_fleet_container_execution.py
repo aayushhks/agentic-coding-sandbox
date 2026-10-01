@@ -165,6 +165,8 @@ async def test_generated_code_cannot_reach_the_network_the_task_or_its_channel(
         "environment": "cat /proc/1/environ /proc/{runner}/environ 2>&1",
         "channel": f"echo '{forged}' | tee /proc/1/fd/1 /proc/{{runner}}/fd/1 2>&1 >/dev/null",
         "memory": "head -c 64 /proc/{runner}/mem 2>&1",
+        # a mount namespace of its own is fine, but mount itself is denied by seccomp
+        "mount": "unshare --user --map-root-user --mount true 2>&1; echo exit $?",
         "signal": "kill -0 {runner} && echo reached || echo unreachable",
     }
     job_id, result = await _run_probe(
@@ -182,6 +184,7 @@ async def test_generated_code_cannot_reach_the_network_the_task_or_its_channel(
     assert "FLEET_ATTEMPT_TOKEN" not in seen["environment"]
     assert seen["channel"].count("Permission denied") == 2
     assert "Permission denied" in seen["memory"]
+    assert "Operation not permitted" in seen["mount"] and seen["mount"].endswith("exit 1")
     assert seen["signal"].endswith("unreachable")
     assert (await _execution_record(fleet_engine, job_id))["stdout_bytes"] > 0
 
