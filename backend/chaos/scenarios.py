@@ -48,6 +48,9 @@ class Scenario:
     wake: str = "timer"
     # unarmed workers besides the armed ones, to take over the jobs of workers that are paused
     spares: int = 0
+    # when a worker the fault killed is replaced: at once, or once every fault has happened, for
+    # faults on chores any worker may do first, like reaping, which a fresh one would take on
+    replace: str = "at_once"
 
     def arms(self, rng: random.Random) -> list[str]:
         """The failpoint each worker started gets, in order, until the faults are spent."""
@@ -63,9 +66,13 @@ def _kill(
     *effects: str,
     workload: str = "sleep",
     hits: tuple[int, int] = (1, 3),
+    replace: str = "at_once",
 ) -> Scenario:
     name = point.replace(".", "-").replace("_", "-") + "-kill"
-    return Scenario(name, point, "kill", summary, ("died", *effects), workload=workload, hits=hits)
+    effects = ("died", *effects)
+    return Scenario(
+        name, point, "kill", summary, effects, workload=workload, hits=hits, replace=replace
+    )
 
 
 SCENARIOS = [
@@ -177,6 +184,7 @@ SCENARIOS = [
         "reaped_once",
         workload="ghost",
         hits=(1, 1),
+        replace="after_faults",
     ),
     _kill(
         "cancel.before_commit",
@@ -184,6 +192,7 @@ SCENARIOS = [
         "cancelled",
         workload="cancel",
         hits=(1, 1),
+        replace="after_faults",
     ),
     _kill(
         "api.submit.after_commit",

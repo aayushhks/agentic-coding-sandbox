@@ -390,8 +390,12 @@ class Run:
                 del self.resume_at[pid]
 
     def replace_the_dead(self) -> None:
+        fired = sum(fault["point"] == self.scenario.point for fault in self.faults)
+        holding = self.scenario.replace == "after_faults" and fired < self.planned
         for process in list(self.processes.values()):
             if process.popen.poll() is None or process.replaced:
+                continue
+            if holding and process is not self.api:
                 continue
             process.replaced = True
             if process is self.api:
@@ -448,7 +452,7 @@ async def _drive(run: Run, engine: AsyncEngine, plan_: Plan) -> None:
         # a worker that claims a job and is never heard from again leaves a lease to reap
         if await _db(lambda: claim(engine, worker_id="ghost", lease_seconds=GHOST_LEASE_SECONDS)):
             run.ghost_claims += 1
-        run.ghost_at = now + 0.7
+        run.ghost_at = now + 0.4
     if run.scenario.point == "postgres.restart" and run.cluster is not None:
         done, total = await _finished(engine, run.job_ids)
         if run.restarts < len(RESTART_AT) and done >= RESTART_AT[run.restarts] * total:
