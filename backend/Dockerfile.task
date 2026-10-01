@@ -23,7 +23,8 @@ RUN --mount=type=secret,id=ca \
 COPY backend/app app
 COPY backend/bench bench
 COPY backend/fleet fleet
-RUN python -m compileall -q app bench fleet
+COPY backend/chaos chaos
+RUN python -m compileall -q app bench fleet chaos
 
 # tasks never run as root
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin task

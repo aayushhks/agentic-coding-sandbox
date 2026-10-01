@@ -10,7 +10,7 @@ def source_hash(root: Path = BACKEND_ROOT) -> str:
     """A hash of the code and lockfile a task image is built from, to tell a stale image apart."""
     digest = hashlib.sha256()
     files = [root / "pyproject.toml", root / "uv.lock", root / "Dockerfile.task"]
-    for package in ("app", "bench", "fleet"):
+    for package in ("app", "bench", "fleet", "chaos"):
         files += (path for path in (root / package).rglob("*") if path.is_file())
     for path in sorted(files):
         if "__pycache__" in path.parts:
