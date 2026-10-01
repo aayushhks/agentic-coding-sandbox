@@ -2,6 +2,7 @@
 
 import json
 import struct
+from collections.abc import Iterator
 from typing import Any, cast
 
 import httpx
@@ -18,15 +19,23 @@ class DockerError(Exception):
         self.status = status
 
 
-def _demux(raw: bytes) -> str:
-    """Join the frames of a non-tty log stream: each is an 8-byte header and its payload."""
-    out = bytearray()
+STDOUT, STDERR = 1, 2
+
+
+def _frames(raw: bytes) -> Iterator[tuple[int, bytes]]:
+    """The frames of a non-tty log stream: an 8-byte header naming the stream, then a payload."""
     at = 0
     while at + 8 <= len(raw):
-        (size,) = struct.unpack(">I", raw[at + 4 : at + 8])
-        out += raw[at + 8 : at + 8 + size]
+        stream, size = struct.unpack(">BxxxI", raw[at : at + 8])
+        yield stream, raw[at + 8 : at + 8 + size]
         at += 8 + size
-    return out.decode(errors="replace")
+
+
+def _demux(raw: bytes, streams: tuple[int, ...] = (STDOUT, STDERR)) -> str:
+    """What a log stream holds from the given streams, in the order it was written."""
+    return b"".join(data for stream, data in _frames(raw) if stream in streams).decode(
+        errors="replace"
+    )
 
 
 class Docker:
@@ -100,6 +109,13 @@ class Docker:
             params={"stdout": "1", "stderr": "1", "tail": str(tail)},
         )
         return _demux(response.content)
+
+    async def output(self, container: str) -> tuple[str, str]:
+        """Everything the container wrote, as its stdout and its stderr."""
+        response = await self._call(
+            "GET", f"/containers/{container}/logs", params={"stdout": "1", "stderr": "1"}
+        )
+        return _demux(response.content, (STDOUT,)), _demux(response.content, (STDERR,))
 
     async def kill(self, container: str) -> None:
         # 409: it had already stopped, which is what a kill wants anyway

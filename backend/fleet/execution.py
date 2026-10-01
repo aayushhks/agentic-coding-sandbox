@@ -2,15 +2,17 @@
 
 import asyncio
 import contextlib
+import hmac
 import json
 import logging
 import os
+import secrets
 import shutil
 import tempfile
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -22,12 +24,11 @@ from fleet.models import ClaimedJob
 from fleet.policy import ExecutionPolicy
 from fleet.progress import reporting_to
 from fleet.runners import Runner, RunnerError, RunnerOutcome
+from fleet.task import TAG
 
 logger = logging.getLogger(__name__)
 LOG_TAIL_CHARS = 16_000
 PARTIAL_EVENTS = 50
-# a result bigger than this is refused rather than read
-MAX_OUTPUT_BYTES = 16 * 1024 * 1024
 DEPLOYMENT = "fleet.deployment"
 LiveAttempts = Callable[[], Awaitable[set[tuple[int, int]]]]
 
@@ -94,19 +95,38 @@ class InProcess(Execution):
         return Attempted(outcome)
 
 
-def _read(path: Path) -> str | None:
-    if not path.is_file() or path.stat().st_size > MAX_OUTPUT_BYTES:
-        return None
-    return path.read_text(errors="replace")
+@dataclass(slots=True)
+class Reports:
+    """What the task process reported on its stdout, and whatever else got printed there."""
+
+    progress: list[dict[str, Any]] = field(default_factory=list)
+    usage: dict[str, Any] | None = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
+    printed: list[str] = field(default_factory=list)
 
 
-def _progress(path: Path) -> list[dict[str, Any]]:
-    text = _read(path) or ""
-    events = []
-    for line in text.splitlines():
-        with contextlib.suppress(ValueError):
-            events.append(json.loads(line))
-    return events
+def read_reports(stdout: str, token: str) -> Reports:
+    """Only a line carrying the attempt's token is a report; any other line was just printed."""
+    reports = Reports()
+    for line in stdout.splitlines():
+        try:
+            message = json.loads(line)
+        except ValueError:
+            message = None
+        if not isinstance(message, dict) or not hmac.compare_digest(
+            str(message.get("token")).encode(), token.encode()
+        ):
+            reports.printed.append(line)
+        elif message.get(TAG) == "progress" and isinstance(message.get("event"), dict):
+            reports.progress.append(message["event"])
+        elif message.get(TAG) == "usage":
+            reports.usage = message.get("usage")
+        elif message.get(TAG) == "result":
+            reports.result = message.get("result")
+        elif message.get(TAG) == "error":
+            reports.error = str(message.get("error"))
+    return reports
 
 
 class InContainer(Execution):
@@ -165,17 +185,17 @@ class InContainer(Execution):
 
     async def run(self, job: ClaimedJob, worker_id: str) -> Attempted:
         work = Path(tempfile.mkdtemp(prefix=f"fleet-{job.id}-{job.attempt}-", dir=self._work_root))
-        inbox, outbox = work / "in", work / "out"
+        inbox = work / "in"
+        # only the task process learns it, so only its reports can carry it
+        token = secrets.token_hex(16)
         created: list[str] = []
         network: str | None = None
         try:
             inbox.mkdir()
-            outbox.mkdir()
             (inbox / "job.json").write_text(json.dumps({"name": job.name, "payload": job.payload}))
-            # the task runs as another user: it may read its job, and write only its results
+            # the task runs as another user, and may only read its job
             for path, mode in ((work, 0o755), (inbox, 0o755), (inbox / "job.json", 0o644)):
                 os.chmod(path, mode)
-            os.chmod(outbox, 0o777)
             tags = self._labels(job, worker_id)
             if job.policy.egress:
                 network = await self._egress(job, tags, created)
@@ -186,7 +206,7 @@ class InContainer(Execution):
                     runner=self._runner,
                     policy=job.policy,
                     input_dir=inbox,
-                    output_dir=outbox,
+                    token=token,
                     network=network,
                     proxy="http://egress:3128" if network else None,
                     labels=tags,
@@ -206,8 +226,9 @@ class InContainer(Execution):
                 code = await self._docker.wait(container)
             seconds = time.monotonic() - started
             state = (await self._docker.inspect(container))["State"]
-            logs = await self._docker.logs(container)
-            usage = _read(outbox / "usage.json")
+            stdout, stderr = await self._docker.output(container)
+            reports = read_reports(stdout, token)
+            logs = "".join(f"{line}\n" for line in reports.printed) + stderr
             execution = {
                 "mode": "container",
                 "image": self._image,
@@ -219,9 +240,10 @@ class InContainer(Execution):
                 "oom_killed": bool(state.get("OOMKilled")),
                 "timed_out": timed_out,
                 "seconds": round(seconds, 3),
-                "usage": json.loads(usage) if usage else None,
+                "usage": reports.usage,
+                "stdout_bytes": len(stdout.encode()),
             }
-            result = self._result(job.policy, outbox, code, execution, logs)
+            result = self._result(job.policy, reports, code, execution, logs)
             return Attempted(result, execution, logs[-LOG_TAIL_CHARS:])
         finally:
             # also on cancellation: a stopped run never leaves its container behind
@@ -236,21 +258,19 @@ class InContainer(Execution):
     def _result(
         self,
         policy: ExecutionPolicy,
-        outbox: Path,
+        reports: Reports,
         code: int,
         execution: dict[str, Any],
         logs: str,
     ) -> RunnerOutcome | RunnerError:
         if execution["timed_out"]:
-            return cut_short("timeout", policy, _progress(outbox / "progress.jsonl"), logs)
-        result = _read(outbox / "result.json")
-        if code == 0 and result is not None:
-            return RunnerOutcome.model_validate_json(result)
+            return cut_short("timeout", policy, reports.progress, logs)
+        if code == 0 and reports.result is not None:
+            return RunnerOutcome.model_validate(reports.result)
         if execution["oom_killed"]:
-            return cut_short("memory_limit", policy, _progress(outbox / "progress.jsonl"), logs)
-        error = _read(outbox / "error.json")
-        if error is not None:
-            return RunnerError(str(json.loads(error)["error"]))
+            return cut_short("memory_limit", policy, reports.progress, logs)
+        if reports.error is not None:
+            return RunnerError(reports.error)
         last = logs.strip().splitlines()[-1] if logs.strip() else "no output"
         return RunnerError(f"task container exited {code}: {last}")
 

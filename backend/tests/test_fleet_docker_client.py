@@ -11,3 +11,5 @@ def test_a_multiplexed_log_stream_is_joined_back_into_text() -> None:
     assert _demux(raw) == "out one\nerr\nout two\n"
     # a truncated trailing frame is dropped rather than misread
     assert _demux(raw + b"\x01\x00\x00") == "out one\nerr\nout two\n"
+    # or split by stream: 1 is stdout, 2 is stderr
+    assert (_demux(raw, (1,)), _demux(raw, (2,))) == ("out one\nout two\n", "err\n")

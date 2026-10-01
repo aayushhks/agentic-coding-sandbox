@@ -13,15 +13,13 @@ from fleet.containers import (
 from fleet.policy import ExecutionPolicy
 
 
-def test_the_task_profile_is_dockers_default_plus_three_calls() -> None:
+def test_the_task_profile_is_dockers_default_plus_unshare() -> None:
     default = json.loads(DOCKER_DEFAULT_SECCOMP.read_text())
     profile = task_seccomp_profile()
     assert profile["defaultAction"] == "SCMP_ACT_ERRNO"
     assert profile["syscalls"][:-1] == default["syscalls"]
-    assert profile["syscalls"][-1] == {
-        "names": list(NESTED_SANDBOX_SYSCALLS),
-        "action": "SCMP_ACT_ALLOW",
-    }
+    assert profile["syscalls"][-1] == {"names": ["unshare"], "action": "SCMP_ACT_ALLOW"}
+    assert NESTED_SANDBOX_SYSCALLS == ("unshare",)
     assert {key: value for key, value in profile.items() if key != "syscalls"} == {
         key: value for key, value in default.items() if key != "syscalls"
     }
@@ -33,7 +31,7 @@ def _config(policy: ExecutionPolicy, proxy: str | None = None) -> dict[str, obje
         runner="bench.runner:run_job",
         policy=policy,
         input_dir=Path("/work/in"),
-        output_dir=Path("/work/out"),
+        token="0123abcd",
         network=None if proxy is None else "fleet-7-1",
         proxy=proxy,
         labels=labels(job_id=7, attempt=1, worker_id="w0"),
@@ -50,15 +48,19 @@ def test_a_task_container_gets_its_limits_and_nothing_more() -> None:
         256 * 1024 * 1024,
         64,
     )
-    assert host["ReadonlyRootfs"] and host["CapDrop"] == ["ALL"] and host["Init"]
+    assert host["ReadonlyRootfs"] and host["CapDrop"] == ["ALL"]
+    # the task process itself is pid 1: an init would hold its stdout and its token, dumpable
+    assert host["Init"] is False
     assert host["SecurityOpt"][0] == "no-new-privileges"
     assert host["Tmpfs"] == {"/tmp": "rw,nosuid,nodev,exec,size=100m"}
-    assert host["Binds"] == ["/work/in:/in:ro", "/work/out:/out:rw"]
+    # the job is the only thing mounted in, read-only; nothing comes back through a mount
+    assert host["Binds"] == ["/work/in:/in:ro"]
     assert host["NetworkMode"] == "none"
     assert config["User"] == "10001:10001"
     env = config["Env"]
     assert isinstance(env, list)
-    assert "SANDBOX_REQUIRE_ISOLATION=1" in env and "SANDBOX_HIDDEN_PATHS=/in:/out" in env
+    assert "SANDBOX_REQUIRE_ISOLATION=1" in env and "FLEET_ATTEMPT_TOKEN=0123abcd" in env
+    assert not any(item.startswith("SANDBOX_HIDDEN_PATHS") for item in env)
     assert not any(item.startswith(("HTTPS_PROXY", "HTTP_PROXY")) for item in env)
     assert config["Labels"] == {
         "fleet.managed": "1",
@@ -71,8 +73,8 @@ def test_a_task_container_gets_its_limits_and_nothing_more() -> None:
 def test_the_container_carries_its_own_deadline_behind_the_workers() -> None:
     cmd = _config(ExecutionPolicy(timeout_seconds=90))["Cmd"]
     assert cmd == [
-        *("timeout", "-s", "KILL", str(90 + DEADLINE_GRACE_SECONDS)),
         *("python", "-m", "fleet.task", "--runner", "bench.runner:run_job"),
+        *("--deadline-seconds", str(90 + DEADLINE_GRACE_SECONDS)),
     ]
 
 

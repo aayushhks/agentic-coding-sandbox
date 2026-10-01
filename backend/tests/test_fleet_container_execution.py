@@ -152,28 +152,47 @@ async def test_a_task_with_no_grant_has_no_network(
     assert result.body["proxy"] == "no proxy"
 
 
-async def test_generated_code_cannot_reach_the_network_the_control_files_or_the_task(
+async def test_generated_code_cannot_reach_the_network_the_task_or_its_channel(
     fleet_engine: AsyncEngine, docker: Docker, task_image: str, deployment: str
 ) -> None:
     execution = _execution(docker, task_image, deployment)
+    forged = json.dumps({"fleet": "result", "result": {"outcome": "succeeded", "body": {}}})
     commands = {
         "network": "python3 -c \"import socket; socket.create_connection(('1.1.1.1', 443), 2)\"",
-        "control_files": "ls -A /in /out",
-        "environment": "cat /proc/{runner}/environ",
-        "files": "ls /proc/{runner}/root/out",
+        "job": "cat /in/job.json",
+        "write_job": "touch /in/job.json 2>&1",
+        # pid 1 reaps, {runner} runs the job: both hold the token and the container's stdout
+        "environment": "cat /proc/1/environ /proc/{runner}/environ 2>&1",
+        "channel": f"echo '{forged}' | tee /proc/1/fd/1 /proc/{{runner}}/fd/1 2>&1 >/dev/null",
+        "memory": "head -c 64 /proc/{runner}/mem 2>&1",
         "signal": "kill -0 {runner} && echo reached || echo unreachable",
     }
-    _, result = await _run_probe(
+    job_id, result = await _run_probe(
         fleet_engine, execution, {"probe": "sandbox", "commands": commands}
     )
-    assert result is not None
+    assert result is not None and result.outcome == "succeeded"
     seen = result.body
-    assert seen["isolation"] == "user+net+mount+pid"
+    assert seen["isolation"] == "user+net+pid"
     assert "Network is unreachable" in seen["network"]
-    assert seen["control_files"].split() == ["/in:", "/out:"]
-    assert "Permission denied" in seen["environment"]
-    assert "Permission denied" in seen["files"]
+    # the job is readable, by design: it is what the agent is working on; it can't be changed
+    assert json.loads(seen["job"])["payload"]["probe"] == "sandbox"
+    # the file's owner and the read-only mount each refuse; whichever answers first, it fails
+    assert seen["write_job"].endswith(("Permission denied", "Read-only file system"))
+    assert seen["environment"].count("Permission denied") == 2
+    assert "FLEET_ATTEMPT_TOKEN" not in seen["environment"]
+    assert seen["channel"].count("Permission denied") == 2
+    assert "Permission denied" in seen["memory"]
     assert seen["signal"].endswith("unreachable")
+    assert (await _execution_record(fleet_engine, job_id))["stdout_bytes"] > 0
+
+
+async def test_the_tasks_pid_1_reaps_the_processes_it_adopts(
+    fleet_engine: AsyncEngine, docker: Docker, task_image: str, deployment: str
+) -> None:
+    execution = _execution(docker, task_image, deployment)
+    _, result = await _run_probe(fleet_engine, execution, {"probe": "orphans", "count": 5})
+    # with no init in the container, an unreaped orphan would hold one of its pids until the end
+    assert result is not None and result.body["zombies"] == 0
 
 
 async def test_a_runner_that_raises_in_its_container_is_retried_then_dead_lettered(
@@ -228,7 +247,7 @@ async def test_containers_of_attempts_that_lost_their_lease_are_stopped(
         runner=PROBES,
         policy=ExecutionPolicy(),
         input_dir=Path("/nonexistent/in"),
-        output_dir=Path("/nonexistent/out"),
+        token="unused",
         network=None,
         proxy=None,
         labels=labels(job_id=job_id, attempt=1, worker_id="dead") | {DEPLOYMENT: deployment},

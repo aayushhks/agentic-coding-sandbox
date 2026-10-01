@@ -6,13 +6,14 @@ from pathlib import Path
 from typing import Any
 
 from fleet.policy import ExecutionPolicy
+from fleet.task import TOKEN_VARIABLE
 
 # docker's default seccomp profile, fetched from github.com/moby/profiles seccomp/default.json on
 # 2026-09-30 (sha256 6416b47770785a41ac59073cdc77d9fe98517df2799dc83ef207e622de3053f6)
 DOCKER_DEFAULT_SECCOMP = Path(__file__).with_name("profiles") / "docker-default-seccomp.json"
 # what the agent's sandbox needs to give generated code its own namespaces; with no capabilities,
-# the container can only use them inside a user namespace the sandbox creates for itself
-NESTED_SANDBOX_SYSCALLS = ("unshare", "mount", "umount2")
+# the container can only use it to create a user namespace, and the namespaces inside that
+NESTED_SANDBOX_SYSCALLS = ("unshare",)
 TASK_UID = 10001
 # the in-container deadline trails the worker's timeout, and only matters if the worker is gone
 DEADLINE_GRACE_SECONDS = 30
@@ -46,8 +47,9 @@ def _locked_down(policy: ExecutionPolicy) -> dict[str, Any]:
         "ReadonlyRootfs": True,
         "CapDrop": ["ALL"],
         "SecurityOpt": ["no-new-privileges", f"seccomp={json.dumps(task_seccomp_profile())}"],
-        "Init": True,
-        "LogConfig": {"Type": "json-file", "Config": {"max-size": "1m", "max-file": "1"}},
+        # no init process: the task's own process is pid 1, so nothing dumpable holds its stdout
+        "Init": False,
+        "LogConfig": {"Type": "json-file", "Config": {"max-size": "8m", "max-file": "1"}},
     }
 
 
@@ -57,20 +59,21 @@ def task_config(
     runner: str,
     policy: ExecutionPolicy,
     input_dir: Path,
-    output_dir: Path,
+    token: str,
     network: str | None,
     proxy: str | None,
     labels: dict[str, str],
 ) -> dict[str, Any]:
-    """The container for one attempt: its job in at /in, its result and progress out at /out."""
+    """The container for one attempt: its job in at /in, and its reports out on its stdout."""
     deadline = int(policy.timeout_seconds) + DEADLINE_GRACE_SECONDS
     env = {
         "HOME": "/tmp",
         "TMPDIR": "/tmp",
         "PYTHONDONTWRITEBYTECODE": "1",
-        # generated code must run in its own namespaces, and never see the job's control files
+        # generated code must run in namespaces of its own, or not at all
         "SANDBOX_REQUIRE_ISOLATION": "1",
-        "SANDBOX_HIDDEN_PATHS": "/in:/out",
+        # proves a report came from the task process; it drops this before running anything
+        TOKEN_VARIABLE: token,
     }
     if proxy is not None:
         env |= {
@@ -80,16 +83,16 @@ def task_config(
             "http_proxy": proxy,
         }
     host = _locked_down(policy) | {
-        # the only writable places: a size-capped scratch space and the output directory
+        # the only writable place is a size-capped scratch space; the job is mounted read-only
         "Tmpfs": {"/tmp": f"rw,nosuid,nodev,exec,size={policy.tmp_mb}m"},
-        "Binds": [f"{input_dir}:/in:ro", f"{output_dir}:/out:rw"],
+        "Binds": [f"{input_dir}:/in:ro"],
         "NetworkMode": network or "none",
     }
     return {
         "Image": image,
         "Cmd": [
-            *("timeout", "-s", "KILL", str(deadline)),
             *("python", "-m", "fleet.task", "--runner", runner),
+            *("--deadline-seconds", str(deadline)),
         ],
         "User": f"{TASK_UID}:{TASK_UID}",
         "WorkingDir": "/tmp",

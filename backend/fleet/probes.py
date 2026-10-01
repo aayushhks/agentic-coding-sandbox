@@ -6,7 +6,8 @@ Run them through the fleet like any job (runner fleet.probes:run). Each reports 
 - busy: burns cpu for a while and reports how much it got;
 - connect: tries a destination directly and through the egress proxy;
 - sandbox: runs commands in the agent's sandbox, as generated code would, and reports what they
-  could reach: the network, the job's control files, the task process;
+  could reach: the network, the job, the task process and its channel;
+- orphans: leaves processes behind for the container's pid 1 to adopt, and counts the zombies;
 - raise: fails underneath the task.
 """
 
@@ -15,6 +16,7 @@ import os
 import resource
 import socket
 import time
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -46,6 +48,18 @@ def _through_proxy(host: str, port: int) -> str:
             return sock.recv(64).split(b"\r\n", 1)[0].decode(errors="replace")
     except OSError as exc:
         return f"refused: {exc}"
+
+
+def _zombies() -> int:
+    """Processes in this pid namespace that have exited and that nobody has reaped."""
+    count = 0
+    for stat in Path("/proc").glob("[0-9]*/stat"):
+        try:
+            # the state follows the command name, which is in parentheses and may hold spaces
+            count += stat.read_text().rsplit(")", 1)[1].split()[0] == "Z"
+        except OSError:
+            continue
+    return count
 
 
 def _sandbox(commands: dict[str, str]) -> dict[str, str]:
@@ -92,6 +106,13 @@ async def run(name: str, payload: dict[str, Any]) -> RunnerOutcome:
         body |= {"direct": _connect(host, port), "proxy": _through_proxy(host, port)}
     elif probe == "sandbox":
         body |= _sandbox(payload["commands"])
+    elif probe == "orphans":
+        # each shell exits at once, so its sleep is adopted by pid 1 and exits there
+        for _ in range(payload["count"]):
+            shell = await asyncio.create_subprocess_exec("sh", "-c", "sleep 0.2 &")
+            await shell.wait()
+        await asyncio.sleep(1)
+        body["zombies"] = _zombies()
     elif probe == "raise":
         raise RuntimeError("the probe failed underneath the task")
     else:
