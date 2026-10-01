@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from fleet.failpoints import failpoint
 from fleet.models import (
     DEFAULT_MAX_ATTEMPTS,
     DEFAULT_RETRY,
@@ -190,6 +191,7 @@ async def submit_batch(
 
 async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) -> ClaimedJob | None:
     """Lease the oldest queued job; SKIP LOCKED lets concurrent claimers pass each other's rows."""
+    await failpoint("claim.before", worker=worker_id)
     async with engine.begin() as connection:
         row = (
             await connection.execute(
@@ -223,6 +225,8 @@ async def claim(engine: AsyncEngine, *, worker_id: str, lease_seconds: float) ->
                 "lease_expires_at": row.lease_expires_at,
             },
         )
+        await failpoint("claim.before_commit", connection, job=row.id, attempt=row.attempt)
+    await failpoint("claim.after_commit", job=row.id, attempt=row.attempt)
     return ClaimedJob(
         id=row.id,
         attempt=row.attempt,
@@ -245,13 +249,17 @@ async def start(engine: AsyncEngine, *, job_id: int, attempt: int) -> bool:
             ),
             {"job": job_id, "attempt": attempt},
         )
-        return result.rowcount == 1
+        started = result.rowcount == 1
+    if started:
+        await failpoint("start.after_commit", job=job_id, attempt=attempt)
+    return started
 
 
 async def heartbeat(
     engine: AsyncEngine, *, job_id: int, attempt: int, lease_seconds: float
 ) -> Beat | None:
     """Extend a live lease to lease_seconds from now; None once this attempt has lost the job."""
+    await failpoint("heartbeat.before", job=job_id, attempt=attempt)
     async with engine.begin() as connection:
         # the attempt log keeps the extended lease, so each result can be checked against it
         row = (
@@ -303,6 +311,8 @@ async def finish_cancelled(engine: AsyncEngine, *, job_id: int, attempt: int) ->
         ended = await connection.scalar(
             text(_FINISH_CANCELLED), {"job": job_id, "attempt": attempt}
         )
+        if ended is not None:
+            await failpoint("cancel.before_commit", connection, job=job_id, attempt=attempt)
     return ended is not None
 
 
@@ -372,6 +382,8 @@ async def publish(
             ),
             {"job": job_id, "attempt": attempt, "at": stored.published_at},
         )
+        await failpoint("publish.before_commit", connection, job=job_id, attempt=attempt)
+    await failpoint("publish.after_commit", job=job_id, attempt=attempt)
     return True
 
 
@@ -404,6 +416,8 @@ async def release(
                 },
             )
         ).first()
+        if row is not None:
+            await failpoint("release.before_commit", connection, job=job_id, attempt=attempt)
     return None if row is None else cast(JobState, row.state)
 
 
@@ -425,7 +439,10 @@ async def reap(engine: AsyncEngine, *, retry: RetryPolicy = DEFAULT_RETRY) -> li
                 "cap": retry.backoff_cap_seconds,
             },
         )
-        return sorted(row.job_id for row in rows)
+        ended = sorted(row.job_id for row in rows)
+        if ended:
+            await failpoint("reap.before_commit", connection, jobs=ended)
+    return ended
 
 
 async def record_execution(

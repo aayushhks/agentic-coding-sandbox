@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from fleet.config import FleetSettings
+from fleet.failpoints import failpoint
 from fleet.models import (
     DEFAULT_MAX_ATTEMPTS,
     BatchStatus,
@@ -93,6 +94,8 @@ def create_app(
             raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
         if not submission.created:
             response.status_code = status.HTTP_200_OK
+        else:
+            await failpoint("api.submit.after_commit", batch=submission.batch_id)
         return submission
 
     @app.get("/batches/{batch_id}")
