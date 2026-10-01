@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
+import pytest
 import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -341,6 +342,43 @@ async def test_generated_code_cannot_use_its_tasks_egress(
     assert result is not None
     # the task may reach its proxy, but the code it runs has no network at all
     assert "Network is unreachable" in result.body["proxy"] or "resolution" in result.body["proxy"]
+
+
+async def test_an_internal_network_answers_no_outside_names(
+    docker: Docker, task_image: str, deployment: str
+) -> None:
+    # a task granted egress sits on an internal network: if docker forwarded its dns queries,
+    # they would be a way out that the proxy never sees
+    lookup = (
+        "import socket\n"
+        "try:\n"
+        "    socket.getaddrinfo('example.com', 443)\n"
+        "    print('resolved')\n"
+        "except OSError as exc:\n"
+        "    print('failed:', exc)\n"
+    )
+    tags = {"fleet.test": deployment}
+    seen = {}
+    for internal in (False, True):
+        name = f"{deployment}-dns-{'internal' if internal else 'open'}"
+        network = await docker.create_network(name, internal=internal, labels=tags)
+        config = {
+            "Image": task_image,
+            "Cmd": ["python", "-c", lookup],
+            "Labels": tags,
+            "HostConfig": {"NetworkMode": name},
+        }
+        container = await docker.create(name, config)
+        try:
+            await docker.start(container)
+            await docker.wait(container)
+            seen[internal] = (await docker.logs(container)).strip()
+        finally:
+            await docker.remove(container)
+            await docker.remove_network(network)
+    if seen[False] != "resolved":
+        pytest.skip(f"this host resolves no outside names at all: {seen[False]}")
+    assert seen[True].startswith("failed:"), seen[True]
 
 
 async def test_a_killed_container_worker_loses_nothing_and_leaves_nothing_running(
