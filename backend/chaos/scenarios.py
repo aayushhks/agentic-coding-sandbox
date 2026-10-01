@@ -36,8 +36,9 @@ class Scenario:
     summary: str
     effects: tuple[str, ...]
     faults: int = 3
-    # sleep: keyed jobs of 50-600 ms; crash, cancel: some of them crash, or run until cancelled;
-    # agent: the bench's recorded tasks, replayed
+    # sleep: keyed jobs of 50-600 ms; long: of 1.2-2 s; crash, cancel: some of them crash, or
+    # run until cancelled; ghost: a worker claims some and vanishes; api: submitted through an
+    # api that dies; agent: the bench's recorded tasks, replayed
     workload: str = "sleep"
     execution: str = "process"
     # the hits each armed process may fire on, so a fault lands on a different job each time
@@ -122,6 +123,8 @@ SCENARIOS = [
         "stop",
         "a worker is paused well past its lease after its job ran, before it publishes",
         ("retried", "refused"),
+        # long jobs, so the attempt that took the job over is still running when the late one wakes
+        workload="long",
     ),
     Scenario(
         "publish-before-commit-stop",

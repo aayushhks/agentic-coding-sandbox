@@ -46,6 +46,7 @@ from fleet.store import cancel, claim, submit_batch
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 JOBS = 30
+LONG_JOBS = 18
 WORKERS = 3
 LEASE_SECONDS = 1.0
 REAP_EVERY_SECONDS = 0.5
@@ -97,9 +98,11 @@ def plan(scenario: Scenario, rng: random.Random) -> Plan:
         }
         return Plan([jobs], outcomes=outcomes)
     jobs, keys, long_jobs = [], {}, set()
-    for n in range(JOBS):
+    for n in range(LONG_JOBS if scenario.workload == "long" else JOBS):
         name, key = f"job-{n}", uuid.UUID(int=rng.getrandbits(128)).hex
         kind, sleep_ms = "ok", rng.randint(50, 600)
+        if scenario.workload == "long":
+            sleep_ms = rng.randint(1200, 2000)
         if scenario.workload == "crash" and rng.random() < 0.3:
             kind = "crash"
         if scenario.workload == "cancel" and n % 3 == 0:
