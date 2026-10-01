@@ -14,8 +14,13 @@ sections below cover what is built and measured so far.
   alone.
 - **The agent runner** (`bench/runner.py`) is one such plugin. A job's payload is self-contained —
   the task spec plus, for replay, the recorded model responses — so a worker needs nothing from the
-  repo, which is what containerized workers will need.
-- **The control plane** (`fleet/api.py`) accepts batches and serves job status and results.
+  repo to run it.
+- **Each attempt runs in a container of its own** (`--execution container`), created for the
+  attempt under the job's execution policy and removed after it, or, for tests and comparison, in
+  the worker's own process. Either way the agent's sandbox puts every command it runs in namespaces
+  of its own, so code the agent generates sits behind two fences.
+- **The control plane** (`fleet/api.py`) accepts batches, checks each batch's policy against the
+  operator's limits, cancels jobs, and serves job status and results.
 
 ## Why Postgres and `SKIP LOCKED`
 
@@ -57,17 +62,19 @@ deduplication layer on top — the problem a single transactional store avoids.
 
 ```
 queued ──claim──▶ claimed ──start──▶ running ──publish──▶ succeeded | failed | escalated
-  ▲                  │                  │
-  │                  └────────┬─────────┘
-  │                           │ infrastructure failure: the lease lapsed, or the runner raised
-  │                           ▼
-  └─── attempts left ─── retry budget ─── none left ───▶ dead_lettered
-       (after a backoff)
+  ▲  │               │                  │
+  │  │               └────────┬─────────┘
+  │  │                        │ infrastructure failure: the lease lapsed, or the runner raised
+  │  │                        ▼
+  └──┼── attempts left ── retry budget ── none left ──▶ dead_lettered
+     │   (after a backoff)
+     └──cancel──▶ cancelled ◀── cancel requested, seen at the next heartbeat (or at the failure)
 ```
 
 Every claim adds a row to `fleet_attempts`, so a job's history is an append-only log. Each attempt
 ends exactly one way: `published` (its result was accepted), `lease_expired` (its lease ran out and a
-reaper took the job back), or `released` (its runner raised, and the worker gave the job back).
+reaper took the job back), `released` (its runner raised, and the worker gave the job back), or
+`cancelled` (its worker stopped it because a cancel was requested).
 
 ## Invariants the database enforces
 
@@ -178,9 +185,120 @@ Every timestamp — submitted, claimed, started, heartbeat, published, finished 
 Postgres's clock (`clock_timestamp()`), so queue wait, service time and lease checks are comparable
 across processes and, later, machines.
 
+## Cancellation
+
+- **A queued job is cancelled in the request's own transaction**, so no worker ever sees it.
+- **A running job gets a cancel request**, stamped on its row. Its worker learns of it from the
+  answer to its next heartbeat — every third of the lease, 10 s by default — stops the run (in a
+  container: kills and removes it), and ends the job `cancelled`, **releasing the lease at once**
+  rather than letting it lapse. Measured with containers at the default lease, a cancel ended a
+  running job a median 5.34 s after the request and at most 9.57 s in 20 rounds, of which stopping
+  the container took 85–117 ms after the heartbeat; a queued job was gone in a 5 ms round trip
+  ([m19](m19-controlled-execution.md#cancellation)).
+- **A cancel wins over anything that hadn't landed yet.** A publish that finds a cancel request
+  ends the job cancelled instead of storing the result; an attempt reaped or released after a cancel
+  request ends the job cancelled instead of retrying it.
+- **What noticing at heartbeat cadence costs**: up to one heartbeat interval of work nobody wants,
+  in exchange for no extra query per running job. Checking more often, or `LISTEN/NOTIFY`, would
+  shorten it; both are candidates to measure, not to assume.
+
+## Controlled execution: the policy model
+
+Everything a task could use is denied unless granted. Each batch carries an execution policy, fixed
+at submission and stored with each job; each attempt records the policy it ran under, beside the
+image it ran, how it exited, whether it was killed for memory or time, and what it used.
+
+### Who decides what
+
+| Who | Decides | How |
+|---|---|---|
+| **The operator** | the most any batch may ask for, and the only destinations that may ever be granted | `FLEET_MAX_CPUS`, `FLEET_MAX_MEMORY_MB`, `FLEET_MAX_PIDS`, `FLEET_MAX_TMP_MB`, `FLEET_MAX_TIMEOUT_SECONDS` and `FLEET_GRANTABLE_EGRESS` (comma-separated `host:port` pairs) on the API; nothing is grantable unless listed |
+| **The submitter** | each batch's policy, within those ceilings | `policy` on `POST /batches`; the API refuses a policy over any ceiling, or naming a destination that isn't grantable, with a 403 that names every violation |
+| **The worker** | nothing | it enforces the stored policy through the container runtime, and records what it applied |
+
+### Denied by default
+
+| | Default | Enforced by | At the limit |
+|---|---|---|---|
+| CPU | 1 core | the CPU cgroup's quota | slowed, never killed |
+| Memory | 1024 MB, no swap | the memory cgroup | the kernel kills a process; a task left with no result is `failed` with `memory_limit`, final |
+| Processes | 256 | the pids cgroup | `fork` fails |
+| Scratch space | 512 MB of `/tmp`, the only writable path, where the agent's workspace lives | a tmpfs, whose pages also count as the task's memory | writes fail |
+| Wall clock | 600 s | the worker's timer, then a kill; 30 s later the container also ends itself, in case its worker is gone | `failed` with `timeout`, final, keeping the progress reported so far and the tail of the logs |
+| Network | none: a network namespace with only loopback | Docker's `none` network | connections fail at once |
+| Files | the image, read-only; the job at `/in`, read-only | a read-only root filesystem and a read-only bind mount | writes fail |
+| Privilege | user 10001, no capabilities, no privilege gain | `CapDrop ALL`, `no-new-privileges`, Docker's default seccomp profile plus `unshare` | — |
+
+A grant can raise any limit up to its ceiling and name `host:port` destinations to reach. Memory
+and timeout kills are final failures, never retried: the same task would hit the same limit again.
+
+`unshare` is the one system call added to Docker's default seccomp profile, which otherwise allows
+it only with `CAP_SYS_ADMIN`. It lets the agent's sandbox, running without capabilities, create a
+user namespace and the network and PID namespaces inside it. `mount` stays denied, by seccomp and
+by Docker's default AppArmor profile; a test checks that generated code can make namespaces but
+can't mount anything.
+
+### How egress is granted
+
+A batch granted egress gets, for each attempt, an internal Docker network with no route out. The
+only other container on it is a proxy, which also has a leg on the outside network. The proxy speaks
+only HTTP `CONNECT`, the way HTTPS clients tunnel: a `CONNECT` to exactly a granted `host:port` is
+spliced through, any other destination gets a 403, any other method a 405. The task finds the proxy
+through `HTTPS_PROXY`. A test checks that a granted destination is reachable through the proxy and
+not directly, and that an ungranted one is refused both ways.
+
+### What a task can reach
+
+- **With no grant:** its own loopback, nothing else on any network. On disk: the image and its job,
+  read-only, and its own `/tmp`. Its own processes, in its own PID namespace. Not the Docker socket,
+  not the host's files, not another task.
+- **With a grant:** also each granted `host:port`, through the proxy — whatever address that name
+  resolves to from the proxy, when the connection is made. The task's own lookups answer only for
+  its own network, which holds just the proxy: Docker doesn't resolve outside names on an internal
+  network, so DNS is no way around the proxy either. The design relies on that, so a test checks it.
+- **Code the agent generates**, run by the sandbox inside the container: no network at all, even
+  when the task has a grant, since its own network namespace has only loopback. It cannot see or
+  signal the task's processes, or read the task process's memory, environment or open files, so it
+  can neither learn the report token nor write to the container's output. It can make namespaces
+  of its own but can't mount anything. It can read the job at `/in` — by design, as the job is what
+  the agent is working on — but not change it.
+
+### How results come back
+
+The task process reports on its own stdout: progress, resource use and the result, each a JSON line
+carrying a token the worker generates for the attempt and passes in the container's environment.
+The worker takes only lines carrying that token; anything else on stdout is kept as log. The task
+process is the container's PID 1. Before anything else runs, it makes itself non-dumpable, which
+leaves `/proc/1` owned by root, so nothing else in the container can read its memory, environment or
+open files, and it removes the token from its environment, so nothing it starts inherits it. As
+PID 1, it forks once: the parent only reaps the processes orphaned onto it and passes on the child's
+exit code, and the child runs the job.
+
+The first design wrote results to a writable `/out` mount instead, and kept generated code away from
+it by giving sandboxed commands a mount namespace with `/in` and `/out` covered over. Docker's default
+AppArmor profile denies `mount`, so on GitHub's runners the sandbox couldn't create that namespace
+and refused to run. The stdout channel needs no mount, and leaves nothing writable that the worker
+reads.
+
+### What it doesn't protect against
+
+- **A shared kernel.** Containers and namespaces share the host's kernel; a kernel exploit gets past
+  both fences. A user-space kernel (gVisor) or a microVM per task would be the next step, at a cost
+  to be measured.
+- **The worker.** It holds the Docker socket, which is root on the host. Workers are trusted; tasks
+  are not.
+- **Names, not addresses.** A granted name is resolved by the proxy when the task connects, so
+  whoever controls that name's DNS controls where the connection goes.
+- **Granted egress is a way out.** A task can send its job, and anything it computes from it, to a
+  granted destination.
+- **Shared and missing limits.** Scratch space counts against memory; disk I/O is not limited; the
+  container's log keeps the last 8 MB, so a task that prints more loses its earliest output, and
+  one whose result line doesn't survive fails as an infrastructure error.
+- **What a stopped run already did.** A run that was cancelled, timed out or fenced out still did
+  whatever it did through a granted destination before it was stopped.
+
 ## Still to come
 
-- The policy model for controlled execution (containers, limits, network) — M19.
 - The full fault matrix around the checker: kills at each exact point, dropped database
   connections, API restarts — M20.
 - Where scaling stops being linear, measured — M21.
