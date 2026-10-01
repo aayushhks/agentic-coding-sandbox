@@ -319,6 +319,7 @@ async def serve(
     retry: RetryPolicy,
     db_retry_seconds: float,
     exit_when_idle: bool,
+    ready_file: Path | None = None,
 ) -> Worker:
     engine = worker_engine(url, lease_seconds=lease_seconds)
     stop = asyncio.Event()
@@ -338,6 +339,9 @@ async def serve(
         retry=retry,
         db_retry_seconds=db_retry_seconds,
     )
+    if ready_file is not None:
+        # whoever started the worker can wait for this before handing it any work
+        await asyncio.to_thread(ready_file.write_text, worker_id)
     try:
         await worker.run(exit_when_idle=exit_when_idle, stop=stop)
     finally:
@@ -377,6 +381,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--deployment", default=settings.deployment)
     parser.add_argument("--exit-when-idle", action="store_true")
     parser.add_argument(
+        "--ready-file",
+        type=Path,
+        default=None,
+        help="write this file once the worker is up and about to poll for jobs",
+    )
+    parser.add_argument(
         "--stats-out",
         type=Path,
         default=None,
@@ -408,6 +418,7 @@ def main(argv: list[str] | None = None) -> int:
             ),
             db_retry_seconds=args.db_retry_seconds,
             exit_when_idle=args.exit_when_idle,
+            ready_file=args.ready_file,
         )
     )
     if args.stats_out is not None:

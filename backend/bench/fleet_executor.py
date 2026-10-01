@@ -54,6 +54,10 @@ def tail(log: IO[bytes]) -> str:
     return log.read().decode(errors="replace")[-2000:]
 
 
+def ready_workers(folder: Path) -> int:
+    return len(list(folder.glob("w*.ready")))
+
+
 def worker_reports(folder: Path) -> list[dict[str, Any]]:
     """What each worker wrote as it exited; one that had to be killed wrote nothing."""
     return [json.loads(path.read_text()) for path in sorted(folder.glob("w*.json"))]
@@ -127,12 +131,13 @@ class FleetExecutor:
                 env,
                 api_log,
             )
-            # the workers start before the submit, so their start-up isn't charged to any job
+            # the workers start before the submit and are waited for, so no job pays for a start
             workers = [
                 spawn(
                     [
                         *("-m", "fleet.worker", "--runner", "bench.runner:run_job"),
                         *("--worker-id", f"w{index}", "--database-url", self._url, *options),
+                        *("--ready-file", str(stats / f"w{index}.ready")),
                         *("--stats-out", str(stats / f"w{index}.json")),
                     ],
                     env,
@@ -147,6 +152,13 @@ class FleetExecutor:
                     if api.poll() is not None or time.monotonic() > deadline:
                         raise RuntimeError(f"the fleet api never came up:\n{tail(api_log)}")
                     await asyncio.sleep(0.1)
+                while ready_workers(stats) < self.workers:
+                    for worker, log in zip(workers, worker_logs, strict=True):
+                        if worker.poll() is not None:
+                            raise RuntimeError(f"a fleet worker exited early:\n{tail(log)}")
+                    if time.monotonic() > deadline:
+                        raise RuntimeError("the fleet workers never came up")
+                    await asyncio.sleep(0.05)
                 groups = {
                     "workers": [worker.pid for worker in workers],
                     "api": [api.pid],

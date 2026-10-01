@@ -258,17 +258,20 @@ async def test_the_worker_command_drains_a_batch(
     assert states == {"succeeded"}
 
 
-async def test_the_worker_command_writes_its_counts_and_store_call_times_at_exit(
+async def test_the_worker_command_says_when_it_is_up_and_writes_its_counts_at_exit(
     fleet_engine: AsyncEngine, fleet_database_url: str, tmp_path: Path
 ) -> None:
     jobs = [NewJob(name=f"j{n}", payload={"sleep_ms": 10}) for n in range(2)]
     await submit_batch(fleet_engine, label="b", jobs=jobs)
-    out = tmp_path / "w0.json"
+    out, ready = tmp_path / "w0.json", tmp_path / "w0.ready"
     process = start_worker(
-        fleet_database_url, exit_when_idle=True, extra_args=("--stats-out", str(out))
+        fleet_database_url,
+        exit_when_idle=True,
+        extra_args=("--stats-out", str(out), "--ready-file", str(ready)),
     )
     output, _ = await asyncio.to_thread(process.communicate, timeout=60)
     assert process.returncode == 0, output
+    assert ready.read_text() == "w0"
     stats = json.loads(out.read_text())
     assert (stats["worker_id"], stats["published"], stats["lost"]) == ("w0", 2, 0)
     assert stats["database"]["publish"]["calls"] == 2
