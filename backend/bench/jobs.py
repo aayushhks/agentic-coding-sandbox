@@ -34,6 +34,18 @@ class JobOutput(BaseModel):
     model_seconds: float
 
 
+class AttemptRun(BaseModel):
+    """One attempt at a job, its times in seconds since the batch was submitted."""
+
+    attempt: int
+    worker: str
+    claimed_at: float
+    ended_at: float | None
+    # published, lease_expired, released or cancelled
+    ended_by: str | None
+    error: str | None
+
+
 class JobResult(BaseModel):
     job_id: str
     task_id: str
@@ -65,6 +77,8 @@ class JobResult(BaseModel):
     # what the job's tokens cost at the run's pinned price, None without one
     cost_usd: float | None = None
     output: JobOutput | None = None
+    # every attempt the fleet made at the job, in order; None where there is no fleet
+    attempt_history: list[AttemptRun] | None = None
 
     @property
     def queue_wait(self) -> float:

@@ -12,20 +12,21 @@ import tempfile
 import time
 import uuid
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import IO, Any, Literal
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from bench.executor import BatchResult, job_result
-from bench.jobs import JobResult
+from bench.jobs import AttemptRun, JobResult
 from bench.resources import Sampler, combine_calls, named
 from bench.runner import execution_from_body
 from bench.taskset import BenchTask, Job, TaskSet
 from fleet.client import FleetClient
 from fleet.models import NewJob
 from fleet.policy import DEFAULT_POLICY, ExecutionPolicy
-from fleet.store import batch_jobs, executions
+from fleet.store import attempt_history, batch_jobs, executions
 from fleet.store import job_result as published_result
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -208,10 +209,15 @@ class FleetExecutor:
             rows = await batch_jobs(engine, batch_id)
             published = {row.id: await published_result(engine, row.id) for row in rows}
             ran = await executions(engine, batch_id)
+            history = await attempt_history(engine, batch_id)
         finally:
             await engine.dispose()
         by_name = {job.id: job for job in jobs}
         start = min(row.submitted_at for row in rows)
+
+        def since(moment: datetime | None) -> float | None:
+            return None if moment is None else (moment - start).total_seconds()
+
         results = []
         for row in rows:
             result = published[row.id]
@@ -235,6 +241,17 @@ class FleetExecutor:
                     claimed_at=(row.claimed_at - start).total_seconds(),
                     finished_at=(row.finished_at - start).total_seconds(),
                     ran=ran.get(row.id),
+                    history=[
+                        AttemptRun(
+                            attempt=attempt.attempt,
+                            worker=attempt.worker_id,
+                            claimed_at=(attempt.claimed_at - start).total_seconds(),
+                            ended_at=since(attempt.ended_at),
+                            ended_by=attempt.ended_by,
+                            error=attempt.error,
+                        )
+                        for attempt in history.get(row.id, [])
+                    ],
                 )
             )
         return results

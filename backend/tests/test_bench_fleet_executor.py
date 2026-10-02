@@ -31,6 +31,14 @@ async def test_the_fleet_path_reproduces_the_recorded_outcomes(
         assert (result.attempts, result.divergence) == (1, None)
         # every timestamp is Postgres's, measured from the moment the batch was inserted
         assert 0.0 == result.submitted_at <= result.claimed_at <= result.finished_at
+        # one attempt each, by the worker that published it, claimed when the job says
+        [attempt] = result.attempt_history or []
+        assert (attempt.attempt, attempt.worker, attempt.ended_by) == (
+            1,
+            result.worker,
+            "published",
+        )
+        assert attempt.claimed_at == pytest.approx(result.claimed_at)
     # the agent ran in the workers' processes, so their trees used cpu the host saw
     used = batch.resources
     assert used is not None and used.window_seconds > 0

@@ -13,7 +13,7 @@ from app.benchmark.runner import TaskResult, run_task
 from app.eval.failure import FailureMode, classify_failure
 from app.llm.base import LLMProvider
 from app.tickets.runner import ResolutionOutcome, TicketResolution, resolve_ticket
-from bench.jobs import FailureKind, JobOutput, JobResult, Outcome
+from bench.jobs import AttemptRun, FailureKind, JobOutput, JobResult, Outcome
 from bench.replay import RecordedCall, RecordingProvider, ReplayProvider
 from bench.resources import BatchResources, DatabaseCalls
 from bench.taskset import BenchTask, Expectation, Job, TaskKind, TaskSet
@@ -329,6 +329,7 @@ def job_result(
     claimed_at: float,
     finished_at: float,
     ran: dict[str, Any] | None = None,
+    history: list[AttemptRun] | None = None,
 ) -> JobResult:
     return JobResult(
         job_id=job.id,
@@ -356,6 +357,7 @@ def job_result(
         served_models=execution.served_models,
         fingerprints=execution.fingerprints,
         output=execution.output,
+        attempt_history=history,
     )
 
 
