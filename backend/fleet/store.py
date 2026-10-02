@@ -15,6 +15,7 @@ from fleet.models import (
     DEFAULT_MAX_ATTEMPTS,
     DEFAULT_RETRY,
     UNFINISHED_STATES,
+    AttemptRecord,
     BatchStatus,
     ClaimedJob,
     JobState,
@@ -529,6 +530,32 @@ async def executions(engine: AsyncEngine, batch_id: int) -> dict[int, dict[str, 
             {"batch": batch_id},
         )
         return {row.id: None if row.execution is None else _json(row.execution) for row in rows}
+
+
+async def attempt_history(engine: AsyncEngine, batch_id: int) -> dict[int, list[AttemptRecord]]:
+    """Every attempt of every job in a batch, in order: the job's retry history."""
+    async with engine.connect() as connection:
+        rows = await connection.execute(
+            text(
+                "select a.job_id, a.attempt, a.worker_id, a.claimed_at, a.ended_at, a.ended_by, "
+                "a.error from fleet_attempts a join fleet_jobs j on j.id = a.job_id "
+                "where j.batch_id = :batch order by a.job_id, a.attempt"
+            ),
+            {"batch": batch_id},
+        )
+        history: dict[int, list[AttemptRecord]] = {}
+        for row in rows:
+            history.setdefault(row.job_id, []).append(
+                AttemptRecord(
+                    attempt=row.attempt,
+                    worker_id=row.worker_id,
+                    claimed_at=row.claimed_at,
+                    ended_at=row.ended_at,
+                    ended_by=row.ended_by,
+                    error=row.error,
+                )
+            )
+        return history
 
 
 async def live_attempts(engine: AsyncEngine) -> set[tuple[int, int]]:

@@ -8,6 +8,7 @@ from fleet.models import NewJob, RetryPolicy
 from fleet.policy import ExecutionPolicy
 from fleet.store import (
     IdempotencyConflictError,
+    attempt_history,
     batch_jobs,
     batch_status,
     cancel,
@@ -505,3 +506,34 @@ async def test_a_job_cancelled_before_it_starts_is_never_started(fleet_engine: A
     assert await finish_cancelled(fleet_engine, job_id=job.id, attempt=1)
     status = await job_status(fleet_engine, job.id)
     assert status is not None and (status.state, status.started_at) == ("cancelled", None)
+
+
+async def test_a_job_s_attempts_come_back_in_order_with_how_each_ended(
+    fleet_engine: AsyncEngine,
+) -> None:
+    submission = await submit_batch(fleet_engine, label="b", jobs=[NewJob(name="j", payload={})])
+    first = await claim(fleet_engine, worker_id="w0", lease_seconds=60)
+    assert first is not None
+    assert await start(fleet_engine, job_id=first.id, attempt=first.attempt)
+    await release(
+        fleet_engine, job_id=first.id, attempt=first.attempt, error="boom", retry=NO_BACKOFF
+    )
+    second = await claim(fleet_engine, worker_id="w1", lease_seconds=60)
+    assert second is not None and second.id == first.id
+    assert await start(fleet_engine, job_id=second.id, attempt=second.attempt)
+    assert await publish(
+        fleet_engine,
+        job_id=second.id,
+        attempt=second.attempt,
+        worker_id="w1",
+        outcome="succeeded",
+        body={},
+    )
+    [job_id] = submission.job_ids
+    history = (await attempt_history(fleet_engine, submission.batch_id))[job_id]
+    assert [(a.attempt, a.worker_id, a.ended_by, a.error) for a in history] == [
+        (1, "w0", "released", "boom"),
+        (2, "w1", "published", None),
+    ]
+    assert all(a.ended_at is not None and a.claimed_at <= a.ended_at for a in history)
+    assert history[0].ended_at is not None and history[0].ended_at <= history[1].claimed_at

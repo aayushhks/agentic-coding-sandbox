@@ -93,6 +93,18 @@ class BatchStatus(BaseModel):
     done: bool
 
 
+class AttemptRecord(BaseModel):
+    """One claim of a job: who held it, for how long, and how it ended."""
+
+    attempt: int
+    worker_id: str
+    claimed_at: datetime
+    ended_at: datetime | None
+    # published, lease_expired, released or cancelled; None while it still runs
+    ended_by: str | None
+    error: str | None
+
+
 class PublishedResult(BaseModel):
     job_id: int
     attempt: int
