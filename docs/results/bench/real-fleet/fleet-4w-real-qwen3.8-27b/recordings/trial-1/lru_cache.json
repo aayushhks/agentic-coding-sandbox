@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "task_id": "lru_cache",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-10-02T18:47:55+00:00",
+  "git_sha": "cbe7ba9806b0e73fc22900ba94ada4fb2233c86d",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "9b91b38d3c6e2d5a0b8212996e22d045fdbfcb0a398b467665305ac3cc453027",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"The task is to create an LRU (Least Recently Used) cache. Let me first check the workspace contents, then create the solution.\", \"tool\": \"list_dir\", \"arguments\": {\"path\": \".\"}}",
+      "prompt_tokens": 465,
+      "completion_tokens": 48,
+      "latency_seconds": 1.0094726689994786,
+      "retry_wait_seconds": 7.400003596558236e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_5e14805ce3"
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"The workspace is empty. I need to create `solution.py` with an `LRUCache` class. The standard approach is to use a dictionary combined with a doubly-linked list for O(1) get and put operations. Let me write the solution.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"class Node:\\n    \\\"\\\"\\\"Doubly-linked list node for the LRU cache.\\\"\\\"\\\"\\n    __slots__ = ('key', 'value', 'prev', 'next')\\n\\n    def __init__(self, key=0, value=0):\\n        self.key = key\\n        self.value = value\\n        self.prev = None\\n        self.next = None\\n\\n\\nclass LRUCache:\\n    \\\"\\\"\\\"Least Recently Used cache with O(1) get and put.\\n\\n    Both get and put count as uses of a key, refreshing its recency.\\n    When capacity is exceeded, the least recently used entry is evicted.\\n    \\\"\\\"\\\"\\n\\n    def __init__(self, capacity: int):\\n        self.capacity = capacity\\n        self.cache = {}  # key -> Node\\n        # Dummy head and tail to simplify edge cases\\n        self.head = Node()  # most recently used side\\n        self.tail = Node()  # least recently used side\\n        self.head.next = self.tail\\n        self.tail.prev = self.head\\n\\n    def _remove(self, node: Node) -> None:\\n        \\\"\\\"\\\"Unlink node from the list.\\\"\\\"\\\"\\n        node.prev.next = node.next\\n        node.next.prev = node.prev\\n\\n    def _add_to_front(self, node: Node) -> None:\\n        \\\"\\\"\\\"Insert node right after head (most recently used position).\\\"\\\"\\\"\\n        node.prev = self.head\\n        node.next = self.head.next\\n        self.head.next.prev = node\\n        self.head.next = node\\n\\n    def get(self, key: int) -> int:\\n        if key not in self.cache:\\n            return -1\\n        node = self.cache[key]\\n        # Move to front (mark as most recently used)\\n        self._remove(node)\\n        self._add_to_front(node)\\n        return node.value\\n\\n    def put(self, key: int, value: int) -> None:\\n        if key in self.cache:\\n            node = self.cache[key]\\n            node.value = value\\n            # Move to front (mark as most recently used)\\n            self._remove(node)\\n            self._add_to_front(node)\\n        else:\\n            node = Node(key, value)\\n            self.cache[key] = node\\n            self._add_to_front(node)\\n            if len(self.cache) > self.capacity:\\n                # Evict least recently used (node before tail)\\n                lru = self.tail.prev\\n                self._remove(lru)\\n                del self.cache[lru.key]\\n\"}}",
+      "prompt_tokens": 532,
+      "completion_tokens": 641,
+      "latency_seconds": 1.5639764939996894,
+      "retry_wait_seconds": 1.0459998520673253e-6,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_fea14bdc83"
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "Now let me write a comprehensive test file to verify the solution:\n\n{\"thought\": \"Now I need to write a test file to verify the LRU cache implementation works correctly.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"import pytest\\nfrom solution import LRUCache\\n\\n\\nclass TestLRUCache:\\n    def test_basic_put_and_get(self):\\n        cache = LRUCache(2)\\n        cache.put(1, 1)\\n        assert cache.get(1) == 1\\n\\n    def test_get_nonexistent_returns_minus_one(self):\\n        cache = LRUCache(2)\\n        assert cache.get(99) == -1\\n\\n    def test_eviction_of_least_recently_used(self):\\n        cache = LRUCache(2)\\n        cache.put(1, 1)\\n        cache.put(2, 2)\\n        cache.put(3, 3)  # evicts key 1\\n        assert cache.get(1) == -1\\n        assert cache.get(2) == 2\\n        assert cache.get(3) == 3\\n\\n    def test_get_refreshes_recency(self):\\n        cache = LRUCache(2)\\n        cache.put(1, 1)\\n        cache.put(2, 2)\\n        cache.get(1)       # key 1 is now most recently used\\n        cache.put(3, 3)    # evicts key 2 (least recently used)\\n        assert cache.get(2) == -1\\n        assert cache.get(1) == 1\\n        assert cache.get(3) == 3\\n\\n    def test_put_refreshes_recency(self):\\n        cache = LRUCache(2)\\n        cache.put(1, 1)\\n        cache.put(2, 2)\\n        cache.put(1, 10)   # key 1 is now most recently used\\n        cache.put(3, 3)    # evicts key 2\\n        assert cache.get(2) == -1\\n        assert cache.get(1) == 10\\n        assert cache.get(3) == 3\\n\\n    def test_update_existing_key(self):\\n        cache = LRUCache(2)\\n        cache.put(1, 1)\\n        cache.put(1, 2)\\n        assert cache.get(1) == 2\\n\\n    def test_capacity_one(self):\\n        cache = LRUCache(1)\\n        cache.put(1, 1)\\n        cache.put(2, 2)  # evicts key 1\\n        assert cache.get(1) == -1\\n        assert cache.get(2) == 2\\n\\n    def test_capacity_one_update(self):\\n        cache = LRUCache(1)\\n        cache.put(1, 1)\\n        cache.put(1, 2)  # update, no eviction\\n        assert cache.get(1) == 2\\n\\n    def test_sequence_from_leetcode(self):\\n        \\\"\\\"\\\"Classic LeetCode 146 example.\\\"\\\"\\\"\\n        cache = LRUCache(2)\\n        cache.put(1, 1)\\n        cache.put(2, 2)\\n        assert cache.get(1) == 1\\n        cache.put(3, 3)   # evicts key 2\\n        assert cache.get(2) == -1\\n        cache.put(4, 4)   # evicts key 1\\n        assert cache.get(1) == -1\\n        assert cache.get(3) == 3\\n        assert cache.get(4) == 4\\n\\n    def test_many_operations(self):\\n        cache = LRUCache(3)\\n        cache.put(1, 1)\\n        cache.put(2, 2)\\n        cache.put(3, 3)\\n        cache.put(4, 4)   # evicts 1\\n        assert cache.get(1) == -1\\n        assert cache.get(2) == 2\\n        cache.put(5, 5)   # evicts 3\\n        assert cache.get(3) == -1\\n        assert cache.get(4) == 4\\n        assert cache.get(5) == 5\\n\\n    def test_get_does_not_change_order_of_others(self):\\n        cache = LRUCache(3)\\n        cache.put(1, 1)\\n        cache.put(2, 2)\\n        cache.put(3, 3)\\n        cache.get(1)      # 1 becomes MRU, order: 1, 3, 2\\n        cache.put(4, 4)  ",
+      "prompt_tokens": 1201,
+      "completion_tokens": 1024,
+      "latency_seconds": 2.665183032000641,
+      "retry_wait_seconds": 13.140568500999507,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c14f15bfae"
+    }
+  ],
+  "error": {
+    "observation_head": "Your last response could not be parsed: response was not valid JSON: Unterminated string starting at: line 1 column 179 (char 178). Respond with a single JSON object: {\"thought\": \"...\", \"tool\": \"...\",",
+    "message": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_[redacted]` service tier `on_demand` on output tokens per minute (OTPM): Limit 1000, Used 860, Requested 641. Please try again in 30.06s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}"
+  }
+}

@@ -562,6 +562,239 @@
       "doc": "docs/m22-records.md"
     },
     {
+      "id": "real-fleet",
+      "title": "The real agent on the real model, through the fleet",
+      "config": "qwen/qwen3.8-27b on groq (its limit on this key 8,000 tokens a minute), the 18-task set once, seed 1; 4 fleet workers, each job in its worker's own process, 600 s per job; one virtualized host: Intel(R) Xeon(R) Processor @ 2.80GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v51, Python 3.13.12; commit cbe7ba9, clean checkout",
+      "points": [
+        "14 of 18 expectations met: 11 solved, 2 escalated, 1 failed on the task, 4 failed underneath it. Unmet: factorial, merge_sorted, two_sum, fizzbuzz.",
+        "Every job finished on its first attempt."
+      ],
+      "tables": [
+        {
+          "title": "The batch, beside the same tasks on the same model run sequentially",
+          "columns": [
+            "run",
+            "expectations met",
+            "batch",
+            "tasks / min",
+            "tokens",
+            "tokens / min",
+            "workers' time on the rate limit"
+          ],
+          "rows": [
+            [
+              "4 fleet workers",
+              "14 of 18",
+              "611.6 s",
+              "1.77",
+              "72,697",
+              "7,132",
+              "79%"
+            ],
+            [
+              "M16, one worker in the bench's process",
+              "18 of 18",
+              "973.0 s",
+              "1.11",
+              "108,804",
+              "6,709",
+              "91%"
+            ],
+            [
+              "M22, one worker in the bench's process",
+              "18 of 18",
+              "1,035.3 s",
+              "1.04",
+              "117,927",
+              "6,835",
+              "90%"
+            ]
+          ]
+        },
+        {
+          "title": "Every job, in the order it was claimed",
+          "columns": [
+            "task",
+            "worker",
+            "attempts",
+            "service",
+            "on the rate limit",
+            "tokens",
+            "outcome"
+          ],
+          "rows": [
+            [
+              "fix_average",
+              "w0",
+              "1",
+              "64.7 s",
+              "60.2 s",
+              "4,040",
+              "solved"
+            ],
+            [
+              "factorial",
+              "w2",
+              "1",
+              "39.5 s",
+              "0.0 s",
+              "0",
+              "failed (provider_error), unmet"
+            ],
+            [
+              "merge_sorted",
+              "w3",
+              "1",
+              "51.0 s",
+              "0.0 s",
+              "0",
+              "failed (provider_error), unmet"
+            ],
+            [
+              "count_vowels",
+              "w1",
+              "1",
+              "15.5 s",
+              "10.3 s",
+              "4,590",
+              "solved"
+            ],
+            [
+              "lru_cache",
+              "w1",
+              "1",
+              "143.7 s",
+              "13.1 s",
+              "3,911",
+              "solved"
+            ],
+            [
+              "topological_sort",
+              "w2",
+              "1",
+              "203.8 s",
+              "193.4 s",
+              "13,172",
+              "solved"
+            ],
+            [
+              "two_sum",
+              "w3",
+              "1",
+              "153.7 s",
+              "67.5 s",
+              "519",
+              "failed (provider_error), unmet"
+            ],
+            [
+              "roman_to_int",
+              "w0",
+              "1",
+              "346.5 s",
+              "339.8 s",
+              "6,350",
+              "solved"
+            ],
+            [
+              "fizzbuzz",
+              "w1",
+              "1",
+              "94.6 s",
+              "0.0 s",
+              "0",
+              "failed (provider_error), unmet"
+            ],
+            [
+              "fibonacci_fast",
+              "w3",
+              "1",
+              "340.2 s",
+              "334.9 s",
+              "5,443",
+              "solved"
+            ],
+            [
+              "valid_parentheses",
+              "w2",
+              "1",
+              "158.5 s",
+              "152.6 s",
+              "4,834",
+              "solved"
+            ],
+            [
+              "TCK-04",
+              "w1",
+              "1",
+              "1.2 s",
+              "0.0 s",
+              "1,354",
+              "escalated"
+            ],
+            [
+              "add_numbers",
+              "w1",
+              "1",
+              "151.0 s",
+              "144.1 s",
+              "6,574",
+              "solved"
+            ],
+            [
+              "multi_file_shapes",
+              "w2",
+              "1",
+              "193.9 s",
+              "187.2 s",
+              "8,163",
+              "solved"
+            ],
+            [
+              "unsatisfiable_spec",
+              "w1",
+              "1",
+              "57.5 s",
+              "50.5 s",
+              "3,533",
+              "failed (wrong_solution)"
+            ],
+            [
+              "TCK-08",
+              "w0",
+              "1",
+              "60.9 s",
+              "59.5 s",
+              "794",
+              "escalated"
+            ],
+            [
+              "fix_binary_search",
+              "w1",
+              "1",
+              "147.7 s",
+              "141.5 s",
+              "6,455",
+              "solved"
+            ],
+            [
+              "reverse_string",
+              "w0",
+              "1",
+              "69.8 s",
+              "64.3 s",
+              "2,965",
+              "solved"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        "docs/results/bench/real-fleet/fleet-4w-real-qwen3.8-27b",
+        "docs/results/bench/real-fleet/analysis.py"
+      ],
+      "doc": "docs/failure-analysis.md"
+    },
+    {
       "id": "containers",
       "title": "What a container per job costs",
       "config": "medians of 100 runs of each, process and container alternating; one virtualized host: Intel(R) Xeon(R) Processor @ 2.80GHz, 4 logical CPUs; commit bbc8f6f, clean checkout",

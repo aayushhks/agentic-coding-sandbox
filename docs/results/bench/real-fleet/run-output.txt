@@ -1,0 +1,4 @@
+worktree at cbe7ba9806b0e73fc22900ba94ada4fb2233c86d, waiting until 18:45 UTC
+starting at 18:45:08 UTC
+trial 1 done: {'jobs': 18, 'solved': 11, 'escalated': 2, 'failed_task': 1, 'failed_infra': 4, 'failed_harness': 0, 'retries': 0, 'matched_expectation': 14}
+record: exit 0 at 18:55:28 UTC
