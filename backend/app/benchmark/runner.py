@@ -1,7 +1,7 @@
 """Run a single benchmark task end to end and grade it against its hidden tests."""
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.agent.loop import Agent
 from app.agent.types import AgentConfig, AgentRun, StepCallback
@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.llm.base import LLMProvider
 from app.sandbox.base import Sandbox, SandboxConfig
 from app.sandbox.factory import make_sandbox
+from app.sandbox.snapshot import workspace_files
 from app.sandbox.tools import ToolCall, ToolName
 
 
@@ -29,6 +30,8 @@ class TaskResult:
     solved: bool
     run: AgentRun
     evaluation: Evaluation
+    # the workspace as the agent left it, before the hidden tests were written into it
+    files: dict[str, str] = field(default_factory=dict)
 
 
 def setup_workspace(sandbox: Sandbox, files: dict[str, str]) -> None:
@@ -67,6 +70,7 @@ async def run_task(
         setup_workspace(sandbox, task.workspace_files)
         agent = Agent(provider, sandbox, agent_config, on_step=on_step)
         run = await agent.run(task.description)
+        files = await asyncio.to_thread(workspace_files, sandbox.workspace)
         # the hidden tests run off the event loop, as the agent's own tools do: blocking it would
         # starve whatever shares the loop, such as the heartbeats keeping a worker's lease alive
         evaluation = await asyncio.to_thread(grade, sandbox, task)
@@ -77,6 +81,7 @@ async def run_task(
             solved=evaluation.solved,
             run=run,
             evaluation=evaluation,
+            files=files,
         )
     finally:
         sandbox.cleanup()

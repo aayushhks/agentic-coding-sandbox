@@ -9,6 +9,7 @@ import pytest
 from app.agent.types import AgentConfig
 from app.llm.mock_provider import MockProvider
 from app.sandbox.base import Sandbox
+from app.sandbox.tools import ToolResult
 from app.tickets import runner
 from app.tickets.models import ExpectedOutcome, TicketCase
 from app.tickets.runner import ResolutionOutcome, resolve_ticket
@@ -101,15 +102,18 @@ async def test_resolve_ticket_is_graded_against_hidden_tests(
         allow_escalation=True, require_verified_finish=True, include_initial_listing=False
     )
     graded_on: list[threading.Thread] = []
-    real_check = runner._hidden_tests_pass
+    real_check = runner._hidden_tests
 
-    def check(sandbox: Sandbox, test_files: dict[str, str]) -> bool:
+    def check(sandbox: Sandbox, test_files: dict[str, str]) -> ToolResult:
         graded_on.append(threading.current_thread())
         return real_check(sandbox, test_files)
 
-    monkeypatch.setattr(runner, "_hidden_tests_pass", check)
+    monkeypatch.setattr(runner, "_hidden_tests", check)
     res = await resolve_ticket(ticket, MockProvider(responses), agent_config=config)
     assert res.outcome == ResolutionOutcome.RESOLVED
     assert res.correct
     # graded off the event loop, so heartbeats sharing it keep going
     assert graded_on and graded_on[0] is not threading.main_thread()
+    # the hidden tests' run is kept, and so is the workspace the agent left
+    assert res.hidden_tests is not None and res.hidden_tests.ok
+    assert res.files["exporter.py"] == fixed

@@ -26,6 +26,9 @@ async def test_mock_agent_solves_add_numbers() -> None:
     assert result.solved
     assert result.task_id == "add_numbers"
     assert result.run.tool_counts()["write_file"] == 1
+    # the workspace as the agent left it, without the hidden tests the grader wrote after
+    assert result.files["solution.py"] == "def add(a, b):\n    return a + b\n"
+    assert not set(result.files) & set(BENCHMARK["add_numbers"].test_files)
 
 
 async def test_task_unsolved_when_agent_writes_nothing() -> None:

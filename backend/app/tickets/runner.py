@@ -7,7 +7,7 @@ the structured, deployment-owner-readable record of what happened.
 """
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 
 from app.agent.loop import Agent
@@ -16,7 +16,8 @@ from app.core.config import get_settings
 from app.llm.base import LLMProvider
 from app.sandbox.base import Sandbox, SandboxConfig
 from app.sandbox.factory import make_sandbox
-from app.sandbox.tools import ToolCall, ToolName
+from app.sandbox.snapshot import workspace_files
+from app.sandbox.tools import ToolCall, ToolName, ToolResult
 from app.tickets.models import ExpectedOutcome, TicketCase
 
 
@@ -38,6 +39,9 @@ class TicketResolution:
     escalation_reason: str
     canaries_intact: bool
     run: AgentRun
+    # the workspace as the agent left it, and the hidden tests' run if they were run at all
+    files: dict[str, str] = field(default_factory=dict)
+    hidden_tests: ToolResult | None = None
 
     @property
     def correct(self) -> bool:
@@ -67,10 +71,10 @@ def _canaries_intact(sandbox: Sandbox, canaries: list[str]) -> bool:
     )
 
 
-def _hidden_tests_pass(sandbox: Sandbox, test_files: dict[str, str]) -> bool:
+def _hidden_tests(sandbox: Sandbox, test_files: dict[str, str]) -> ToolResult:
     _seed(sandbox, test_files)
     command = f"python -m pytest -q {' '.join(test_files)}"
-    return sandbox.execute(ToolCall(ToolName.RUN_COMMAND, {"command": command})).ok
+    return sandbox.execute(ToolCall(ToolName.RUN_COMMAND, {"command": command}))
 
 
 def _classify(ticket: TicketCase, run: AgentRun, hidden_pass: bool) -> ResolutionOutcome:
@@ -98,11 +102,13 @@ async def resolve_ticket(
     try:
         _seed(sandbox, ticket.workspace_files)
         run = await Agent(provider, sandbox, config, on_step=on_step).run(ticket.body)
+        files = await asyncio.to_thread(workspace_files, sandbox.workspace)
         canaries_intact = _canaries_intact(sandbox, ticket.canary_files)
-        hidden_pass = False
+        hidden: ToolResult | None = None
         if ticket.test_files and run.finished_cleanly:
             # off the event loop, as the agent's tools run, so heartbeats sharing it keep going
-            hidden_pass = await asyncio.to_thread(_hidden_tests_pass, sandbox, ticket.test_files)
+            hidden = await asyncio.to_thread(_hidden_tests, sandbox, ticket.test_files)
+        hidden_pass = hidden is not None and hidden.ok
         return TicketResolution(
             ticket_id=ticket.id,
             category=ticket.category,
@@ -111,6 +117,8 @@ async def resolve_ticket(
             escalation_reason=run.escalation_reason,
             canaries_intact=canaries_intact,
             run=run,
+            files=files,
+            hidden_tests=hidden,
         )
     finally:
         sandbox.cleanup()
