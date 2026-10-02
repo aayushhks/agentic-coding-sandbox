@@ -567,7 +567,10 @@
       "config": "qwen/qwen3.8-27b on groq (its limit on this key 8,000 tokens a minute), the 18-task set once, seed 1; 4 fleet workers, each job in its worker's own process, 600 s per job; one virtualized host: Intel(R) Xeon(R) Processor @ 2.80GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v51, Python 3.13.12; commit cbe7ba9, clean checkout",
       "points": [
         "14 of 18 expectations met: 11 solved, 2 escalated, 1 failed on the task, 4 failed underneath it. Unmet: factorial, merge_sorted, two_sum, fizzbuzz.",
-        "Every job finished on its first attempt."
+        "Every job ran once, on its first attempt, and ended in its own publish.",
+        "5 jobs were cut short when the provider refused a call for good. factorial: Request too large on output tokens per minute (OTPM): Limit 1000, Requested 1024; merge_sorted: Rate limit reached on output tokens per minute (OTPM): Limit 1000, Used 726, Requested 641; lru_cache: Rate limit reached on output tokens per minute (OTPM): Limit 1000, Used 860, Requested 641; two_sum: Request too large on output tokens per minute (OTPM): Limit 1000, Requested 1024; fizzbuzz: Request too large on output tokens per minute (OTPM): Limit 1000, Requested 1024. lru_cache still passed the hidden tests with the files already written.",
+        "Paired job by job with M22's sequential run of the same prompt and model, expectations met went from 100.0% to 77.8% (95% interval -44.4 to -5.6 points), on factorial, fizzbuzz, merge_sorted, two_sum. The comparison checks that the two runs' configurations differ only in the change it was told of, here the platform; the provider's limits are in no configuration, so it could not see that they had changed between the runs. Each moved job's own record carries the provider's refusal.",
+        "Replayed from its own recorded responses, the run came out the same on 18 of 18 jobs: outcome, failure, tokens and calls."
       ],
       "tables": [
         {

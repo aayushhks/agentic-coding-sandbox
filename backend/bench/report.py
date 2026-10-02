@@ -9,6 +9,7 @@ Every section names the configuration its numbers were measured under and the re
 
 import argparse
 import json
+import re
 import statistics
 from collections import Counter
 from collections.abc import Callable, Iterable
@@ -464,6 +465,31 @@ def _batch_row(name: str, trial: dict[str, Any]) -> list[str]:
     ]
 
 
+def _refusal(task_id: str) -> str | None:
+    """What the provider said when it refused a job's call for good, from the job's recording."""
+    path = REAL_FLEET / "recordings" / "trial-1" / f"{task_id}.json"
+    if not path.exists():
+        return None
+    message = (_load(path).get("error") or {}).get("message", "")
+    found = re.search(
+        r"(Request too large|Rate limit reached).*? on ([^:]+): (Limit \d+(?:, Used \d+)?, "
+        r"Requested \d+)",
+        message,
+    )
+    return None if found is None else f"{found[1]} on {found[2]}: {found[3]}"
+
+
+def _replayed(trial: dict[str, Any]) -> str | None:
+    """How many of the run's jobs came out the same when replayed from their own responses."""
+    path = REAL_FLEET.parent / "replayed" / "trial-1.json"
+    if not path.exists():
+        return None
+    again = {job["task_id"]: job for job in _load(path)["jobs"]}
+    keys = ("outcome", "failure_mode", "prompt_tokens", "completion_tokens", "llm_calls")
+    same = sum(all(job[key] == again[job["task_id"]][key] for key in keys) for job in trial["jobs"])
+    return f"{same} of {len(trial['jobs'])}"
+
+
 def _real_fleet() -> dict[str, Any] | None:
     """The real agent against the real model through the whole platform, once it has run."""
     path = REAL_FLEET / "trial-1.json"
@@ -497,6 +523,7 @@ def _real_fleet() -> dict[str, Any] | None:
     unmet = [job["task_id"] for job in jobs if not job["matched_expectation"]]
     retried = [job["task_id"] for job in jobs if job["attempts"] > 1]
     policy = config["execution"]["policy"]
+    cut = [job for job in jobs if job["termination_reason"] == "provider_error"]
     points = [
         f"{counts['matched_expectation']} of {counts['jobs']} expectations met: "
         f"{counts['solved']} solved, {counts['escalated']} escalated, {counts['failed_task']} "
@@ -505,9 +532,42 @@ def _real_fleet() -> dict[str, Any] | None:
         (
             f"{len(retried)} jobs took more than one attempt: {', '.join(retried)}."
             if retried
-            else "Every job finished on its first attempt."
+            else "Every job ran once, on its first attempt, and ended in its own publish."
         ),
     ]
+    if cut:
+        refusals = "; ".join(
+            f"{job['task_id']}: {_refusal(job['task_id']) or 'no message recorded'}" for job in cut
+        )
+        kept = [job["task_id"] for job in cut if job["outcome"] == "solved"]
+        points.append(
+            f"{len(cut)} jobs were cut short when the provider refused a call for good. {refusals}."
+            + (
+                f" {', '.join(kept)} still passed the hidden tests with the files already written."
+                if kept
+                else ""
+            )
+        )
+    compared = REAL_FLEET.parent / "comparison.json"
+    if compared.exists():
+        comparison = _load(compared)
+        met = comparison["matched"]
+        moved = [task["task_id"] for task in comparison["tasks"]]
+        points.append(
+            f"Paired job by job with M22's sequential run of the same prompt and model, "
+            f"expectations met went from {met['baseline']:.1%} to {met['candidate']:.1%} (95% "
+            f"interval {met['low'] * 100:+.1f} to {met['high'] * 100:+.1f} points), on "
+            f"{', '.join(moved)}. The comparison checks that the two runs' configurations differ "
+            f"only in the change it was told of, here the platform; the provider's limits are in "
+            f"no configuration, so it could not see that they had changed between the runs. Each "
+            f"moved job's own record carries the provider's refusal."
+        )
+    replayed = _replayed(trial)
+    if replayed is not None:
+        points.append(
+            f"Replayed from its own recorded responses, the run came out the same on {replayed} "
+            f"jobs: outcome, failure, tokens and calls."
+        )
     return {
         "id": "real-fleet",
         "title": "The real agent on the real model, through the fleet",
