@@ -15,6 +15,7 @@ from app.core.config import get_settings
 from app.llm.base import LLMProvider
 from app.llm.groq_provider import GroqProvider
 from app.sandbox.base import SandboxConfig
+from bench.compare import RESAMPLES, compare, render
 from bench.environment import capture_environment
 from bench.executor import (
     AGENT_CONFIGS,
@@ -594,6 +595,27 @@ def _run_scale(args: argparse.Namespace, taskset: TaskSet, count: int) -> int:
     return 0 if result.outcomes_match and passed else 1
 
 
+def _run_compare(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    try:
+        result = compare(
+            load_trials(args.baseline),
+            load_trials(args.candidate),
+            expect=args.expect,
+            resamples=args.resamples,
+            seed=args.seed,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
+    report = render(result)
+    print(report, end="")
+    if args.out is not None:
+        write_record(result, args.out)
+    if args.markdown is not None:
+        args.markdown.write_text(report)
+    # a difference nobody declared means the change can't be credited with what moved
+    return 2 if args.expect and result.unexpected_changes else 0
+
+
 def _replay(
     args: argparse.Namespace,
     taskset: TaskSet,
@@ -746,6 +768,22 @@ def _parser() -> argparse.ArgumentParser:
     ab.add_argument("--out-root", type=Path, default=None)
     ab.add_argument("--database-url", default=None, help="default: a throwaway local Postgres")
 
+    comparison = commands.add_parser(
+        "compare", help="whether a change made the bench better or worse, and by how much"
+    )
+    comparison.add_argument("--baseline", type=Path, required=True, help="the run without it")
+    comparison.add_argument("--candidate", type=Path, required=True, help="the run with it")
+    comparison.add_argument(
+        "--expect",
+        action="append",
+        default=[],
+        help="a config field the change is meant to alter; any other that differs fails the run",
+    )
+    comparison.add_argument("--out", type=Path, default=None, help="write the record here")
+    comparison.add_argument("--markdown", type=Path, default=None, help="write the report here")
+    comparison.add_argument("--resamples", type=int, default=RESAMPLES)
+    comparison.add_argument("--seed", type=int, default=0)
+
     scale = commands.add_parser("scale", help="interleave fleet replays at several worker counts")
     scale.add_argument("--workers", type=int, nargs="+", default=[1, 2, 4])
     scale.add_argument(
@@ -770,6 +808,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "summarize":
         print_summary(summarize_label(args.label, args.out or RESULTS_ROOT / args.label))
         return 0
+    if args.command == "compare":
+        return _run_compare(args, parser)
 
     taskset = load_taskset()
     count = args.tasks or len(taskset.tasks)

@@ -150,7 +150,7 @@ def summary_path(directory: Path) -> Path:
     return directory / "summary.json"
 
 
-def write_record(record: TrialRecord | SummaryRecord, path: Path) -> Path:
+def write_record(record: BaseModel, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(record.model_dump_json(indent=2) + "\n", encoding="utf-8")
     return path
