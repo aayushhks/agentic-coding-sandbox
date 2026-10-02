@@ -13,7 +13,7 @@ from app.eval.failure import FailureMode, classify_failure
 from app.llm.base import LLMProvider
 from app.tickets.runner import ResolutionOutcome, TicketResolution, resolve_ticket
 from bench.jobs import FailureKind, JobResult, Outcome
-from bench.replay import RecordingProvider, ReplayProvider
+from bench.replay import RecordedCall, RecordingProvider, ReplayProvider
 from bench.resources import BatchResources, DatabaseCalls
 from bench.taskset import BenchTask, Expectation, Job, TaskKind, TaskSet
 
@@ -135,6 +135,18 @@ def _retry_wait(provider: LLMProvider) -> float:
     return sum(call.retry_wait_seconds for call in provider.calls)
 
 
+def _answered(provider: LLMProvider) -> list[RecordedCall]:
+    if isinstance(provider, RecordingProvider):
+        return provider.calls
+    if isinstance(provider, ReplayProvider):
+        return provider.answered
+    return []
+
+
+def _distinct(values: Sequence[str | None]) -> list[str]:
+    return sorted({value for value in values if value})
+
+
 async def _execute(
     task: BenchTask, provider: LLMProvider, configs: AgentConfigs, on_step: StepCallback | None
 ) -> tuple[AgentRun, Outcome, str | None, bool]:
@@ -177,6 +189,8 @@ class TaskExecution(BaseModel):
     completion_tokens: int
     retry_wait_seconds: float
     divergence: str | None
+    served_models: list[str] = []
+    fingerprints: list[str] = []
 
 
 async def execute_task(
@@ -204,6 +218,8 @@ async def execute_task(
         completion_tokens=run.completion_tokens,
         retry_wait_seconds=_retry_wait(provider),
         divergence=divergence,
+        served_models=_distinct([call.served_model for call in _answered(provider)]),
+        fingerprints=_distinct([call.fingerprint for call in _answered(provider)]),
     )
 
 
@@ -242,6 +258,8 @@ def job_result(
         retry_wait_seconds=execution.retry_wait_seconds,
         divergence=execution.divergence,
         execution=ran,
+        served_models=execution.served_models,
+        fingerprints=execution.fingerprints,
     )
 
 

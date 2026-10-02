@@ -25,6 +25,9 @@ class CompletionResult:
     content: str
     prompt_tokens: int
     completion_tokens: int
+    # the model that answered, as the provider reported it, and the build it ran, if it said
+    model: str | None = None
+    fingerprint: str | None = None
 
     @property
     def total_tokens(self) -> int:

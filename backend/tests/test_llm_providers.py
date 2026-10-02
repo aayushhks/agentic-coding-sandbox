@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from app.core.config import Settings
@@ -50,6 +52,25 @@ def test_groq_provider_exposes_name_and_model() -> None:
 def test_groq_provider_passes_max_retries_to_the_sdk() -> None:
     assert GroqProvider(api_key="test-key")._client.max_retries == 2
     assert GroqProvider(api_key="test-key", max_retries=0)._client.max_retries == 0
+
+
+async def test_groq_provider_reports_the_model_and_build_that_answered(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = GroqProvider(api_key="test-key", model="qwen/qwen3.8-27b", max_retries=0)
+
+    async def create(**_: object) -> SimpleNamespace:
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))],
+            usage=SimpleNamespace(prompt_tokens=19, completion_tokens=2),
+            model="qwen/qwen3.8-27b",
+            system_fingerprint="fp_57c7e760a9",
+        )
+
+    monkeypatch.setattr(provider._client.chat.completions, "create", create)
+    result = await provider.complete([Message(role=Role.USER, content="hi")])
+    assert (result.content, result.prompt_tokens, result.completion_tokens) == ("ok", 19, 2)
+    assert (result.model, result.fingerprint) == ("qwen/qwen3.8-27b", "fp_57c7e760a9")
 
 
 def test_factory_builds_groq_when_configured() -> None:

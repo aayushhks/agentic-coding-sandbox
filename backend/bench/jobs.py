@@ -43,6 +43,9 @@ class JobResult(BaseModel):
     divergence: str | None
     # how the job's final attempt ran, when it ran in a container: limits, exit, peak memory
     execution: dict[str, Any] | None = None
+    # the models that answered and the builds they ran, as the provider reported them
+    served_models: list[str] = []
+    fingerprints: list[str] = []
 
     @property
     def queue_wait(self) -> float:

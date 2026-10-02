@@ -46,4 +46,5 @@ class MockProvider(LLMProvider):
             content=content,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
+            model=self._model,
         )

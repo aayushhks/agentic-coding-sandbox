@@ -40,6 +40,9 @@ class RecordedCall(BaseModel):
     completion_tokens: int
     latency_seconds: float
     retry_wait_seconds: float
+    # the model that answered and the build it ran, as the provider reported them
+    served_model: str | None = None
+    fingerprint: str | None = None
 
 
 class RecordedError(BaseModel):
@@ -147,6 +150,8 @@ class RecordingProvider(LLMProvider):
                     completion_tokens=result.completion_tokens,
                     latency_seconds=self._clock() - started,
                     retry_wait_seconds=started - first_attempt,
+                    served_model=result.model,
+                    fingerprint=result.fingerprint,
                 )
             )
             return result
@@ -221,7 +226,14 @@ class ReplayProvider(LLMProvider):
             content=call.content,
             prompt_tokens=call.prompt_tokens,
             completion_tokens=call.completion_tokens,
+            model=call.served_model,
+            fingerprint=call.fingerprint,
         )
+
+    @property
+    def answered(self) -> list[RecordedCall]:
+        """The recorded calls this replay has served so far."""
+        return self._recording.calls[: min(self._cursor, len(self._recording.calls))]
 
     def _expect(
         self, messages: Sequence[Message], temperature: float, max_tokens: int

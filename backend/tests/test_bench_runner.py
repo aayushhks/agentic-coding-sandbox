@@ -42,6 +42,8 @@ async def test_the_runner_reports_what_the_recording_did() -> None:
     assert (execution.outcome, execution.failure_mode) == (Outcome.FAILED, "wrong_solution")
     assert execution.llm_calls == len(recordings[task.id].calls)
     assert execution.prompt_tokens == sum(call.prompt_tokens for call in recordings[task.id].calls)
+    # the model that answered each recorded call, as its provider reported it
+    assert (execution.served_models, execution.fingerprints) == (["mock-model"], [])
 
 
 async def test_the_runner_reports_each_agent_step_as_it_happens() -> None:

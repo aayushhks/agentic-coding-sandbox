@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -125,6 +126,37 @@ async def test_recording_keeps_responses_tokens_and_request_fingerprints() -> No
     assert [call.observation_head for call in calls] == ["", "[ok] exit_code=0"]
     assert calls[1].prompt_tokens == sum(len(m.content.split()) for m in second)
     assert recording.provider == "mock"
+
+
+class _Fingerprinted(MockProvider):
+    async def complete(
+        self, messages: Sequence[Message], *, temperature: float = 0.0, max_tokens: int = 1024
+    ) -> CompletionResult:
+        result = await super().complete(messages, temperature=temperature, max_tokens=max_tokens)
+        return replace(result, model="served-model", fingerprint="fp_1")
+
+
+async def test_the_model_and_build_that_answered_are_recorded_and_replayed() -> None:
+    first, second = _conversation(), _conversation("[ok] exit_code=0\n1 passed in 0.02s")
+    recorder = RecordingProvider(_Fingerprinted(["a", "b"]))
+    for messages in (first, second):
+        await recorder.complete(messages)
+    assert [(c.served_model, c.fingerprint) for c in recorder.calls] == [
+        ("served-model", "fp_1")
+    ] * 2
+    recording = build_recording(
+        recorder,
+        task_id="demo",
+        taskset_version="v1",
+        outcome="solved",
+        git_sha="x",
+        recorded_at="t",
+    )
+    replay = ReplayProvider(recording)
+    assert replay.answered == []
+    result = await replay.complete(first)
+    assert (result.model, result.fingerprint) == ("served-model", "fp_1")
+    assert replay.answered == recording.calls[:1]
 
 
 async def test_recording_times_the_answer_apart_from_retry_waits() -> None:

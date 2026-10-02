@@ -55,4 +55,6 @@ class GroqProvider(LLMProvider):
             content=content,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
+            model=response.model,
+            fingerprint=response.system_fingerprint,
         )
