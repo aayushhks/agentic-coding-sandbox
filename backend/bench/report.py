@@ -439,6 +439,118 @@ def _experiment() -> tuple[dict[str, Any], dict[str, Any]]:
     return headline, section
 
 
+# the real agent on the real model, through the fleet
+
+
+REAL_FLEET = RESULTS / "bench" / "real-fleet" / "fleet-4w-real-qwen3.8-27b"
+# the key's limit on the model, from the provider's own messages
+TOKENS_PER_MINUTE = 8000
+
+
+def _batch_row(name: str, trial: dict[str, Any]) -> list[str]:
+    m, c = trial["metrics"], trial["metrics"]["counts"]
+    wall = m["batch_wall_clock_seconds"]
+    tokens = m["prompt_tokens"] + m["completion_tokens"]
+    busy = sum(job["finished_at"] - job["claimed_at"] for job in trial["jobs"])
+    waited = sum(job["retry_wait_seconds"] for job in trial["jobs"])
+    return [
+        name,
+        f"{c['matched_expectation']} of {c['jobs']}",
+        f"{wall:,.1f} s",
+        f"{m['tasks_per_minute']:.2f}",
+        f"{tokens:,}",
+        f"{tokens / (wall / 60):,.0f}",
+        f"{waited / busy:.0%}",
+    ]
+
+
+def _real_fleet() -> dict[str, Any] | None:
+    """The real agent against the real model through the whole platform, once it has run."""
+    path = REAL_FLEET / "trial-1.json"
+    if not path.exists():
+        return None
+    trial = _load(path)
+    config, counts = trial["config"], trial["metrics"]["counts"]
+    sequential = {
+        "M16": RESULTS / "bench" / "sequential-real-qwen3.8-27b" / "trial-1.json",
+        "M22": RESULTS / "bench" / "m22" / "baseline" / "trial-1.json",
+    }
+    batches = [_batch_row(f"{config['workers']} fleet workers", trial)] + [
+        _batch_row(f"{name}, one worker in the bench's process", _load(source))
+        for name, source in sequential.items()
+    ]
+    jobs = sorted(trial["jobs"], key=lambda job: job["claimed_at"])
+    rows = [
+        [
+            job["task_id"],
+            job["worker"],
+            str(job["attempts"]),
+            f"{job['finished_at'] - job['claimed_at']:,.1f} s",
+            f"{job['retry_wait_seconds']:,.1f} s",
+            f"{job['prompt_tokens'] + job['completion_tokens']:,}",
+            job["outcome"]
+            + ("" if job["failure_mode"] is None else f" ({job['failure_mode']})")
+            + ("" if job["matched_expectation"] else ", unmet"),
+        ]
+        for job in jobs
+    ]
+    unmet = [job["task_id"] for job in jobs if not job["matched_expectation"]]
+    retried = [job["task_id"] for job in jobs if job["attempts"] > 1]
+    policy = config["execution"]["policy"]
+    points = [
+        f"{counts['matched_expectation']} of {counts['jobs']} expectations met: "
+        f"{counts['solved']} solved, {counts['escalated']} escalated, {counts['failed_task']} "
+        f"failed on the task, {counts['failed_infra']} failed underneath it."
+        + (f" Unmet: {', '.join(unmet)}." if unmet else ""),
+        (
+            f"{len(retried)} jobs took more than one attempt: {', '.join(retried)}."
+            if retried
+            else "Every job finished on its first attempt."
+        ),
+    ]
+    return {
+        "id": "real-fleet",
+        "title": "The real agent on the real model, through the fleet",
+        "config": (
+            f"{config['model']} on {config['provider']} (its limit on this key "
+            f"{TOKENS_PER_MINUTE:,} tokens a minute), the 18-task set once, seed {config['seed']}; "
+            f"{config['workers']} fleet workers, each job in its worker's own process, "
+            f"{policy['timeout_seconds']:g} s per job; {_machine([trial])}; {_build([trial])}"
+        ),
+        "points": points,
+        "tables": [
+            {
+                "title": "The batch, beside the same tasks on the same model run sequentially",
+                "columns": [
+                    "run",
+                    "expectations met",
+                    "batch",
+                    "tasks / min",
+                    "tokens",
+                    "tokens / min",
+                    "workers' time on the rate limit",
+                ],
+                "rows": batches,
+            },
+            {
+                "title": "Every job, in the order it was claimed",
+                "columns": [
+                    "task",
+                    "worker",
+                    "attempts",
+                    "service",
+                    "on the rate limit",
+                    "tokens",
+                    "outcome",
+                ],
+                "rows": rows,
+            },
+        ],
+        "sources": [_relative(REAL_FLEET), _relative(REAL_FLEET.parent / "analysis.py")],
+        "doc": "docs/failure-analysis.md",
+    }
+
+
 # the single-process baseline: m16
 
 
@@ -559,7 +671,11 @@ def build_report() -> dict[str, Any]:
         ),
         "repository": REPOSITORY,
         "headline": [scaling_headline, faults_headline, experiment_headline],
-        "sections": [scaling, faults, experiment, _containers(), _baseline()],
+        "sections": [
+            section
+            for section in (scaling, faults, experiment, _real_fleet(), _containers(), _baseline())
+            if section is not None
+        ],
     }
 
 
