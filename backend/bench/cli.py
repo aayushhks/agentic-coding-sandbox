@@ -57,7 +57,7 @@ from bench.replay import (
     recordings_digest,
     write_recording,
 )
-from bench.runner import replay_payload
+from bench.runner import real_payload, replay_payload
 from bench.taskset import BenchTask, Job, TaskSet, load_taskset, plan_jobs
 from fleet.config import FleetSettings, async_url
 from fleet.docker import Docker
@@ -298,11 +298,17 @@ async def record_trial(
     recordings_dir: Path | None,
     verbose: bool = True,
     extra_rules: Sequence[str] = (),
+    fleet: FleetExecutor | None = None,
 ) -> TrialRecord:
-    """Run one real trial, optionally saving every task's responses as the replay recordings."""
+    """Run one real trial, optionally saving every task's responses as the replay recordings.
+
+    Without a fleet it runs in this process, stopping at the provider's daily cap; on a fleet the
+    workers call the model themselves, each with the key from its own environment, and a job the
+    cap stops ends as an infrastructure failure, the way it would in production.
+    """
     if recordings_dir is not None and count != len(taskset.tasks):
         raise ValueError("recordings need exactly one run of every task")
-    executor = SequentialExecutor()
+    executor: Executor | FleetExecutor = fleet or SequentialExecutor()
     configs = agent_configs(extra_rules)
     config = build_config(
         taskset,
@@ -331,13 +337,26 @@ async def record_trial(
         )
         write_recording(recording, recordings_dir)
 
-    record = await run_trial(
-        label=label,
-        trial=trial,
-        taskset=taskset,
-        count=count,
-        seed=seed,
-        execute=lambda jobs: executor.run(
+    async def on_fleet(jobs: list[Job]) -> BatchResult:
+        assert fleet is not None
+        batch = await fleet.run(
+            taskset,
+            jobs,
+            lambda task: real_payload(
+                task,
+                model,
+                taskset_version=taskset.version,
+                git_sha=git_sha,
+                extra_rules=extra_rules,
+            ),
+        )
+        if recordings_dir is not None:
+            for recording in batch.recordings:
+                write_recording(recording, recordings_dir)
+        return batch
+
+    def in_process(jobs: list[Job]) -> Awaitable[BatchResult]:
+        return SequentialExecutor().run(
             taskset,
             jobs,
             # the recorder owns retries so each call's latency leaves out rate-limit waits
@@ -345,7 +364,15 @@ async def record_trial(
             stop_check=_daily_cap_reached,
             on_result=_both(keep, _progress(count) if verbose else None),
             configs=configs,
-        ),
+        )
+
+    record = await run_trial(
+        label=label,
+        trial=trial,
+        taskset=taskset,
+        count=count,
+        seed=seed,
+        execute=on_fleet if fleet is not None else in_process,
         config=config,
     )
     write_record(record, trial_path(out_dir, trial))
@@ -722,6 +749,11 @@ def _parser() -> argparse.ArgumentParser:
         default=[],
         help="a rule to add to the agent's system prompt; repeat for more",
     )
+    record.add_argument("--executor", choices=["sequential", "fleet"], default="sequential")
+    record.add_argument("--workers", type=int, default=1, help="fleet only")
+    record.add_argument(
+        "--database-url", default=None, help="fleet only; default: a throwaway local Postgres"
+    )
 
     replay = commands.add_parser("replay", help="replay the recordings through the executor")
     replay.add_argument("--latency", choices=[p.value for p in LatencyProfile], default="zero")
@@ -824,23 +856,35 @@ def main(argv: list[str] | None = None) -> int:
         if not api_key:
             parser.error("GROQ_API_KEY is not set")
         model = args.model
-        label = args.label or f"sequential-real-{model.rsplit('/', 1)[-1]}"
-        record = asyncio.run(
-            record_trial(
-                label=label,
-                trial=args.trial,
-                taskset=taskset,
-                count=count,
-                seed=args.seed,
-                inner_for=lambda _task: GroqProvider(api_key, model=model, max_retries=0),
-                provider="groq",
-                model=model,
-                out_dir=args.out or RESULTS_ROOT / label,
-                recordings_dir=args.recordings_out
-                or (RECORDINGS_ROOT / taskset.version if args.write_recordings else None),
-                extra_rules=args.extra_rule,
+        name = "sequential" if args.executor == "sequential" else f"fleet-{args.workers}w"
+        label = args.label or f"{name}-real-{model.rsplit('/', 1)[-1]}"
+
+        def trial(fleet: FleetExecutor | None) -> TrialRecord:
+            return asyncio.run(
+                record_trial(
+                    label=label,
+                    trial=args.trial,
+                    taskset=taskset,
+                    count=count,
+                    seed=args.seed,
+                    inner_for=lambda _task: GroqProvider(api_key, model=model, max_retries=0),
+                    provider="groq",
+                    model=model,
+                    out_dir=args.out or RESULTS_ROOT / label,
+                    recordings_dir=args.recordings_out
+                    or (RECORDINGS_ROOT / taskset.version if args.write_recordings else None),
+                    extra_rules=args.extra_rule,
+                    fleet=fleet,
+                )
             )
-        )
+
+        if args.executor == "fleet":
+            if args.workers < 1:
+                parser.error("the fleet needs at least one worker")
+            with _fleet(args.database_url, [(args.workers, "process")]) as (fleet,):
+                record = trial(fleet)
+        else:
+            record = trial(None)
         if record.interrupted:
             print(f"trial {args.trial} interrupted: {record.interrupted}")
             return 1

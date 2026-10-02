@@ -254,6 +254,38 @@ async def test_recording_stops_at_the_daily_cap_and_keeps_finished_tasks(
     assert not summary_path(tmp_path / "records").exists()
 
 
+async def test_a_real_trial_on_the_fleet_keeps_its_responses_for_replay(
+    tmp_path: Path, fleet_engine: AsyncEngine, fleet_database_url: str
+) -> None:
+    fleet = FleetExecutor(
+        fleet_database_url, workers=2, lease_seconds=60, runner="tests.bench_real_runner:run_job"
+    )
+    record = await record_trial(
+        label="mini-real-fleet",
+        trial=1,
+        taskset=MINI_TASKSET,
+        count=3,
+        seed=1,
+        inner_for=scripted_provider,
+        provider="mock",
+        model="mock-model",
+        out_dir=tmp_path / "records",
+        recordings_dir=tmp_path / "recordings",
+        verbose=False,
+        fleet=fleet,
+    )
+    assert (record.config.mode, record.config.executor, record.config.workers) == (
+        "real",
+        "fleet",
+        2,
+    )
+    assert record.interrupted is None
+    recordings = load_recordings(tmp_path / "recordings")
+    assert {task_id: r.outcome for task_id, r in recordings.items()} == {
+        job.task_id: job.outcome.value for job in record.jobs
+    }
+
+
 async def test_recordings_need_each_task_exactly_once(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="exactly one run of every task"):
         await record_trial(
