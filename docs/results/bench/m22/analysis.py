@@ -129,11 +129,29 @@ def against_m16() -> None:
             if j["task_id"] == task
         )
     )
+    below = sum(
+        1
+        for task in m16
+        if sum(
+            j["prompt_tokens"] + j["completion_tokens"]
+            for j in first["short-thoughts"]["jobs"]
+            if j["task_id"] == task
+        )
+        < min(
+            m16[task][0],
+            sum(
+                j["prompt_tokens"] + j["completion_tokens"]
+                for j in first["baseline"]["jobs"]
+                if j["task_id"] == task
+            ),
+        )
+    )
     dates = sorted({value[2] for value in m16.values()})
     print(
         f"  totals: m16 {totals[0]:,} (recorded {', '.join(dates)}), m22 baseline {totals[1]:,}, "
         f"m22 short {totals[2]:,}; the baseline matched m16 to the token on {same} of {len(m16)} tasks"
     )
+    print(f"  the short-thoughts run used fewer tokens than both baseline runs on {below} of {len(m16)} tasks")
 
 
 def comparison() -> None:
