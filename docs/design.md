@@ -400,6 +400,69 @@ records show when that happened. Telling it apart from a change takes repeated r
 comparison's intervals resample jobs, so with one round they cover how a change varies across tasks,
 not how one task varies from run to run.
 
-## Still to come
+## At ten times the scale
 
-- What would change at ten times the scale.
+Ten times the largest runs measured here means ten times the workers, jobs and model calls — past
+one host's 4 vCPUs, past 16 workers and past one provider key. No measurement was made at that
+scale, so nothing below is a figure for it. Each item names the measured result that says something
+would have to change, what the change would be, and what would have to be measured before trusting
+it. The rule from M17 on holds: an optimization lands only with an A/B behind it.
+
+- **Workers on many hosts.** At full speed one host's CPUs were the limit: 4 workers kept them 93%
+  busy, and 8 did no more work ([m21](m21-scaling.md)). Nothing in the queue needs workers on one
+  machine — a claim is one query against Postgres, and leases are judged by Postgres's clock, so
+  hosts' clocks never enter into it. What changes is deployment: workers per host sized to its cores
+  for CPU-bound work, or to the model calls it can keep in flight. The bench's fleet executor
+  launches processes on one host; a multi-host run needs a launcher that doesn't, and the scaling
+  curve would have to be measured again across hosts, where a network sits between every worker and
+  the database.
+- **Connections to the one primary.** Postgres used at most 2.6% of one CPU and a job's store calls
+  took 9–15 ms wherever the workers had CPUs to spare, up to 16 workers. The first limit ten times
+  the workers would meet is connections, not CPU: each worker process keeps its own pool of them,
+  and Postgres allows 100 by default. A pooler in front of the primary is the usual answer, with two
+  catches here: a worker's session sets `idle_in_transaction_session_timeout`, the fix for a frozen
+  worker holding its rows ([m20](m20-fault-injection.md)), which transaction pooling would not
+  carry; and `LISTEN/NOTIFY`, below, needs a session of its own. The claim — `SKIP LOCKED` over a
+  partial index on queued jobs — was never measured past 16 claimers; how its latency grows with
+  claimers is the measurement to make first.
+- **Tables that only grow.** Every attempt and result is kept, because the invariant checker reads
+  them all. At ten times the jobs, finished batches would move out of the hot tables — partitioned
+  by batch or by day, the checker run before a partition is detached — and the jobs table's churn
+  (each job is updated at claim, start, every heartbeat and publish) needs its vacuum watched.
+- **Being told about work instead of polling for it.** An idle worker polls, backing off to half a
+  second: a one-worker batch's first claim came 0.12 s after the submit, and at 4 workers the wait
+  for first claims was about 1% of a 12-second batch's worker time ([m21](m21-scaling.md)). Every
+  idle worker's poll is an empty claim against the primary, so their number grows with the pool.
+  `LISTEN/NOTIFY` on submit, with polling kept as the fallback, would cut both; it stays a candidate
+  until an A/B shows what it changes.
+- **A container per job.** A job in a container cost 2.6–3.0 CPU-seconds against 0.7–0.8 in a
+  worker's process, mostly a fresh Python interpreter importing the agent every time, and containers
+  hit the CPUs' limit at 16 workers on one host ([m21](m21-scaling.md)). Ten times the jobs would
+  pay that start-up ten times over. A container kept per worker and reset between jobs, or an image
+  whose interpreter starts with the agent already imported, would cut it — but a reused container
+  can carry state from one job to the next, so the reset would need tests that try to break it, as
+  M19's limits had, and an A/B for the saving.
+- **The model provider as the real scheduler.** With the real model, the provider's limits came
+  first: one key's 8,000 tokens a minute kept a batch waiting 88–91% of its time with one worker
+  ([m16](m16-bench-harness.md), [m22](m22-records.md)), and its 200,000-token daily cap stopped M22
+  after one round. At ten times the work, admission has to follow the token budget rather than the
+  worker count: a job is taken when its key can afford it, work is spread over keys and tiers with a
+  budget each, and a batch that would overrun a daily cap is deferred rather than started and cut
+  off mid-way. The run of the real agent through the fleet in the [failure
+  analysis](failure-analysis.md) shows what today's platform does when the rate limit and its own
+  per-job timeout meet.
+- **Where records live.** An 18-job trial record is 56–83 KB, and all of M22, recordings included,
+  is 716 KB. Committing records to the repository works at this scale and is what keeps the report
+  page honest; at ten times the runs they belong in object storage, indexed in Postgres, with the
+  report page reading the index and a drift check that still compares it to the stored records.
+- **Fair shares between users.** One user and one experiment at a time made first-in, first-out
+  enough, and fair scheduling was deliberately left out. Many users or experiments sharing a fleet
+  would need priorities and quotas, specified first as a measurable claim — for example, that a
+  low-priority batch can't hold a high-priority one back past some bound — and then built to it.
+- **One primary, one failure domain.** Workers ride through Postgres restarts — 30 of them in the
+  fault matrix, with no invariant violated ([m20](m20-fault-injection.md)) — but while the primary
+  is down nothing is claimed or published. A standby with failover is the change, and it has to be
+  synchronous: an asynchronous standby can lose a publish the client already saw acknowledged, or a
+  claim a worker already acted on, and the attempt numbers that fence workers out are only as good
+  as the database that holds them. The fault matrix would have to run against failover, not just
+  restart, before trusting it.
