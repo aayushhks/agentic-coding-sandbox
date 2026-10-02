@@ -12,6 +12,15 @@ def is_daily_cap(exc: BaseException) -> bool:
     return isinstance(exc, groq.RateLimitError) and "per day" in str(exc).lower()
 
 
+def provider_message(exc: BaseException, limit: int = 400) -> str:
+    """What the provider itself said about an error, which for a cap names the limit and use."""
+    body = getattr(exc, "body", None)
+    inner = body.get("error", body) if isinstance(body, dict) else None
+    message = inner.get("message") if isinstance(inner, dict) else None
+    text = message if isinstance(message, str) else str(exc)
+    return text[:limit]
+
+
 def retry_delay(exc: Exception) -> float | None:
     """Seconds to wait before retrying a Groq error, or None when retrying cannot help."""
     if isinstance(exc, groq.RateLimitError):

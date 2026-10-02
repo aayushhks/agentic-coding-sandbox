@@ -1,7 +1,13 @@
 import groq
 import httpx
 
-from bench.groq_limits import DEFAULT_DELAY_SECONDS, MAX_DELAY_SECONDS, is_daily_cap, retry_delay
+from bench.groq_limits import (
+    DEFAULT_DELAY_SECONDS,
+    MAX_DELAY_SECONDS,
+    is_daily_cap,
+    provider_message,
+    retry_delay,
+)
 
 _REQUEST = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
 
@@ -51,3 +57,16 @@ def test_request_errors_are_not_retried() -> None:
     assert retry_delay(_status_error(groq.BadRequestError, 400, "bad request")) is None
     assert retry_delay(_status_error(groq.APIStatusError, 413, "request too large")) is None
     assert retry_delay(ValueError("not a groq error")) is None
+
+
+def test_the_provider_s_own_message_is_kept_from_the_body_it_sent() -> None:
+    said = (
+        "Rate limit reached ... on tokens per day (TPD): Limit 200000, Used 199523, Requested 2513"
+    )
+    response = httpx.Response(429, request=_REQUEST)
+    body = {"error": {"message": said, "type": "tokens", "code": "rate_limit_exceeded"}}
+    exc = groq.RateLimitError(f"Error code: 429 - {body}", response=response, body=body)
+    assert provider_message(exc) == said
+    # without a body, the error's own text stands in, cut to a length a record can hold
+    bare = _status_error(groq.RateLimitError, 429, "x" * 1000)
+    assert provider_message(bare) == "x" * 400

@@ -245,7 +245,10 @@ async def test_recording_stops_at_the_daily_cap_and_keeps_finished_tasks(
         recordings_dir=tmp_path / "recordings",
         verbose=False,
     )
-    assert record.interrupted == "the provider's daily cap was reached after 1 of 3 jobs"
+    assert record.interrupted == (
+        "the provider's daily cap was reached (Rate limit reached on tokens per day (TPD)) "
+        "after 1 of 3 jobs"
+    )
     assert [job.task_id for job in record.jobs] == [first]
     assert set(load_recordings(tmp_path / "recordings")) == {first}
     assert not summary_path(tmp_path / "records").exists()

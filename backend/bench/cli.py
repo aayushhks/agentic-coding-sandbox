@@ -28,7 +28,7 @@ from bench.executor import (
     agent_configs,
 )
 from bench.fleet_executor import FleetExecutor, pool_topology
-from bench.groq_limits import is_daily_cap, retry_delay
+from bench.groq_limits import is_daily_cap, provider_message, retry_delay
 from bench.jobs import JobResult
 from bench.metrics import PERCENTILE_METHOD, compute_metrics
 from bench.prices import price_for
@@ -280,7 +280,7 @@ async def replay_trials(
 def _daily_cap_reached(provider: LLMProvider) -> str | None:
     gave_up = provider.gave_up if isinstance(provider, RecordingProvider) else None
     if gave_up is not None and is_daily_cap(gave_up):
-        return "the provider's daily cap was reached"
+        return f"the provider's daily cap was reached ({provider_message(gave_up)})"
     return None
 
 
