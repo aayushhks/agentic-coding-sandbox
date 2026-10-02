@@ -365,6 +365,41 @@ placement rule plain: workers go where the CPUs are — more hosts, each with as
 cores keep busy, or as many as wait on the model at once — and one primary serves them all. Where
 that primary would saturate is beyond what one host can drive, and is the ten-times question below.
 
+## Evaluation records: what makes two runs comparable
+
+A run is only comparable to another if each says exactly what it ran with, and only reproducible if
+what it produced can be produced again. M22 made the bench's records carry both
+([m22](m22-records.md)).
+
+- **What ran is pinned by digests and versions, not names.** The task set has a version and a
+  digest; the agent has a digest of every kind of task's rendered system prompt, tool definitions
+  included, and its configs; container runs carry their image's id. Two runs with equal digests ran
+  the same prompts and settings on the same tasks, whatever their labels say.
+- **The model is what the provider said answered, call by call.** A run asks for a model by name;
+  each call records the model the provider reported and the build it ran (its system fingerprint).
+  In M22's experiment one model name was answered by 6 and by 7 builds in two trials, and 33 of 36
+  jobs saw more than one build across their own calls: "the same model" was not one build.
+- **What the agent did is kept, not just its score**: its answer, a diff of every file it changed,
+  the hidden tests' verdict and output, its tool use, its tokens, the time it waited on the model,
+  and every attempt the fleet made at it. A regression can be read in the record without rerunning
+  it.
+- **Every real run keeps the model's responses.** Replaying them reproduces the run job for job —
+  outcomes, tokens, calls — so a result can be checked by anyone, for free, and a later change can
+  be measured against exactly the runs it is compared with. Replay refuses a request the recording
+  never saw, so a replay with a changed prompt fails loudly rather than reusing answers to a
+  different question.
+- **A comparison is paired and declared.** Runs are interleaved round by round on one machine, jobs
+  are paired by round, the change must be declared (any other difference fails the comparison), and
+  intervals resample jobs rather than runs, since one job tends to behave alike across rounds.
+- **Cost is computed, and says at what price.** Tokens are priced from a list pinned in the repo,
+  each price with its source and the day it was read, so a cost can be recomputed when prices move.
+
+What this does not settle: two runs on the same digests can still differ, because the provider's
+builds change underneath a model name and sampling at temperature 0 is not deterministic here. The
+records show when that happened. Telling it apart from a change takes repeated rounds: the
+comparison's intervals resample jobs, so with one round they cover how a change varies across tasks,
+not how one task varies from run to run.
+
 ## Still to come
 
 - What would change at ten times the scale.
