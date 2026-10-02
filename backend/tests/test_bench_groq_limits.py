@@ -70,3 +70,15 @@ def test_the_provider_s_own_message_is_kept_from_the_body_it_sent() -> None:
     # without a body, the error's own text stands in, cut to a length a record can hold
     bare = _status_error(groq.RateLimitError, 429, "x" * 1000)
     assert provider_message(bare) == "x" * 400
+
+
+def test_the_provider_s_message_leaves_out_the_account_it_names() -> None:
+    said = (
+        "Rate limit reached for model `m` in organization `org_01k94fjezdecqv8v01awf25mmc` on TPD"
+    )
+    response = httpx.Response(429, request=_REQUEST)
+    body = {"error": {"message": said}}
+    exc = groq.RateLimitError(f"Error code: 429 - {body}", response=response, body=body)
+    assert provider_message(exc) == (
+        "Rate limit reached for model `m` in organization `org_[redacted]` on TPD"
+    )

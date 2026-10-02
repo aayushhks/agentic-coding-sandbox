@@ -300,3 +300,18 @@ async def test_replay_flags_a_run_that_never_reached_the_recorded_failure() -> N
     await replay.complete(_conversation())
     replay.check_consumed()
     assert replay.divergence == "the run stopped after 1 of 2 recorded calls"
+
+
+async def test_a_recorded_failure_keeps_the_provider_s_words_but_not_the_account() -> None:
+    class Refusing(FlakyProvider):
+        async def complete(
+            self, messages: Sequence[Message], *, temperature: float = 0.0, max_tokens: int = 1024
+        ) -> CompletionResult:
+            raise FlakyError("limit reached in organization `org_01k94fjezdecqv8v01awf25mmc`")
+
+    time = FakeTime()
+    provider = RecordingProvider(Refusing(time, failures=0), sleep=time.sleep, clock=time.clock)
+    with pytest.raises(FlakyError):
+        await provider.complete(_conversation())
+    assert provider.error is not None
+    assert provider.error.message == ("FlakyError: limit reached in organization `org_[redacted]`")

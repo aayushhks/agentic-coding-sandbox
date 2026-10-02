@@ -2,6 +2,8 @@
 
 import groq
 
+from bench.replay import without_account
+
 DEFAULT_DELAY_SECONDS = 5.0
 MIN_DELAY_SECONDS = 1.0
 MAX_DELAY_SECONDS = 120.0
@@ -18,7 +20,7 @@ def provider_message(exc: BaseException, limit: int = 400) -> str:
     inner = body.get("error", body) if isinstance(body, dict) else None
     message = inner.get("message") if isinstance(inner, dict) else None
     text = message if isinstance(message, str) else str(exc)
-    return text[:limit]
+    return without_account(text)[:limit]
 
 
 def retry_delay(exc: Exception) -> float | None:

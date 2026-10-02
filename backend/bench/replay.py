@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import re
 import time
 from collections.abc import Awaitable, Callable, Sequence
 from enum import StrEnum
@@ -18,8 +19,15 @@ RECORDINGS_ROOT = Path(__file__).resolve().parent / "recordings"
 
 Sleep = Callable[[float], Awaitable[None]]
 Clock = Callable[[], float]
+# the account a provider names in its error messages, which a record has no need to publish
+_ACCOUNT = re.compile(r"\borg_[0-9A-Za-z]{6,}")
 # seconds to wait before retrying a failed call, or None when retrying cannot help
 RetryDelay = Callable[[Exception], float | None]
+
+
+def without_account(text: str) -> str:
+    """A provider's message with the account it names taken out."""
+    return _ACCOUNT.sub("org_[redacted]", text)
 
 
 class LatencyProfile(StrEnum):
@@ -133,7 +141,7 @@ class RecordingProvider(LLMProvider):
                     self.gave_up = exc
                     self.error = RecordedError(
                         observation_head=observation_head(messages),
-                        message=f"{type(exc).__name__}: {exc}",
+                        message=without_account(f"{type(exc).__name__}: {exc}"),
                     )
                     raise
                 await self._sleep(delay)
