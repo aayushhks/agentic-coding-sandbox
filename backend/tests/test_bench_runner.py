@@ -1,11 +1,22 @@
 import json
+from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
+import bench.runner
+from app.llm.mock_provider import MockProvider
 from bench.jobs import JobOutput, Outcome
 from bench.replay import LatencyProfile
-from bench.runner import execution_from_body, replay_payload, run_job
+from bench.runner import (
+    execution_from_body,
+    real_payload,
+    recording_from_body,
+    replay_payload,
+    run_job,
+)
 from fleet.progress import reporting_to
-from tests.bench_helpers import MINI_TASKSET, record_mini_batch
+from tests.bench_helpers import MINI_TASKSET, SCRIPTS, record_mini_batch
 
 
 async def test_a_replay_payload_is_plain_json_and_runs_anywhere() -> None:
@@ -99,3 +110,34 @@ async def test_the_runner_reports_each_agent_step_as_it_happens() -> None:
     assert [event["step"] for event in events] == list(range(execution.iterations))
     assert sum(event["prompt_tokens"] for event in events) == execution.prompt_tokens
     assert events[-1]["tool"] == "finish"
+
+
+async def test_a_real_job_calls_the_model_from_the_worker_and_sends_back_every_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task = MINI_TASKSET.get("adder")
+    monkeypatch.setattr(
+        bench.runner, "real_provider", lambda model: MockProvider(SCRIPTS["adder"], model=model)
+    )
+    payload = real_payload(task, "mock-model", taskset_version="test", git_sha="abc")
+    # the payload crosses the api and sits in the database, so it must hold no credentials
+    assert json.loads(json.dumps(payload)) == payload
+    assert not any("key" in field for field in payload)
+    outcome = await run_job(task.id, payload)
+    assert outcome.outcome == "succeeded"
+    recording = recording_from_body(outcome.body)
+    assert recording is not None
+    assert (recording.task_id, recording.git_sha, recording.outcome) == ("adder", "abc", "solved")
+    assert len(recording.calls) == len(SCRIPTS["adder"])
+    # the responses it sent back replay to the same run
+    replayed = replay_payload(task, recording, LatencyProfile.ZERO)
+    again = execution_from_body((await run_job(task.id, replayed)).body)
+    assert (again.outcome, again.divergence) == (Outcome.SOLVED, None)
+
+
+def test_a_worker_without_the_key_fails_the_job_as_infrastructure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(bench.runner, "get_settings", lambda: SimpleNamespace(groq_api_key=None))
+    with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
+        bench.runner.real_provider("qwen/qwen3.8-27b")

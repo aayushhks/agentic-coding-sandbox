@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from bench.fleet_executor import FleetExecutor, pool_topology
 from bench.replay import LatencyProfile
-from bench.runner import replay_payload
+from bench.runner import real_payload, replay_payload
 from bench.taskset import plan_jobs
 from tests.bench_helpers import MINI_TASKSET, record_mini_batch
 
@@ -57,3 +57,23 @@ def test_a_fleet_needs_a_worker_and_describes_its_pool() -> None:
         FleetExecutor("postgresql+asyncpg://unused", workers=0)
     assert FleetExecutor("postgresql+asyncpg://unused", workers=4).topology == pool_topology(4)
     assert pool_topology(1).startswith("single host: one fleet worker process, ")
+
+
+async def test_real_jobs_on_the_fleet_bring_back_their_responses(
+    fleet_engine: AsyncEngine, fleet_database_url: str
+) -> None:
+    jobs = plan_jobs(MINI_TASKSET, 3, seed=1)
+    fleet = FleetExecutor(
+        fleet_database_url, workers=2, lease_seconds=60, runner="tests.bench_real_runner:run_job"
+    )
+    batch = await fleet.run(
+        MINI_TASKSET,
+        jobs,
+        lambda task: real_payload(task, "mock-model", taskset_version="test", git_sha="abc"),
+    )
+    by_task = {result.task_id: result for result in batch.results}
+    assert {r.task_id: r.outcome for r in batch.recordings} == {
+        task_id: result.outcome.value for task_id, result in by_task.items()
+    }
+    for result in batch.results:
+        assert result.served_models == ["mock-model"]

@@ -3,7 +3,7 @@
 import difflib
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 
 from pydantic import BaseModel
@@ -14,7 +14,7 @@ from app.eval.failure import FailureMode, classify_failure
 from app.llm.base import LLMProvider
 from app.tickets.runner import ResolutionOutcome, TicketResolution, resolve_ticket
 from bench.jobs import AttemptRun, FailureKind, JobOutput, JobResult, Outcome
-from bench.replay import RecordedCall, RecordingProvider, ReplayProvider
+from bench.replay import RecordedCall, Recording, RecordingProvider, ReplayProvider
 from bench.resources import BatchResources, DatabaseCalls
 from bench.taskset import BenchTask, Expectation, Job, TaskKind, TaskSet
 
@@ -54,6 +54,8 @@ class BatchResult:
     # the cpu the batch used and the time its workers waited on the database, when measured
     resources: BatchResources | None = None
     database: dict[str, DatabaseCalls] | None = None
+    # the responses each real job got from the model, so the batch can be replayed
+    recordings: list[Recording] = field(default_factory=list)
 
 
 class Executor(Protocol):

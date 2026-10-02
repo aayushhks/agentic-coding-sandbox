@@ -20,8 +20,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from bench.executor import BatchResult, job_result
 from bench.jobs import AttemptRun, JobResult
+from bench.replay import Recording
 from bench.resources import Sampler, combine_calls, named
-from bench.runner import execution_from_body
+from bench.runner import execution_from_body, recording_from_body
 from bench.taskset import BenchTask, Job, TaskSet
 from fleet.client import FleetClient
 from fleet.models import NewJob
@@ -87,6 +88,7 @@ class FleetExecutor:
         image_id: str | None = None,
         policy: ExecutionPolicy = DEFAULT_POLICY,
         postgres_pid: int | None = None,
+        runner: str = "bench.runner:run_job",
     ) -> None:
         if workers < 1:
             raise ValueError("the fleet needs at least one worker")
@@ -107,6 +109,7 @@ class FleetExecutor:
         self._deployment = f"bench-{uuid.uuid4().hex[:8]}"
         # the database server's main process, when it runs on this host where its cpu can be read
         self._postgres_pid = postgres_pid
+        self._runner = runner
 
     async def run(
         self, taskset: TaskSet, jobs: Sequence[Job], payload_for: PayloadFactory
@@ -136,7 +139,7 @@ class FleetExecutor:
             workers = [
                 spawn(
                     [
-                        *("-m", "fleet.worker", "--runner", "bench.runner:run_job"),
+                        *("-m", "fleet.worker", "--runner", self._runner),
                         *("--worker-id", f"w{index}", "--database-url", self._url, *options),
                         *("--ready-file", str(stats / f"w{index}.ready")),
                         *("--stats-out", str(stats / f"w{index}.json")),
@@ -193,17 +196,20 @@ class FleetExecutor:
                         process.kill()
             reports = worker_reports(stats)
             database = combine_calls(reports) if len(reports) == self.workers else None
+        results, recordings = await self._results(taskset, jobs, submission.batch_id)
         return BatchResult(
-            await self._results(taskset, jobs, submission.batch_id),
+            results,
             None,
             resources=sampler.result,
             database=database,
+            recordings=recordings,
         )
 
     async def _results(
         self, taskset: TaskSet, jobs: Sequence[Job], batch_id: int
-    ) -> list[JobResult]:
-        """Rebuild bench results from what the fleet stored, timed by Postgres's clock."""
+    ) -> tuple[list[JobResult], list[Recording]]:
+        """Rebuild bench results from what the fleet stored, timed by Postgres's clock, and the
+        responses any real job got."""
         engine = create_async_engine(self._url)
         try:
             rows = await batch_jobs(engine, batch_id)
@@ -219,6 +225,7 @@ class FleetExecutor:
             return None if moment is None else (moment - start).total_seconds()
 
         results = []
+        recordings = []
         for row in rows:
             result = published[row.id]
             if row.state == "dead_lettered":
@@ -230,6 +237,9 @@ class FleetExecutor:
             if result is None or row.claimed_at is None or row.finished_at is None:
                 raise RuntimeError(f"job {row.name} finished without a complete record")
             job = by_name[row.name]
+            recording = recording_from_body(result.body)
+            if recording is not None:
+                recordings.append(recording)
             results.append(
                 job_result(
                     job,
@@ -254,4 +264,4 @@ class FleetExecutor:
                     ],
                 )
             )
-        return results
+        return results, recordings
