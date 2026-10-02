@@ -1,4 +1,6 @@
 #!/bin/bash
+# these records were written to ../m21 by this script, then moved here once the bench was fixed to
+# wait for every worker to be up before submitting a batch
 # m21: the fixed task set, 72 jobs a batch, on pools of fleet workers of several sizes; within each
 # run every pool's trials are interleaved with the others', their order reversed every other trial.
 # run in this order, one after the other: idle, zero, past-cores, recorded, containers. past-cores
