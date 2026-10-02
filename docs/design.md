@@ -400,6 +400,15 @@ records show when that happened. Telling it apart from a change takes repeated r
 comparison's intervals resample jobs, so with one round they cover how a change varies across tasks,
 not how one task varies from run to run.
 
+Nor can a comparison see a difference the records don't hold. The provider's limits are in no
+record, and between M22's runs and the first real-model run through the fleet the key met a limit
+of 1,000 output tokens a minute that no earlier call had hit. Paired with M22's sequential run, the
+fleet run's expectations met fell from 100% to 77.8%, and the comparison could only set that against
+the one difference it saw, the platform. Each moved job's own record names the provider's refusal,
+which is how it was told apart ([failure analysis](failure-analysis.md#the-real-agent-through-the-whole-platform)).
+Recording what the provider says about its limits with every run would let a comparison flag such a
+change as undeclared.
+
 ## At ten times the scale
 
 Ten times the largest runs measured here means ten times the workers, jobs and model calls — past
