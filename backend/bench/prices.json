@@ -1,0 +1,14 @@
+{
+  "currency": "USD",
+  "models": {
+    "qwen/qwen3.8-27b": {
+      "provider": "groq",
+      "input_per_million_tokens": 0.8,
+      "output_per_million_tokens": 4.0,
+      "source": "https://console.groq.com/docs/model/qwen/qwen3.8-27b",
+      "retrieved": "2026-10-02",
+      "how": "a web search's summary of the source page; the page itself could not be fetched from the machine the runs used, whose network policy blocks groq.com, so the figures are unchecked against it",
+      "note": "list price for pay-as-you-go use; the key the bench ran on is on the free tier, which charges nothing"
+    }
+  }
+}

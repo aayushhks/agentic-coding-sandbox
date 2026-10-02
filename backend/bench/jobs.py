@@ -46,6 +46,8 @@ class JobResult(BaseModel):
     # the models that answered and the builds they ran, as the provider reported them
     served_models: list[str] = []
     fingerprints: list[str] = []
+    # what the job's tokens cost at the run's pinned price, None without one
+    cost_usd: float | None = None
 
     @property
     def queue_wait(self) -> float:

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from bench.environment import REPO_ROOT, Environment
 from bench.jobs import JobResult
 from bench.metrics import TrialMetrics
+from bench.prices import Price
 from bench.resources import BatchResources, DatabaseCalls
 
 RECORD_SCHEMA_VERSION = 1
@@ -39,6 +40,8 @@ class BenchConfig(BaseModel):
     # the system prompt each kind of task started from, and a digest of those and the configs
     system_prompts: dict[str, str] | None = None
     agent_digest: str | None = None
+    # the pinned price the run's cost is computed at, None when the list has none for the model
+    price: Price | None = None
 
 
 class TrialRecord(BaseModel):

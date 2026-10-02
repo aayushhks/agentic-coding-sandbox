@@ -1,4 +1,5 @@
 import asyncio
+import json
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import httpx
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+import bench.prices
 from app.llm.base import CompletionResult, LLMProvider, Message
 from bench.cli import (
     AbResult,
@@ -183,6 +185,39 @@ async def test_a_trial_with_an_extra_rule_replays_with_it_and_diverges_without(
     plain = await replay("without", [])
     assert plain.metrics["counts.failed_harness"].max == 3
     assert plain.config.agent_digest != config.agent_digest
+
+
+async def test_a_trial_prices_every_job_at_the_pinned_price_and_adds_them_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    prices = tmp_path / "prices.json"
+    entry = {
+        "provider": "mock",
+        "input_per_million_tokens": 1.0,
+        "output_per_million_tokens": 2.0,
+        "source": "test",
+        "retrieved": "today",
+        "how": "made up for the test",
+    }
+    prices.write_text(json.dumps({"currency": "USD", "models": {"mock-model": entry}}))
+    monkeypatch.setattr(bench.prices, "PRICES_PATH", prices)
+    record = await record_trial(
+        label="mini-priced",
+        trial=1,
+        taskset=MINI_TASKSET,
+        count=3,
+        seed=1,
+        inner_for=scripted_provider,
+        provider="mock",
+        model="mock-model",
+        out_dir=tmp_path / "records",
+        recordings_dir=None,
+        verbose=False,
+    )
+    assert record.config.price is not None and record.config.price.source == "test"
+    for job in record.jobs:
+        assert job.cost_usd == pytest.approx((job.prompt_tokens + 2 * job.completion_tokens) / 1e6)
+    assert record.metrics.cost_usd == pytest.approx(sum(job.cost_usd or 0 for job in record.jobs))
 
 
 async def test_recording_stops_at_the_daily_cap_and_keeps_finished_tasks(

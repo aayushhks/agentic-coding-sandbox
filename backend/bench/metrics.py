@@ -133,4 +133,12 @@ def compute_metrics(
         completion_tokens=sum(r.completion_tokens for r in results),
         llm_calls=sum(r.llm_calls for r in results),
         retry_wait_seconds=sum(r.retry_wait_seconds for r in results),
+        cost_usd=_cost(results),
     )
+
+
+def _cost(results: Sequence[JobResult]) -> float | None:
+    costs = [r.cost_usd for r in results]
+    if not costs or any(cost is None for cost in costs):
+        return None
+    return sum(cost for cost in costs if cost is not None)

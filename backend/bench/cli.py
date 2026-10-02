@@ -30,6 +30,7 @@ from bench.fleet_executor import FleetExecutor, pool_topology
 from bench.groq_limits import is_daily_cap, retry_delay
 from bench.jobs import JobResult
 from bench.metrics import PERCENTILE_METHOD, compute_metrics
+from bench.prices import price_for
 from bench.provenance import agent_digest, system_prompts
 from bench.records import (
     RESULTS_ROOT,
@@ -111,6 +112,7 @@ def build_config(
         execution=executor.execution,
         system_prompts=system_prompts(configs),
         agent_digest=agent_digest(configs),
+        price=price_for(model),
     )
 
 
@@ -153,6 +155,13 @@ async def run_trial(
     environment = capture_environment()
     started_at = utc_now()
     batch = await execute(plan_jobs(taskset, count, seed))
+    price = config.price
+    jobs = [
+        job.model_copy(update={"cost_usd": price.cost(job.prompt_tokens, job.completion_tokens)})
+        if price is not None
+        else job
+        for job in batch.results
+    ]
     return TrialRecord(
         label=label,
         trial=trial,
@@ -160,8 +169,8 @@ async def run_trial(
         interrupted=batch.interrupted,
         config=config,
         environment=environment,
-        metrics=compute_metrics(batch.results, workers=config.workers),
-        jobs=batch.results,
+        metrics=compute_metrics(jobs, workers=config.workers),
+        jobs=jobs,
         resources=batch.resources,
         database=batch.database,
     )
