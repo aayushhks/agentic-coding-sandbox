@@ -687,6 +687,12 @@ def _parser() -> argparse.ArgumentParser:
     record.add_argument(
         "--write-recordings", action="store_true", help="save the responses as the replay set"
     )
+    record.add_argument(
+        "--recordings-out",
+        type=Path,
+        default=None,
+        help="save the responses here instead, leaving the replay set as it is",
+    )
     record.add_argument("--out", type=Path, default=None)
     record.add_argument(
         "--extra-rule",
@@ -790,7 +796,8 @@ def main(argv: list[str] | None = None) -> int:
                 provider="groq",
                 model=model,
                 out_dir=args.out or RESULTS_ROOT / label,
-                recordings_dir=RECORDINGS_ROOT / taskset.version if args.write_recordings else None,
+                recordings_dir=args.recordings_out
+                or (RECORDINGS_ROOT / taskset.version if args.write_recordings else None),
                 extra_rules=args.extra_rule,
             )
         )

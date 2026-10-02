@@ -2,12 +2,15 @@ import asyncio
 import json
 from collections.abc import Sequence
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 import groq
 import httpx
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+import bench.cli
 import bench.prices
 from app.llm.base import CompletionResult, LLMProvider, Message
 from bench.cli import (
@@ -25,6 +28,7 @@ from bench.jobs import FailureKind, Outcome
 from bench.records import (
     BenchConfig,
     SummaryRecord,
+    TrialRecord,
     load_trials,
     summarize,
     summary_path,
@@ -288,6 +292,25 @@ def test_summarize_command_rebuilds_the_summary(
     assert main(["summarize", "--label", "demo", "--out", str(tmp_path)]) == 0
     assert summary_path(tmp_path).is_file()
     assert "demo: replay mode" in capsys.readouterr().out
+
+
+def test_a_real_trial_can_keep_its_responses_apart_from_the_replay_set(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    kept: dict[str, Any] = {}
+
+    async def record(**arguments: Any) -> TrialRecord:
+        kept.update(arguments)
+        raise SystemExit(0)
+
+    monkeypatch.setattr(bench.cli, "record_trial", record)
+    monkeypatch.setattr(bench.cli, "get_settings", lambda: SimpleNamespace(groq_api_key="k"))
+    argv = ["record", "--trial", "2", "--recordings-out", str(tmp_path / "rec")]
+    argv += ["--extra-rule", "one", "--extra-rule", "two"]
+    with pytest.raises(SystemExit):
+        main(argv)
+    assert kept["recordings_dir"] == tmp_path / "rec"
+    assert kept["extra_rules"] == ["one", "two"]
 
 
 def test_replay_command_rejects_more_than_one_worker() -> None:
