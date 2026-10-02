@@ -134,15 +134,17 @@ was specified with.
 
 Fencing adds work to every publish and wraps every run in a heartbeat loop, so the one-worker
 comparison from M17 was repeated, twice. The setup matches M17's: the 18-task set, replay at zero
-latency, seed 1, the same machine (a virtualized 4-vCPU Intel Xeon @ 2.80 GHz, 15.72 GiB RAM,
-Ubuntu 24.04.4, Python 3.13.12, PostgreSQL 16.13), with Postgres, the API and the worker all on it.
+latency, seed 1, with Postgres, the API and the worker all on one virtualized 4-vCPU machine with
+15.72 GiB RAM, Ubuntu 24.04.4, Python 3.13.12 and PostgreSQL 16.13. Its CPU was not M17's: every
+record from this session names an Intel Xeon @ 2.10 GHz, where M17's named one @ 2.80 GHz. This
+page first called it the same machine; the records say otherwise.
 
 **First, M17's A/B again on the M18 build**: 5 trials per arm, interleaved, with the arm order
 alternating ([records](results/bench/m18/)). The fleet came out **5% slower**: 11.62 s median
 [10.91–12.27] against 11.06 s [10.93–11.59]. But the per-trial difference ranged from −0.26 s to
-+1.34 s, and this session ran 10% faster than M17's across the board. The same code's sequential
-replay measured 12.28 s median in M17's session and 10.80 s in a later one. Numbers from different
-sessions can't be compared, so this didn't settle whether M18 costs anything.
++1.34 s, and this session ran 10% faster than M17's across the board, on a different CPU model. The
+same code's sequential replay measured 12.28 s median in M17's session and 10.80 s in a later one.
+Numbers from different sessions can't be compared, so this didn't settle whether M18 costs anything.
 
 **Then, build against build, in one session.** The M17 code and the M18 code ran alternately, in ABBA
 order: ten `bench.cli ab` runs of two trials each, with the arm order alternating inside each run.
