@@ -124,3 +124,39 @@ export interface DeploymentReport {
   stats: DeploymentStats;
   outcomes: DeploymentOutcome[];
 }
+
+/** One measured claim at the top of the platform report. */
+export interface PlatformClaim {
+  id: string;
+  claim: string;
+  value: string;
+  detail: string;
+  config: string;
+  sources: string[];
+  doc: string;
+}
+
+export interface PlatformTable {
+  title: string;
+  columns: string[];
+  rows: string[][];
+}
+
+export interface PlatformSection {
+  id: string;
+  title: string;
+  config: string;
+  points: string[];
+  tables: PlatformTable[];
+  sources: string[];
+  doc: string;
+}
+
+/** The platform report, generated from the committed records by backend/bench/report.py. */
+export interface PlatformReport {
+  schema_version: number;
+  about: string;
+  repository: string;
+  headline: PlatformClaim[];
+  sections: PlatformSection[];
+}

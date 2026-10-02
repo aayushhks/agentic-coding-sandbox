@@ -1,6 +1,7 @@
 import type {
   CompareResponse,
   DeploymentReport,
+  PlatformReport,
   RunDetail,
   RunSummary,
   TaskDetail,
@@ -54,4 +55,9 @@ export async function getDeploymentReport(): Promise<DeploymentReport> {
     }
   }
   return fetchJSON<DeploymentReport>("/deployment-report.json");
+}
+
+// generated from the committed records and served next to the app in every mode, never from an API
+export function getPlatformReport(): Promise<PlatformReport> {
+  return fetchJSON<PlatformReport>("/platform-report.json");
 }

@@ -4,11 +4,12 @@ import type { ReactNode } from "react";
 import { listRuns } from "./api";
 import { CompareView } from "./components/CompareView";
 import { DeploymentReport } from "./components/DeploymentReport";
+import { PlatformReport } from "./components/PlatformReport";
 import { RunDetail } from "./components/RunDetail";
 import { RunsList } from "./components/RunsList";
 import type { RunSummary } from "./types";
 
-type Tab = "runs" | "compare" | "report";
+type Tab = "runs" | "compare" | "report" | "platform";
 
 function TabButton({
   active,
@@ -66,13 +67,18 @@ export default function App(): ReactNode {
           <TabButton active={tab === "report"} onClick={() => setTab("report")}>
             report
           </TabButton>
+          <TabButton active={tab === "platform"} onClick={() => setTab("platform")}>
+            platform
+          </TabButton>
         </nav>
       </header>
 
       <main className="flex-1">
         {/* The deployment report reads its own endpoint, so it renders regardless of whether any
             benchmark runs exist or the /api/runs fetch failed. */}
-        {tab === "report" ? (
+        {tab === "platform" ? (
+          <PlatformReport />
+        ) : tab === "report" ? (
           <DeploymentReport />
         ) : (
           <>
