@@ -13,9 +13,9 @@ the list, not the system. Where a write-up already tells the story in full, this
 |---|---|---|
 | **Agent** | the model or the agent's loop did the wrong thing on a platform that worked | [1–2](#agent) |
 | **Platform** | the fleet — its queue, workers, leases and containers — did the wrong thing | [3–6](#platform) |
-| **Harness** | the code that measures and tests the system was wrong, or so was the person running it | [7–13](#harness) |
-| **Provider** | the model's API: its rate limit, its daily cap, the builds behind one name, a retired model | [14–17](#provider) |
-| **Environment** | the machine, the VM, the CI runners and the network policy | [18–22](#environment) |
+| **Harness** | the code that measures and tests the system was wrong, or so was the person running it | [7–14](#harness) |
+| **Provider** | the model's API: its rate limit, its daily cap, the builds behind one name, a retired model | [15–18](#provider) |
+| **Environment** | the machine, the VM, the CI runners and the network policy | [19–23](#environment) |
 
 A failure with two causes is filed under the one whose fix removed it, and the other is named. Every
 run thrown away is listed [at the end](#runs-thrown-away-and-runs-kept-though-superseded), whatever
@@ -32,9 +32,9 @@ its class.
   job can use up its retry budget through no fault of its own.
 - **The harness had the most failures, and each would have misreported the system, not broken it**:
   a dirty flag on clean runs, a test that passed a broken build, a batch that timed its own
-  start-up, a trial that one stopped job would have wiped out. Each was found by a further check — a
-  build broken on purpose, a measurement that looked wrong, reading the code before an expensive run
-  — which is the case for having them.
+  start-up, a trial that one stopped job would have wiped out, two configurations stated wrongly.
+  Each was found by a further check — a build broken on purpose, a measurement that looked wrong,
+  reading the code before an expensive run — which is the case for having them.
 - **The provider shaped every real-model result**: real batches spent 88–91% of their time waiting
   on its rate limit, its daily cap ended an experiment after one round, and one model name was
   answered by six or seven builds a trial.
@@ -272,9 +272,26 @@ provider's own message was read with a probe afterwards.
 **Done.** Fixed in `ea58397`: records keep the provider's message. **Evidence.**
 [m22](m22-records.md#honest-notes).
 
+### 14. Two configurations stated wrongly: the report's fault matrix and M18's machine (E4, M18)
+
+**What happened.** The report page described the fault matrix's runs as "each run 18 jobs on 3
+worker processes", read from the first record alone: 230 of the 260 runs had 30 jobs on 3 workers,
+20 had 18 on 3, and 10 had 18 on 5. And M18's write-up said its comparisons ran on "the same
+machine" as M17's, an Intel Xeon @ 2.80 GHz, where every one of its 50 records names a Xeon @ 2.10
+GHz.
+
+**Found by.** Checking each number for the README's final pass against the records it came from.
+
+**Done.** Both fixed (`ad957ff`, `f06c9f0`). The report states a configuration only where every
+record behind a number agrees, refuses where they differ, and lists the fault matrix's three shapes
+of run; a test checks it names every shape the records hold. M18's page names its records' CPU and
+says it first said otherwise. The numbers were right in both; what they were measured on was
+misstated. No M18 conclusion changes, since its comparison was made within one session, but the
+session it found 10% faster than M17's had a different CPU model.
+
 ## Provider
 
-### 14. The rate limit, not the platform, sets real-model throughput (M16, M21, M22)
+### 15. The rate limit, not the platform, sets real-model throughput (M16, M21, M22)
 
 Groq's free tier allows this key 8,000 tokens a minute on `qwen/qwen3.8-27b`. M16's one-worker real
 batch spent 881.7 s of its 973.0 s (91%) waiting on that limit, and M22's two complete trials 90%
@@ -284,7 +301,7 @@ so M21 measured scaling on replay and says so. **Evidence.**
 [m21](m21-scaling.md#with-the-real-model-the-providers-rate-limit),
 [m22](m22-records.md#the-demonstration-one-sentence-in-the-prompt).
 
-### 15. The daily cap cut the prompt experiment to one round of three (M22)
+### 16. The daily cap cut the prompt experiment to one round of three (M22)
 
 Round 2's second arm stopped after 5 of its 18 jobs, and every trial after it was refused at once:
 "Limit 200000, Used 199523, Requested 2513". The two missing rounds needed about 43 more hours of
@@ -292,7 +309,7 @@ budget. The interrupted trials are kept, marked and left out of the pairing, and
 intervals say what one round can: how the change varies across tasks, not how one task varies from
 run to run. **Evidence.** [m22](m22-records.md#the-demonstration-one-sentence-in-the-prompt).
 
-### 16. One model name, six or seven builds, and temperature 0 isn't deterministic (M22)
+### 17. One model name, six or seven builds, and temperature 0 isn't deterministic (M22)
 
 Every call now records the build that answered it. The baseline trial was answered by 6 builds and
 the other arm's by 7; 33 of the 36 jobs were answered by more than one build, up to 6 in one job.
@@ -300,7 +317,7 @@ The unchanged prompt matched M16's run of it token for token on only 7 of 18 tas
 up to 2.4 times on others (`lru_cache`: 8,507 tokens, then 20,042). **Evidence.**
 [m22](m22-records.md#honest-notes).
 
-### 17. The model behind M6 and M7 was retired (M16)
+### 18. The model behind M6 and M7 was retired (M16)
 
 `llama-3.3-70b-versatile` now returns `model_not_found`, so 86.7% → 100% can't be rerun or compared
 with anything since; M16 started a new baseline on another model. Before that, M7's earlier hardened
@@ -310,7 +327,7 @@ mid-benchmark ([below](#runs-thrown-away-and-runs-kept-though-superseded)). **Ev
 
 ## Environment
 
-### 18. CI never ran the sandbox's network isolation test (found in M19)
+### 19. CI never ran the sandbox's network isolation test (found in M19)
 
 Before M19, every CI run skipped `test_network_is_blocked_when_isolated` — 351 passed, 1 skipped —
 because Ubuntu 24.04's AppArmor blocks the unprivileged user namespaces the sandbox needs without
@@ -319,8 +336,10 @@ was the cause and a silent skip the harness's part; CI now lifts the restriction
 and container tests fail rather than skip. **Evidence.**
 [m19](m19-controlled-execution.md#what-m19-found-along-the-way).
 
-### 19. A VM whose speed moves (M16, M18, M20, M21)
+### 20. A VM whose speed moves (M16, M18, M20, M21)
 
+- Between sessions the VM's CPU model itself changed: the records name an Intel Xeon @ 2.80 GHz in
+  M16, M17 and M19, and @ 2.10 GHz in M18 and M20–M22.
 - Between sessions, the same zero-latency replay measured 12.38 s in one and 13.44 and 13.14 s in
   another: noise of about 8% ([m16](m16-bench-harness.md#determinism-and-how-noisy-the-clock-is)).
 - M18's first A/B found the fleet 5% slower; build against build in one session, it wasn't
@@ -334,20 +353,20 @@ and container tests fail rather than skip. **Evidence.**
 So every comparison in these documents is interleaved within one run, and the deterministic measures
 — outcomes, tokens, calls — come first.
 
-### 20. The session's container was restarted, twice
+### 21. The session's container was restarted, twice
 
 The first restart came between M21's first runs and the rest and moved the work to another VM; every
 M21 run was made again there, and the first VM's are [kept](results/bench/m21-previous-vm/). The
 second came while the first real-model fleet run was waiting for the provider's daily budget, and
 killed the waiting process before it had started anything; it was relaunched.
 
-### 21. A Docker daemon nobody supervises
+### 22. A Docker daemon nobody supervises
 
 The session's Docker daemon stopped four times while the session was idle. Each time, local
 container work failed with "connection refused" until the daemon was restarted by hand. No recorded
 run was affected; GitHub's runners have their own.
 
-### 22. The network policy keeps the price unverified (M16, M22)
+### 23. The network policy keeps the price unverified (M16, M22)
 
 This machine's network policy blocks Groq's pages, so the model's list price can't be read from its
 source. M16's records carry `cost_usd: null` rather than an estimate; M22 prices tokens from a web
@@ -364,5 +383,5 @@ key is on the free tier, which charges nothing.
 | M19 | one A/B, thrown away | files were edited while it ran, so two of its trials came from a dirty checkout | harness (the operator) | the same A/B on a clean checkout |
 | M21 | a container run, deleted unread | its script was edited while bash was still reading it, which launched a run nobody meant, on a stale task image | harness (the operator) | none needed; run scripts are now read whole before they start, so editing one mid-run changes nothing |
 | M21 | the first runs, kept as [before-ready](results/bench/m21-before-ready/) | submitted before the workers were up ([11](#11-the-bench-submitted-batches-before-its-workers-were-up-m21)) | harness | the same runs after the fix |
-| M21 | the fixed runs on the first VM, kept as [previous-vm](results/bench/m21-previous-vm/) | the container restart moved the session to another VM ([20](#20-the-sessions-container-was-restarted-twice)) | environment | every run made again on one VM |
-| M22 | four trials stopped by the daily cap, kept and marked interrupted | the provider's daily token cap ([15](#15-the-daily-cap-cut-the-prompt-experiment-to-one-round-of-three-m22)) | provider | left out of the pairing, named in the comparison |
+| M21 | the fixed runs on the first VM, kept as [previous-vm](results/bench/m21-previous-vm/) | the container restart moved the session to another VM ([20](#21-the-sessions-container-was-restarted-twice)) | environment | every run made again on one VM |
+| M22 | four trials stopped by the daily cap, kept and marked interrupted | the provider's daily token cap ([15](#16-the-daily-cap-cut-the-prompt-experiment-to-one-round-of-three-m22)) | provider | left out of the pairing, named in the comparison |
