@@ -15,7 +15,7 @@ from app.llm.base import LLMProvider
 from app.llm.groq_provider import GroqProvider
 from bench.executor import TaskExecution, agent_configs, execute_task, step_event
 from bench.groq_limits import retry_delay
-from bench.jobs import Outcome
+from bench.jobs import FailureKind, Outcome
 from bench.records import utc_now
 from bench.replay import (
     LatencyProfile,
@@ -154,7 +154,31 @@ async def run_job(name: str, payload: dict[str, Any]) -> RunnerOutcome:
 
 
 def execution_from_body(body: dict[str, Any]) -> TaskExecution:
+    if "failure" in body:
+        return stopped_execution(body)
     return TaskExecution.model_validate(body)
+
+
+def stopped_execution(body: dict[str, Any]) -> TaskExecution:
+    """A job the fleet stopped at a limit of its policy, rebuilt from the steps it reported.
+
+    The task never got to fail on its own, so whatever was expected of it, it failed underneath.
+    """
+    # the fleet keeps a job's last 50 events and a task takes at most 15 steps, so none are lost
+    events = body["partial"]["last"]
+    return TaskExecution(
+        outcome=Outcome.FAILED,
+        failure_mode=body["failure"],
+        failure_kind=FailureKind.INFRA,
+        matched_expectation=False,
+        termination_reason="cut_short",
+        iterations=body["partial"]["events"],
+        llm_calls=sum(1 for event in events if event["tool"] is not None or event["malformed"]),
+        prompt_tokens=sum(event["prompt_tokens"] for event in events),
+        completion_tokens=sum(event["completion_tokens"] for event in events),
+        retry_wait_seconds=sum(event.get("retry_wait_seconds", 0.0) for event in events),
+        divergence=None,
+    )
 
 
 def recording_from_body(body: dict[str, Any]) -> Recording | None:

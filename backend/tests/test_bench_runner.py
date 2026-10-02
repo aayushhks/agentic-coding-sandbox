@@ -6,7 +6,7 @@ import pytest
 
 import bench.runner
 from app.llm.mock_provider import MockProvider
-from bench.jobs import JobOutput, Outcome
+from bench.jobs import FailureKind, JobOutput, Outcome
 from bench.replay import LatencyProfile
 from bench.runner import (
     execution_from_body,
@@ -15,6 +15,8 @@ from bench.runner import (
     replay_payload,
     run_job,
 )
+from fleet.execution import cut_short
+from fleet.policy import DEFAULT_POLICY
 from fleet.progress import reporting_to
 from tests.bench_helpers import MINI_TASKSET, SCRIPTS, record_mini_batch
 
@@ -156,6 +158,28 @@ async def test_a_real_job_reports_with_each_step_the_time_its_calls_took_and_wai
     assert sum(event["retry_wait_seconds"] for event in events) == pytest.approx(
         sum(call.retry_wait_seconds for call in recording.calls)
     )
+
+
+def test_a_job_stopped_at_a_limit_is_rebuilt_from_the_steps_it_reported() -> None:
+    steps: list[dict[str, Any]] = [
+        {"tool": "read_file", "malformed": False, "prompt_tokens": 100, "completion_tokens": 20},
+        {"tool": None, "malformed": True, "prompt_tokens": 150, "completion_tokens": 40},
+        # a step the provider failed answered nothing, so it is no model call
+        {"tool": None, "malformed": False, "prompt_tokens": 0, "completion_tokens": 0},
+    ]
+    steps[0]["retry_wait_seconds"] = 30.0
+    body = cut_short("timeout", DEFAULT_POLICY, steps).body
+    execution = execution_from_body(body)
+    assert (execution.outcome, execution.failure_mode, execution.failure_kind) == (
+        Outcome.FAILED,
+        "timeout",
+        FailureKind.INFRA,
+    )
+    assert (execution.termination_reason, execution.matched_expectation) == ("cut_short", False)
+    assert (execution.iterations, execution.llm_calls) == (3, 2)
+    assert (execution.prompt_tokens, execution.completion_tokens) == (250, 60)
+    # a replay job's steps carry no waits, a real job's do
+    assert execution.retry_wait_seconds == 30.0
 
 
 def test_a_worker_without_the_key_fails_the_job_as_infrastructure(

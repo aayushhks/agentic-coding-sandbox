@@ -2,10 +2,13 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from bench.fleet_executor import FleetExecutor, pool_topology
+from bench.jobs import FailureKind, Outcome
 from bench.replay import LatencyProfile
 from bench.runner import real_payload, replay_payload
 from bench.taskset import plan_jobs
+from fleet.policy import ExecutionPolicy
 from tests.bench_helpers import MINI_TASKSET, record_mini_batch
+from tests.bench_stopped_runner import CRASHES, HANGS, HUNG_STEP
 
 
 @pytest.mark.parametrize("workers", [1, 2])
@@ -77,3 +80,49 @@ async def test_real_jobs_on_the_fleet_bring_back_their_responses(
     }
     for result in batch.results:
         assert result.served_models == ["mock-model"]
+
+
+async def test_jobs_the_fleet_stopped_or_gave_up_on_stay_in_the_record_as_failures_underneath(
+    fleet_engine: AsyncEngine, fleet_database_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # quick retries, so the crashing job runs out of attempts long before the deadline
+    monkeypatch.setenv("FLEET_RETRY_BACKOFF_SECONDS", "0.05")
+    fleet = FleetExecutor(
+        fleet_database_url,
+        workers=2,
+        lease_seconds=60,
+        policy=ExecutionPolicy(timeout_seconds=8),
+        runner="tests.bench_stopped_runner:run_job",
+    )
+    batch = await fleet.run(
+        MINI_TASKSET,
+        plan_jobs(MINI_TASKSET, 3, seed=1),
+        lambda task: real_payload(task, "mock-model", taskset_version="test", git_sha="abc"),
+    )
+    by_task = {result.task_id: result for result in batch.results}
+    assert by_task["adder"].matched_expectation
+    hung = by_task[HANGS]
+    assert (hung.outcome, hung.failure_mode, hung.failure_kind, hung.termination_reason) == (
+        Outcome.FAILED,
+        "timeout",
+        FailureKind.INFRA,
+        "cut_short",
+    )
+    # what it had used before the deadline, from the step it reported
+    assert (hung.llm_calls, hung.prompt_tokens, hung.completion_tokens) == (1, 120, 30)
+    assert hung.retry_wait_seconds == HUNG_STEP["retry_wait_seconds"]
+    assert (hung.attempts, hung.matched_expectation) == (1, False)
+    assert hung.service_time >= 8
+    crashed = by_task[CRASHES]
+    # it was expected to fail, but not underneath the task
+    assert (crashed.outcome, crashed.failure_mode, crashed.failure_kind) == (
+        Outcome.FAILED,
+        "dead_lettered",
+        FailureKind.INFRA,
+    )
+    assert (crashed.attempts, crashed.matched_expectation) == (3, False)
+    history = crashed.attempt_history or []
+    assert [attempt.attempt for attempt in history] == [1, 2, 3]
+    assert all("unreachable" in (attempt.error or "") for attempt in history)
+    # only the job that ran to its end sent its responses back
+    assert [recording.task_id for recording in batch.recordings] == ["adder"]

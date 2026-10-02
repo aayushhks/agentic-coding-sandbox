@@ -18,8 +18,8 @@ from typing import IO, Any, Literal
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from bench.executor import BatchResult, job_result
-from bench.jobs import AttemptRun, JobResult
+from bench.executor import BatchResult, TaskExecution, job_result
+from bench.jobs import AttemptRun, FailureKind, JobResult, Outcome
 from bench.replay import Recording
 from bench.resources import Sampler, combine_calls, named
 from bench.runner import execution_from_body, recording_from_body
@@ -32,6 +32,22 @@ from fleet.store import job_result as published_result
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 PayloadFactory = Callable[[BenchTask], dict[str, Any]]
+
+# a job whose every attempt failed underneath the task: what the attempts spent went with them,
+# and its attempt history says how each one ended
+DEAD_LETTERED = TaskExecution(
+    outcome=Outcome.FAILED,
+    failure_mode="dead_lettered",
+    failure_kind=FailureKind.INFRA,
+    matched_expectation=False,
+    termination_reason="dead_lettered",
+    iterations=0,
+    llm_calls=0,
+    prompt_tokens=0,
+    completion_tokens=0,
+    retry_wait_seconds=0.0,
+    divergence=None,
+)
 
 
 def free_port() -> int:
@@ -228,23 +244,22 @@ class FleetExecutor:
         recordings = []
         for row in rows:
             result = published[row.id]
-            if row.state == "dead_lettered":
-                # a bench record needs the task's execution, and a dead letter never produced one
-                raise RuntimeError(
-                    f"job {row.name} was dead-lettered after {row.attempt} attempts: "
-                    f"{row.last_error}"
-                )
-            if result is None or row.claimed_at is None or row.finished_at is None:
+            dead = row.state == "dead_lettered"
+            if (result is None and not dead) or row.claimed_at is None or row.finished_at is None:
                 raise RuntimeError(f"job {row.name} finished without a complete record")
             job = by_name[row.name]
-            recording = recording_from_body(result.body)
-            if recording is not None:
-                recordings.append(recording)
+            if result is None:
+                execution = DEAD_LETTERED
+            else:
+                execution = execution_from_body(result.body)
+                recording = recording_from_body(result.body)
+                if recording is not None:
+                    recordings.append(recording)
             results.append(
                 job_result(
                     job,
                     taskset.get(job.task_id),
-                    execution_from_body(result.body),
+                    execution,
                     worker=row.worker_id or "",
                     attempts=row.attempt,
                     submitted_at=(row.submitted_at - start).total_seconds(),
