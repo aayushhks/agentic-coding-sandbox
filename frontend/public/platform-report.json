@@ -21,7 +21,7 @@
       "claim": "Injected faults, and what the automated invariant checker found",
       "value": "740 faults over 260 runs, 0 invariant violations",
       "detail": "450 kills, 150 dropped connections, 110 pauses and hangs, 30 Postgres restarts. After every run the checker reads the database back: exactly one result per job, nothing lost, no stale write, accounting that adds up; 740 of 740 planned faults happened, and every one left the effects it must.",
-      "config": "260 runs: 26 scenarios × 10 seeds; each run 18 jobs on 3 worker processes with 1 s leases, the api and a local PostgreSQL on one host; commit b64c1fd, clean checkout; every scenario also runs in CI on every push",
+      "config": "260 runs: 26 scenarios × 10 seeds; 230 runs of 30 jobs on 3 worker processes, 20 runs of 18 jobs on 3 worker processes, 10 runs of 18 jobs on 5 worker processes; 1 s leases, 5 attempts per job; the workers, the api and a local PostgreSQL on one virtualized host: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v50, Python 3.13.12; commit b64c1fd, clean checkout; every scenario also runs in CI on every push",
       "sources": [
         "docs/results/chaos/m20",
         "docs/results/chaos/analysis.py"
@@ -253,7 +253,7 @@
     {
       "id": "faults",
       "title": "Fault injection",
-      "config": "260 runs: 26 scenarios × 10 seeds; each run 18 jobs on 3 worker processes with 1 s leases, the api and a local PostgreSQL on one host; commit b64c1fd, clean checkout; every scenario also runs in CI on every push",
+      "config": "260 runs: 26 scenarios × 10 seeds; 230 runs of 30 jobs on 3 worker processes, 20 runs of 18 jobs on 3 worker processes, 10 runs of 18 jobs on 5 worker processes; 1 s leases, 5 attempts per job; the workers, the api and a local PostgreSQL on one virtualized host: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v50, Python 3.13.12; commit b64c1fd, clean checkout; every scenario also runs in CI on every push",
       "points": [
         "450 kills, 150 dropped connections, 110 pauses and hangs, 30 Postgres restarts. After every run the checker reads the database back: exactly one result per job, nothing lost, no stale write, accounting that adds up; 740 of 740 planned faults happened, and every one left the effects it must.",
         "There is no scheduler process to restart: workers pull, and Postgres holds all state, so the api is killed mid-request and Postgres is restarted instead."

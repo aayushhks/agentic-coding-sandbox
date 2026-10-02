@@ -64,14 +64,25 @@ def _metric(trials: list[dict[str, Any]], read: Callable[[dict[str, Any]], float
     return float(median(read(trial) for trial in trials))
 
 
-def _machine(trial: dict[str, Any]) -> str:
-    env = trial["environment"]
+def _one(values: Iterable[Any], what: str) -> Any:
+    """What every record behind a number agrees on; where they differ there is no one value."""
+    distinct = sorted(set(values), key=str)
+    if len(distinct) != 1:
+        raise ValueError(f"the records disagree on {what}: {distinct}")
+    return distinct[0]
+
+
+def _host(env: dict[str, Any]) -> str:
     kind = "virtualized" if env["virtualized"] else "bare-metal"
     return (
         f"one {kind} host: {env['cpu_model']}, {env['logical_cpus']} logical CPUs, "
         f"{env['memory_total_gib']} GiB RAM, {env['os']}, kernel {env['kernel']}, "
         f"Python {env['python']}"
     )
+
+
+def _machine(trials: Iterable[dict[str, Any]]) -> str:
+    return str(_one((_host(trial["environment"]) for trial in trials), "the machine"))
 
 
 def _build(trials: Iterable[dict[str, Any]]) -> str:
@@ -145,13 +156,13 @@ def _scaling() -> tuple[dict[str, Any], dict[str, Any]]:
     every = [
         trial for run in (zero, past, recorded, containers) for t in run.values() for trial in t
     ]
-    first = zero[min(zero)][0]
-    jobs = first["config"]["tasks"]
+    jobs = _one((trial["config"]["tasks"] for trial in every), "jobs a batch")
+    seed = _one((trial["config"]["seed"] for trial in every), "the seed")
 
     def table(title: str, pools: dict[int, list[dict[str, Any]]]) -> Table:
-        trials = sorted({len(t) for t in pools.values()})
+        trials = _one((len(t) for t in pools.values()), "trials per pool")
         return {
-            "title": f"{title}, {jobs} jobs a batch, {trials[0]} trials per pool",
+            "title": f"{title}, {jobs} jobs a batch, {trials} trials per pool",
             "columns": SCALING_COLUMNS,
             "rows": _scaling_rows(pools),
         }
@@ -173,10 +184,10 @@ def _scaling() -> tuple[dict[str, Any], dict[str, Any]]:
     sixteen_busy = _metric(recorded[16], lambda t: t["resources"]["host_busy_fraction"])
     boxed_busy = _metric(containers[16], lambda t: t["resources"]["host_busy_fraction"])
     config = (
-        f"{_machine(first)}; every process — the fleet workers, its api, PostgreSQL 16 and the "
+        f"{_machine(every)}; every process — the fleet workers, its api, PostgreSQL 16 and the "
         f"bench — on that one host, not a cluster; {jobs} jobs a batch (the 18-task set four "
-        f"times, seed {first['config']['seed']}), every pool's trials interleaved with the order "
-        f"reversed every other trial; {_build(every)}"
+        f"times, seed {seed}), every pool's trials interleaved with the order reversed every "
+        f"other trial; {_build(every)}"
     )
     headline = {
         "id": "scaling",
@@ -268,13 +279,20 @@ def _faults() -> tuple[dict[str, Any], dict[str, Any]]:
     seeds = sorted({record["seed"] for record in records})
     shas = sorted({record["build"]["git_sha"][:7] for record in records})
     dirty = any(record["build"]["git_dirty"] for record in records)
+    # the scenarios run different numbers of jobs and workers, so each shape is stated
+    shapes = Counter((record["config"]["jobs"], record["config"]["workers"]) for record in records)
+    shaped = ", ".join(
+        f"{count} runs of {jobs} jobs on {workers} worker processes"
+        for (jobs, workers), count in shapes.most_common()
+    )
+    lease = _one((record["config"]["lease_seconds"] for record in records), "the lease")
+    attempts = _one((record["config"]["max_attempts"] for record in records), "attempts per job")
+    machine = _host(_load(root / "summary.json")["environment"])
     config = (
-        f"{len(records)} runs: {len(order)} scenarios {TIMES} {len(seeds)} seeds; each run "
-        f"{records[0]['config']['jobs']} jobs on {records[0]['config']['workers']} worker "
-        f"processes with {records[0]['config']['lease_seconds']:g} s leases, the api and a local "
-        f"PostgreSQL "
-        f"on one host; commit {', '.join(shas)}, {'dirty' if dirty else 'clean'} checkout; every "
-        f"scenario also runs in CI on every push"
+        f"{len(records)} runs: {len(order)} scenarios {TIMES} {len(seeds)} seeds; {shaped}; "
+        f"{lease:g} s leases, {attempts} attempts per job; the workers, the api and a local "
+        f"PostgreSQL on {machine}; commit {', '.join(shas)}, {'dirty' if dirty else 'clean'} "
+        f"checkout; every scenario also runs in CI on every push"
     )
     kinds_text = ", ".join(f"{count} {kind}" for kind, count in by_kind.items())
     headline = {
@@ -318,7 +336,7 @@ def _faults() -> tuple[dict[str, Any], dict[str, Any]]:
 def _experiment() -> tuple[dict[str, Any], dict[str, Any]]:
     root = RESULTS / "bench" / "m22"
     comparison = _load(root / "comparison.json")
-    baseline = _trials(root / "baseline")[0]
+    arms = [trial for arm in ("baseline", "short-thoughts") for trial in _trials(root / arm)]
     rows = []
     for name, key, unit, digits in (
         ("expectations met", "matched", "%", 1),
@@ -378,11 +396,13 @@ def _experiment() -> tuple[dict[str, Any], dict[str, Any]]:
         )
         replays.append(f"{same} of {len(original['jobs'])}")
     tokens = comparison["tokens_per_job"]
+    model = _one((trial["config"]["model"] for trial in arms), "the model")
+    provider = _one((trial["config"]["provider"] for trial in arms), "the provider")
+    seed = _one((trial["config"]["seed"] for trial in arms), "the seed")
     config = (
-        f"{baseline['config']['model']} on {baseline['config']['provider']}, the 18-task set "
-        f"once a trial, seed {baseline['config']['seed']}, the two arms interleaved; one round "
-        f"completed "
-        f"before the provider's daily token cap; {_machine(baseline)}; {_build([baseline])}"
+        f"{model} on {provider}, the 18-task set once a trial, seed {seed}, the two arms "
+        f"interleaved; one round completed before the provider's daily token cap; "
+        f"{_machine(arms)}; {_build(arms)}"
     )
     headline = {
         "id": "experiments",
@@ -448,9 +468,10 @@ def _baseline() -> dict[str, Any]:
         )
     [real] = _trials(root / "sequential-real-qwen3.8-27b")
     waited = real["metrics"]["retry_wait_seconds"] / real["metrics"]["batch_wall_clock_seconds"]
+    seed = _one((trial["config"]["seed"] for trial in every), "the seed")
     config = (
-        f"one in-process worker running the 18-task set back to back, seed "
-        f"{real['config']['seed']}; {_machine(real)}; {_build(every)}"
+        f"one in-process worker running the 18-task set back to back, seed {seed}; "
+        f"{_machine(every)}; {_build(every)}"
     )
     return {
         "id": "baseline",
