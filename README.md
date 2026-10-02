@@ -56,6 +56,7 @@ flowchart TB
 | **Controlled execution** | each attempt in a locked-down container of its own: CPU, memory, process, scratch and time limits, no network unless a destination is granted through a proxy, and cancellation that releases the lease; every limit tested by a job that tries to break it, on every push | [m19](docs/m19-controlled-execution.md) · [policy model](docs/design.md#controlled-execution-the-policy-model) |
 | **Fault injection** | seeded faults at twelve named points in the job protocol — kills, pauses, hangs and dropped connections, including the api killed mid-request — plus Postgres restarts: 740 faults over 260 runs, zero invariant violations, with the checker and each fault's expected effects checked after every run; every scenario runs in CI on every push | [m20](docs/m20-fault-injection.md) · [design](docs/design.md) |
 | **Scaling** | the task set on 1–16 fleet workers, every process on one 4-vCPU host: 3.8× on 4 workers with jobs at full speed, then flat at the host's CPU ceiling; 13.6× on 16 at the model's latency, bent mostly by the batch's own tail; 8.9× on 16 in containers, whose jobs cost three to four times the CPU. Each bottleneck measured rather than guessed, and Postgres never one | [m21](docs/m21-scaling.md) · [design](docs/design.md#scaling-on-one-host-what-bounds-throughput) |
+| **Experiments** | every run records what it ran with — a digest of the agent's prompts and tools, the model builds that answered, the task set's digest, the price — and what it produced: each job's diff, test verdict, tokens, cost and retries. `bench.cli compare` pairs two runs job by job and says whether a change made things better or worse, with intervals: one prompt sentence cut tokens per job 46% and cost 49% on the real model with every expectation still met, over one round before the provider's daily cap | [m22](docs/m22-records.md) · [design](docs/design.md#evaluation-records-what-makes-two-runs-comparable) |
 
 ## Tech stack
 
@@ -308,10 +309,20 @@ cd backend
 uv run python -m bench.cli replay --trials 5                      # replay at zero latency
 uv run python -m bench.cli replay --trials 5 --latency recorded   # at the model's measured latency
 uv run python -m bench.cli record --trial 2                       # a real-model trial (GROQ_API_KEY)
+uv run python -m bench.cli record --trial 1 --extra-rule "..." --recordings-out /tmp/rec  # a variant
+uv run python -m bench.cli compare --baseline DIR --candidate DIR --expect agent_digest   # did it help
 ```
 
 The measured baseline for today's single-process path is in
 [docs/m16-bench-harness.md](docs/m16-bench-harness.md).
+
+Every trial record says what it ran with — a digest of the agent's system prompts and configs, the
+model and build the provider reported for every call, the task set's digest, the price its cost was
+computed at — and what each job produced: its answer, a diff of the files it changed, the hidden
+tests' verdict and output, its tokens, model time, cost and attempt history. `compare` pairs two runs
+job by job, refuses to credit a change with anything an undeclared difference could explain, and
+says per measure whether the change was better, worse or undetectable, with 95% intervals from
+resampling jobs: [docs/m22-records.md](docs/m22-records.md).
 
 ## Fleet (durable job queue)
 
@@ -379,6 +390,10 @@ execution policy model, what bounds throughput): [docs/design.md](docs/design.md
   two. Combinations, network partitions that leave a connection hanging, full disks and clock steps
   aren't injected; see
   [m20](docs/m20-fault-injection.md#what-the-checker-proves-and-what-it-doesnt).
+- **The prompt experiment is one round.** The provider's daily token cap allowed one paired round of
+  the 18-task set on the real model, so its intervals cover how the change varies across tasks, not
+  how one task varies from run to run; and one model name was answered by 6–7 different builds per
+  trial. See [m22](docs/m22-records.md#honest-notes).
 - **Scaling is measured on one host.** The workers, the api and Postgres shared one 4-vCPU VM, so
   the curves bend at that host's CPUs, and nothing measures a network between hosts; see
   [m21](docs/m21-scaling.md#honest-notes).
