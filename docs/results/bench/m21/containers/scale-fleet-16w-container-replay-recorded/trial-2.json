@@ -1,0 +1,4244 @@
+{
+  "schema_version": 1,
+  "record": "trial",
+  "label": "scale-fleet-16w-container-replay-recorded",
+  "trial": 2,
+  "started_at": "2026-10-02T00:30:36+00:00",
+  "interrupted": null,
+  "config": {
+    "mode": "replay",
+    "latency": "recorded",
+    "executor": "fleet",
+    "workers": 16,
+    "topology": "single host: 16 fleet worker processes, the fleet api and PostgreSQL 16.13, all on this machine; each job in a container of its own",
+    "tasks": 72,
+    "seed": 1,
+    "taskset_version": "v1",
+    "taskset_digest": "207fa64b283eb781dbd0cc0f767089134f5f8d5bf1adbdeaaca576885ba95f3e",
+    "recordings_digest": "d5958d3fdd62ab5d4f4a84917e5557de723099940b9e46cc41f4cc47dbfe1574",
+    "provider": "replay",
+    "model": "qwen/qwen3.8-27b",
+    "agent_configs": {
+      "benchmark": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": false
+      },
+      "ticket": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": true
+      }
+    },
+    "sandbox_config": {
+      "timeout_seconds": 10.0,
+      "max_output_bytes": 10000,
+      "memory_mb": 4096,
+      "cpu_seconds": 15,
+      "max_file_size_mb": 64,
+      "network_disabled": true,
+      "require_isolation": false,
+      "hidden_paths": []
+    },
+    "tool_transport": "in_process",
+    "percentile_method": "linear interpolation between closest ranks (numpy's default)",
+    "execution": {
+      "mode": "container",
+      "policy": {
+        "cpus": 1.0,
+        "memory_mb": 1024,
+        "pids": 256,
+        "tmp_mb": 512,
+        "timeout_seconds": 600.0,
+        "egress": []
+      },
+      "image": "fleet-task:local",
+      "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69"
+    }
+  },
+  "environment": {
+    "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+    "git_dirty": false,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "logical_cpus": 4,
+    "usable_cpus": 4,
+    "cpu_quota_cores": null,
+    "memory_total_gib": 15.72,
+    "memory_limit_gib": null,
+    "virtualized": true,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.18.44-fc-v51",
+    "python": "3.13.12",
+    "sandbox_network_isolated": true
+  },
+  "metrics": {
+    "batch_wall_clock_seconds": 53.318879,
+    "tasks_per_minute": 81.02195846990706,
+    "queue_wait_seconds": {
+      "n": 72,
+      "mean": 20.595380805555557,
+      "p50": 21.7827775,
+      "p95": 42.32361495,
+      "p99": 44.52474195000001,
+      "max": 45.556482
+    },
+    "service_time_seconds": {
+      "n": 72,
+      "mean": 11.039803944444444,
+      "p50": 11.260840999999997,
+      "p95": 17.171399200000003,
+      "p99": 19.22899289,
+      "max": 19.391328
+    },
+    "service_time_excluding_retry_waits_seconds": {
+      "n": 72,
+      "mean": 11.039803944444444,
+      "p50": 11.260840999999997,
+      "p95": 17.171399200000003,
+      "p99": 19.22899289,
+      "max": 19.391328
+    },
+    "utilization": 0.9317359757319728,
+    "utilization_bucket_seconds": 1.0,
+    "utilization_timeline": [
+      0.7839,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9874,
+      0.9939,
+      0.998,
+      1.0,
+      0.9846,
+      1.0,
+      0.9918,
+      0.983,
+      0.9888,
+      0.9926,
+      0.96,
+      0.9921,
+      0.9859,
+      1.0,
+      0.9858,
+      1.0,
+      0.9917,
+      0.9944,
+      0.9939,
+      0.9852,
+      0.9921,
+      0.9791,
+      1.0,
+      0.9937,
+      0.9855,
+      0.9802,
+      1.0,
+      1.0,
+      0.9843,
+      1.0,
+      0.9929,
+      0.9621,
+      0.9998,
+      0.9925,
+      0.9995,
+      0.9681,
+      0.9895,
+      0.9842,
+      0.9923,
+      0.9935,
+      0.9913,
+      0.9646,
+      0.8596,
+      0.7851,
+      0.6633,
+      0.505,
+      0.3118,
+      0.1903,
+      0.0814
+    ],
+    "counts": {
+      "jobs": 72,
+      "solved": 60,
+      "escalated": 8,
+      "failed_task": 4,
+      "failed_infra": 0,
+      "failed_harness": 0,
+      "retries": 0,
+      "matched_expectation": 72
+    },
+    "tokens_per_task": {
+      "n": 72,
+      "mean": 6044.666666666667,
+      "p50": 5081.0,
+      "p95": 15059.500000000013,
+      "p99": 17375.0,
+      "max": 17375.0
+    },
+    "prompt_tokens": 364332,
+    "completion_tokens": 70884,
+    "llm_calls": 368,
+    "retry_wait_seconds": 0.0,
+    "cost_usd": null
+  },
+  "jobs": [
+    {
+      "job_id": "fix_average#0",
+      "task_id": "fix_average",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w9",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.072065,
+      "finished_at": 6.902089,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.05859375,
+          "cpu_seconds": 1.7696329999999998,
+          "max_child_rss_mb": 52.4765625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.74,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "5780dfa9e059",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1484
+      }
+    },
+    {
+      "job_id": "factorial#0",
+      "task_id": "factorial",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w6",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.086214,
+      "finished_at": 9.403451,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.3203125,
+          "cpu_seconds": 1.957971,
+          "max_child_rss_mb": 51.88671875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.202,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "0709b13240c8",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1473
+      }
+    },
+    {
+      "job_id": "merge_sorted#0",
+      "task_id": "merge_sorted",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.109031,
+      "finished_at": 13.607394,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.6171875,
+          "cpu_seconds": 2.123819,
+          "max_child_rss_mb": 51.97265625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 13.251,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "eadd785b1295",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1475
+      }
+    },
+    {
+      "job_id": "count_vowels#0",
+      "task_id": "count_vowels",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w3",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.113828,
+      "finished_at": 12.369411,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.36328125,
+          "cpu_seconds": 1.9612049999999999,
+          "max_child_rss_mb": 52.07421875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.057,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "24f9430b1bf3",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1486
+      }
+    },
+    {
+      "job_id": "lru_cache#0",
+      "task_id": "lru_cache",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w5",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.123753,
+      "finished_at": 16.761883,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.51953125,
+          "cpu_seconds": 2.1559969999999997,
+          "max_child_rss_mb": 52.0703125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 16.371,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "0404546b9942",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1487
+      }
+    },
+    {
+      "job_id": "topological_sort#0",
+      "task_id": "topological_sort",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w13",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.132453,
+      "finished_at": 19.29514,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.6640625,
+          "cpu_seconds": 2.090417,
+          "max_child_rss_mb": 52.265625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 18.827,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "f0f34b67e019",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1660
+      }
+    },
+    {
+      "job_id": "two_sum#0",
+      "task_id": "two_sum",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w14",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.180795,
+      "finished_at": 12.433063,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.546875,
+          "cpu_seconds": 2.009986,
+          "max_child_rss_mb": 52.08984375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.934,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "67081e0c80e4",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "roman_to_int#0",
+      "task_id": "roman_to_int",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w7",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.191023,
+      "finished_at": 15.289222,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.9765625,
+          "cpu_seconds": 2.0164739999999997,
+          "max_child_rss_mb": 52.5703125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 14.81,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ed0e0faba30d",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1485
+      }
+    },
+    {
+      "job_id": "fizzbuzz#0",
+      "task_id": "fizzbuzz",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w10",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.213724,
+      "finished_at": 19.605052,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.55859375,
+          "cpu_seconds": 2.7239359999999997,
+          "max_child_rss_mb": 51.9921875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 19.07,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "0963cb5e10fe",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2252
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#0",
+      "task_id": "fibonacci_fast",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w11",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.219849,
+      "finished_at": 14.881478,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.9375,
+          "cpu_seconds": 2.144477,
+          "max_child_rss_mb": 52.36328125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 14.197,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "42efd743318c",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1472
+      }
+    },
+    {
+      "job_id": "valid_parentheses#0",
+      "task_id": "valid_parentheses",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w8",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.219912,
+      "finished_at": 11.177542,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.5,
+          "cpu_seconds": 1.8993659999999999,
+          "max_child_rss_mb": 52.06640625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 10.521,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "bfa69b2f0d4a",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1291
+      }
+    },
+    {
+      "job_id": "TCK-04#0",
+      "task_id": "TCK-04",
+      "repeat": 0,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w15",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.230793,
+      "finished_at": 5.773725,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.5703125,
+          "cpu_seconds": 0.5129389999999999,
+          "max_child_rss_mb": 52.01171875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.217,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "7b2d6d958a1d",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 918
+      }
+    },
+    {
+      "job_id": "add_numbers#0",
+      "task_id": "add_numbers",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w12",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.28054,
+      "finished_at": 13.921756,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.83984375,
+          "cpu_seconds": 2.799162,
+          "max_child_rss_mb": 52.2734375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 13.325,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1343fa46e01d",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1855
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#0",
+      "task_id": "multi_file_shapes",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w4",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.427142,
+      "finished_at": 15.130768,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.4765625,
+          "cpu_seconds": 2.079451,
+          "max_child_rss_mb": 51.90625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 14.26,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "e10673b9abce",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2229
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#0",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w2",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.427767,
+      "finished_at": 9.465505,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.9140625,
+          "cpu_seconds": 1.8837100000000002,
+          "max_child_rss_mb": 52.5234375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.603,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8b6b49e28b67",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1492
+      }
+    },
+    {
+      "job_id": "TCK-08#0",
+      "task_id": "TCK-08",
+      "repeat": 0,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.429341,
+      "finished_at": 5.094197,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.67578125,
+          "cpu_seconds": 0.504292,
+          "max_child_rss_mb": 52.5234375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.278,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "a41079d47c16",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 719
+      }
+    },
+    {
+      "job_id": "fix_binary_search#0",
+      "task_id": "fix_binary_search",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 5.195344,
+      "finished_at": 17.819738,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.078125,
+          "cpu_seconds": 2.0752930000000003,
+          "max_child_rss_mb": 52.41796875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.456,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "f6f48e312b95",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1486
+      }
+    },
+    {
+      "job_id": "reverse_string#0",
+      "task_id": "reverse_string",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w15",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 5.873562,
+      "finished_at": 15.172065,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.51953125,
+          "cpu_seconds": 1.937635,
+          "max_child_rss_mb": 51.9609375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.164,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "c54e244f6d65",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1284
+      }
+    },
+    {
+      "job_id": "merge_sorted#1",
+      "task_id": "merge_sorted",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w9",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 7.032703,
+      "finished_at": 17.469255,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.625,
+          "cpu_seconds": 1.943842,
+          "max_child_rss_mb": 51.92578125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 10.288,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "4ee22a1d8c8e",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1471
+      }
+    },
+    {
+      "job_id": "lru_cache#1",
+      "task_id": "lru_cache",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w6",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 9.528595,
+      "finished_at": 24.22858,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.19140625,
+          "cpu_seconds": 2.062932,
+          "max_child_rss_mb": 51.65234375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 14.464,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "dd4d27c3cd07",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1478
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#1",
+      "task_id": "fibonacci_fast",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w2",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 9.586398,
+      "finished_at": 21.626424,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.57421875,
+          "cpu_seconds": 2.0751910000000002,
+          "max_child_rss_mb": 52.30078125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.863,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "939633b0058e",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1486
+      }
+    },
+    {
+      "job_id": "valid_parentheses#1",
+      "task_id": "valid_parentheses",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w8",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 11.309425,
+      "finished_at": 22.832454,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.5546875,
+          "cpu_seconds": 1.988145,
+          "max_child_rss_mb": 52.10546875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.369,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "6ef5777f4132",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1287
+      }
+    },
+    {
+      "job_id": "fix_binary_search#1",
+      "task_id": "fix_binary_search",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w3",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 12.500379,
+      "finished_at": 26.201101,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8046875,
+          "cpu_seconds": 1.9648679999999998,
+          "max_child_rss_mb": 52.53515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 13.498,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "48e45326e47a",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1487
+      }
+    },
+    {
+      "job_id": "add_numbers#1",
+      "task_id": "add_numbers",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w14",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 12.573562,
+      "finished_at": 26.611439,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.9296875,
+          "cpu_seconds": 2.614218,
+          "max_child_rss_mb": 52.515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 13.885,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "9ce7bd3dddcb",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1853
+      }
+    },
+    {
+      "job_id": "topological_sort#1",
+      "task_id": "topological_sort",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 13.709052,
+      "finished_at": 30.140845,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.52734375,
+          "cpu_seconds": 1.918674,
+          "max_child_rss_mb": 52.12109375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 16.24,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "79f2e56337eb",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1663
+      }
+    },
+    {
+      "job_id": "roman_to_int#1",
+      "task_id": "roman_to_int",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w12",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 14.024915,
+      "finished_at": 28.000599,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.75390625,
+          "cpu_seconds": 1.912425,
+          "max_child_rss_mb": 52.3515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 13.758,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "5db4f352923a",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1476
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#1",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w11",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 14.97469,
+      "finished_at": 23.208342,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.83984375,
+          "cpu_seconds": 1.917207,
+          "max_child_rss_mb": 52.19140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.066,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "2cdbaf2f30a0",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1484
+      }
+    },
+    {
+      "job_id": "reverse_string#1",
+      "task_id": "reverse_string",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w4",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 15.337867,
+      "finished_at": 24.768757,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.80859375,
+          "cpu_seconds": 1.9073769999999999,
+          "max_child_rss_mb": 52.55859375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.143,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "69fdbfc9d94d",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1295
+      }
+    },
+    {
+      "job_id": "fizzbuzz#1",
+      "task_id": "fizzbuzz",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w15",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 15.418417,
+      "finished_at": 33.517489,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.7734375,
+          "cpu_seconds": 2.591807,
+          "max_child_rss_mb": 52.3984375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 17.952,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "41c0fe859931",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2241
+      }
+    },
+    {
+      "job_id": "two_sum#1",
+      "task_id": "two_sum",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w7",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 15.475172,
+      "finished_at": 26.771734,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.15625,
+          "cpu_seconds": 1.9094349999999998,
+          "max_child_rss_mb": 51.6171875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.082,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "c33cf41cbcc6",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1482
+      }
+    },
+    {
+      "job_id": "count_vowels#1",
+      "task_id": "count_vowels",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w5",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 16.888883,
+      "finished_at": 29.804347,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.9375,
+          "cpu_seconds": 1.9733539999999998,
+          "max_child_rss_mb": 52.49609375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.684,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1f5ea83f6ef9",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1482
+      }
+    },
+    {
+      "job_id": "TCK-04#1",
+      "task_id": "TCK-04",
+      "repeat": 1,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w9",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 17.574152,
+      "finished_at": 21.805696,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.33203125,
+          "cpu_seconds": 0.49880399999999997,
+          "max_child_rss_mb": 51.8828125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.001,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "c24ad2639206",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 919
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#1",
+      "task_id": "multi_file_shapes",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 17.940357,
+      "finished_at": 30.353063,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.39453125,
+          "cpu_seconds": 1.978881,
+          "max_child_rss_mb": 52.1015625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.252,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "aa8921d50be2",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2232
+      }
+    },
+    {
+      "job_id": "factorial#1",
+      "task_id": "factorial",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w13",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 19.404776,
+      "finished_at": 30.611358,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.5546875,
+          "cpu_seconds": 1.9495710000000002,
+          "max_child_rss_mb": 52.16796875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.048,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8c7cfd895325",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1483
+      }
+    },
+    {
+      "job_id": "fix_average#1",
+      "task_id": "fix_average",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w10",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 19.723413,
+      "finished_at": 29.244872,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.3125,
+          "cpu_seconds": 1.882392,
+          "max_child_rss_mb": 52.77734375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.349,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "2bbd3a7b426a",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1471
+      }
+    },
+    {
+      "job_id": "TCK-08#1",
+      "task_id": "TCK-08",
+      "repeat": 1,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w2",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 21.753067,
+      "finished_at": 25.790764,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.6171875,
+          "cpu_seconds": 0.46714300000000003,
+          "max_child_rss_mb": 52.43359375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 3.872,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "72bfcdfe5018",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 730
+      }
+    },
+    {
+      "job_id": "TCK-04#2",
+      "task_id": "TCK-04",
+      "repeat": 2,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w9",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 21.812488,
+      "finished_at": 25.856311,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.42578125,
+          "cpu_seconds": 0.47674599999999995,
+          "max_child_rss_mb": 51.9921875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 3.845,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "2a19d600cf63",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 919
+      }
+    },
+    {
+      "job_id": "lru_cache#2",
+      "task_id": "lru_cache",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w8",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 22.92257,
+      "finished_at": 35.969302,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.421875,
+          "cpu_seconds": 1.9070610000000001,
+          "max_child_rss_mb": 51.74609375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.901,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "df4cd7a87cb8",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1486
+      }
+    },
+    {
+      "job_id": "roman_to_int#2",
+      "task_id": "roman_to_int",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w11",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 23.305906,
+      "finished_at": 36.669921,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.9609375,
+          "cpu_seconds": 1.952326,
+          "max_child_rss_mb": 52.40234375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 13.166,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1b1f0acf8b19",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1476
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#2",
+      "task_id": "fibonacci_fast",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w6",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 24.324724,
+      "finished_at": 36.410942,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.765625,
+          "cpu_seconds": 1.841728,
+          "max_child_rss_mb": 52.3515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.911,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "53f316a12401",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1473
+      }
+    },
+    {
+      "job_id": "reverse_string#2",
+      "task_id": "reverse_string",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w4",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 24.908761,
+      "finished_at": 33.824713,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.53515625,
+          "cpu_seconds": 1.890495,
+          "max_child_rss_mb": 51.8984375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.76,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "fce79e2a9d52",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1284
+      }
+    },
+    {
+      "job_id": "valid_parentheses#2",
+      "task_id": "valid_parentheses",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w2",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 25.795904,
+      "finished_at": 36.546223,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.2109375,
+          "cpu_seconds": 1.918324,
+          "max_child_rss_mb": 51.94140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 10.517,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "3862c5632a35",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1287
+      }
+    },
+    {
+      "job_id": "TCK-08#2",
+      "task_id": "TCK-08",
+      "repeat": 2,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w9",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 25.977949,
+      "finished_at": 29.337231,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.37890625,
+          "cpu_seconds": 0.449321,
+          "max_child_rss_mb": 52.2421875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 3.158,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "9b9e7f106885",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 719
+      }
+    },
+    {
+      "job_id": "fix_average#2",
+      "task_id": "fix_average",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w3",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 26.306807,
+      "finished_at": 35.916528,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.5859375,
+          "cpu_seconds": 1.878085,
+          "max_child_rss_mb": 52.109375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.416,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "e710574a4b62",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1472
+      }
+    },
+    {
+      "job_id": "add_numbers#2",
+      "task_id": "add_numbers",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w14",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 26.728905,
+      "finished_at": 40.018865,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.51171875,
+          "cpu_seconds": 2.637803,
+          "max_child_rss_mb": 52.2578125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 13.15,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1bcd39c65231",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1855
+      }
+    },
+    {
+      "job_id": "fizzbuzz#2",
+      "task_id": "fizzbuzz",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w7",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 26.882343,
+      "finished_at": 43.984741,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8671875,
+          "cpu_seconds": 2.557797,
+          "max_child_rss_mb": 52.34375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 16.869,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "eebe03407a3d",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2239
+      }
+    },
+    {
+      "job_id": "count_vowels#2",
+      "task_id": "count_vowels",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w12",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 28.101699,
+      "finished_at": 40.084496,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.82421875,
+          "cpu_seconds": 1.880156,
+          "max_child_rss_mb": 52.30859375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.808,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "81e72a9fe586",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1476
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#2",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w9",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 29.341676,
+      "finished_at": 38.152501,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.48046875,
+          "cpu_seconds": 1.8951019999999998,
+          "max_child_rss_mb": 51.9140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.634,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8f0456267042",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1493
+      }
+    },
+    {
+      "job_id": "fix_binary_search#2",
+      "task_id": "fix_binary_search",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w10",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 29.359811,
+      "finished_at": 42.520407,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.6171875,
+          "cpu_seconds": 2.0205279999999997,
+          "max_child_rss_mb": 51.91796875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.988,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "c244b1b4043f",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1487
+      }
+    },
+    {
+      "job_id": "factorial#2",
+      "task_id": "factorial",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w5",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 29.917252,
+      "finished_at": 39.991967,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.56640625,
+          "cpu_seconds": 1.8842079999999999,
+          "max_child_rss_mb": 52.3125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.943,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "7e6451208fe3",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1480
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#2",
+      "task_id": "multi_file_shapes",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 30.23657,
+      "finished_at": 43.005917,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.3984375,
+          "cpu_seconds": 1.9159439999999996,
+          "max_child_rss_mb": 51.984375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.589,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "973ac046cb7b",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2240
+      }
+    },
+    {
+      "job_id": "two_sum#2",
+      "task_id": "two_sum",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 30.472741,
+      "finished_at": 41.895079,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.79296875,
+          "cpu_seconds": 1.92858,
+          "max_child_rss_mb": 52.28515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.225,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "f98d0ba2b51f",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1475
+      }
+    },
+    {
+      "job_id": "merge_sorted#2",
+      "task_id": "merge_sorted",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w13",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 30.712077,
+      "finished_at": 41.937197,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.3359375,
+          "cpu_seconds": 1.9743,
+          "max_child_rss_mb": 52.08203125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.027,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "4500db61c82c",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1473
+      }
+    },
+    {
+      "job_id": "topological_sort#2",
+      "task_id": "topological_sort",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w15",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 33.641736,
+      "finished_at": 48.561431,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.75390625,
+          "cpu_seconds": 1.867352,
+          "max_child_rss_mb": 52.203125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 14.698,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "6bc5bb0bf3b5",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1661
+      }
+    },
+    {
+      "job_id": "TCK-08#3",
+      "task_id": "TCK-08",
+      "repeat": 3,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w4",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 33.951448,
+      "finished_at": 37.285125,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.1484375,
+          "cpu_seconds": 0.46088999999999997,
+          "max_child_rss_mb": 52.00390625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 3.096,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "abf8398c1974",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 730
+      }
+    },
+    {
+      "job_id": "fizzbuzz#3",
+      "task_id": "fizzbuzz",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w3",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 36.063145,
+      "finished_at": 53.318879,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.59765625,
+          "cpu_seconds": 2.607443,
+          "max_child_rss_mb": 52.03515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 17.159,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "b3de7bb40e11",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2243
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#3",
+      "task_id": "multi_file_shapes",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w8",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 36.087218,
+      "finished_at": 47.753395,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.37890625,
+          "cpu_seconds": 1.8648230000000001,
+          "max_child_rss_mb": 51.96484375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.413,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ca82cf6a6d6a",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2243
+      }
+    },
+    {
+      "job_id": "fix_average#3",
+      "task_id": "fix_average",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w6",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 36.533841,
+      "finished_at": 45.416833,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.46484375,
+          "cpu_seconds": 1.878136,
+          "max_child_rss_mb": 51.8671875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.558,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "7e285970de90",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "TCK-04#3",
+      "task_id": "TCK-04",
+      "repeat": 3,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w2",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 36.727305,
+      "finished_at": 40.927862,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.45703125,
+          "cpu_seconds": 0.481186,
+          "max_child_rss_mb": 52.04296875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 3.955,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "9be87b47e45f",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 909
+      }
+    },
+    {
+      "job_id": "lru_cache#3",
+      "task_id": "lru_cache",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w11",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 36.822376,
+      "finished_at": 49.404408,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.3671875,
+          "cpu_seconds": 1.8978840000000001,
+          "max_child_rss_mb": 52.078125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.374,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "64d6c96f01cd",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1485
+      }
+    },
+    {
+      "job_id": "merge_sorted#3",
+      "task_id": "merge_sorted",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w4",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 37.288572,
+      "finished_at": 46.796916,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.2890625,
+          "cpu_seconds": 1.845108,
+          "max_child_rss_mb": 52.03515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.319,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "b4d47da8c525",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1475
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#3",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w9",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 38.272804,
+      "finished_at": 46.636289,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.45703125,
+          "cpu_seconds": 1.8540649999999999,
+          "max_child_rss_mb": 52.05859375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.154,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "fb78736f48b6",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1494
+      }
+    },
+    {
+      "job_id": "two_sum#3",
+      "task_id": "two_sum",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w5",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 40.156784,
+      "finished_at": 49.208559,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.359375,
+          "cpu_seconds": 1.9379810000000002,
+          "max_child_rss_mb": 51.70703125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.818,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "3ae6530a2424",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1484
+      }
+    },
+    {
+      "job_id": "add_numbers#3",
+      "task_id": "add_numbers",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w14",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 40.209383,
+      "finished_at": 50.476346,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.55859375,
+          "cpu_seconds": 2.626473,
+          "max_child_rss_mb": 51.859375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 10.131,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "aa09e2b1c4dc",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1854
+      }
+    },
+    {
+      "job_id": "topological_sort#3",
+      "task_id": "topological_sort",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w12",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 40.243256,
+      "finished_at": 53.072968,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.515625,
+          "cpu_seconds": 1.757619,
+          "max_child_rss_mb": 51.96875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.69,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "52107c3b968f",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1658
+      }
+    },
+    {
+      "job_id": "count_vowels#3",
+      "task_id": "count_vowels",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w2",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 40.931771,
+      "finished_at": 51.055368,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.09375,
+          "cpu_seconds": 1.89707,
+          "max_child_rss_mb": 51.78515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.996,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "41d865dc282f",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1472
+      }
+    },
+    {
+      "job_id": "fix_binary_search#3",
+      "task_id": "fix_binary_search",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 42.069906,
+      "finished_at": 52.045369,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8046875,
+          "cpu_seconds": 1.8243449999999999,
+          "max_child_rss_mb": 52.53125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.838,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "d76478e33407",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1484
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#3",
+      "task_id": "fibonacci_fast",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w13",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 42.073311,
+      "finished_at": 51.360585,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.41796875,
+          "cpu_seconds": 1.8860530000000002,
+          "max_child_rss_mb": 52.0078125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.139,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "44f6515bed6b",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1485
+      }
+    },
+    {
+      "job_id": "valid_parentheses#3",
+      "task_id": "valid_parentheses",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w10",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 42.629542,
+      "finished_at": 50.512118,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.4921875,
+          "cpu_seconds": 1.8630879999999999,
+          "max_child_rss_mb": 52.0859375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.71,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "dcf28d42cd24",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1296
+      }
+    },
+    {
+      "job_id": "factorial#3",
+      "task_id": "factorial",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 43.114069,
+      "finished_at": 50.09188,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.6015625,
+          "cpu_seconds": 1.8454449999999998,
+          "max_child_rss_mb": 52.15234375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.762,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "cf0692911ce2",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1483
+      }
+    },
+    {
+      "job_id": "roman_to_int#3",
+      "task_id": "roman_to_int",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w7",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 44.103327,
+      "finished_at": 53.023306,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.3828125,
+          "cpu_seconds": 1.7978939999999999,
+          "max_child_rss_mb": 52.12890625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.771,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "763aae5fb254",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1486
+      }
+    },
+    {
+      "job_id": "reverse_string#3",
+      "task_id": "reverse_string",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w6",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 45.556482,
+      "finished_at": 51.572726,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.4609375,
+          "cpu_seconds": 1.776266,
+          "max_child_rss_mb": 52.07421875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.902,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "4e82e86134b4",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1284
+      }
+    }
+  ],
+  "resources": {
+    "window_seconds": 53.39,
+    "cpus": 4,
+    "sample_seconds": 0.5,
+    "host_busy_cpu_seconds": 200.98,
+    "host_busy_fraction": 0.9442,
+    "host_steal_fraction": 0.0101,
+    "cpu_wait_fraction": 0.722,
+    "processes": {
+      "workers": 2.25,
+      "api": 1.21,
+      "postgres": 0.8,
+      "docker": 18.45,
+      "harness": 1.09
+    },
+    "timeline": [
+      [
+        0.514,
+        0.7216,
+        17
+      ],
+      [
+        1.016,
+        0.9695,
+        18
+      ],
+      [
+        1.516,
+        0.99,
+        17
+      ],
+      [
+        2.017,
+        0.965,
+        17
+      ],
+      [
+        2.517,
+        0.9802,
+        18
+      ],
+      [
+        3.018,
+        0.99,
+        17
+      ],
+      [
+        3.519,
+        0.99,
+        15
+      ],
+      [
+        4.02,
+        0.99,
+        13
+      ],
+      [
+        4.521,
+        0.593,
+        1
+      ],
+      [
+        5.022,
+        0.155,
+        3
+      ],
+      [
+        5.524,
+        0.5918,
+        3
+      ],
+      [
+        6.025,
+        0.6751,
+        3
+      ],
+      [
+        6.525,
+        0.9648,
+        5
+      ],
+      [
+        7.026,
+        0.9045,
+        7
+      ],
+      [
+        7.528,
+        0.9227,
+        7
+      ],
+      [
+        8.028,
+        0.9851,
+        11
+      ],
+      [
+        8.53,
+        0.9851,
+        11
+      ],
+      [
+        9.034,
+        0.9901,
+        9
+      ],
+      [
+        9.535,
+        0.99,
+        17
+      ],
+      [
+        10.036,
+        0.98,
+        11
+      ],
+      [
+        10.537,
+        0.995,
+        12
+      ],
+      [
+        11.038,
+        0.9851,
+        10
+      ],
+      [
+        11.54,
+        0.9751,
+        15
+      ],
+      [
+        12.041,
+        0.9799,
+        15
+      ],
+      [
+        12.542,
+        0.9901,
+        17
+      ],
+      [
+        13.043,
+        0.995,
+        22
+      ],
+      [
+        13.545,
+        0.995,
+        14
+      ],
+      [
+        14.046,
+        0.9851,
+        19
+      ],
+      [
+        14.547,
+        0.9899,
+        14
+      ],
+      [
+        15.049,
+        0.99,
+        17
+      ],
+      [
+        15.549,
+        0.9752,
+        13
+      ],
+      [
+        16.051,
+        0.985,
+        10
+      ],
+      [
+        16.551,
+        0.9899,
+        10
+      ],
+      [
+        17.052,
+        0.98,
+        9
+      ],
+      [
+        17.554,
+        0.9901,
+        18
+      ],
+      [
+        18.055,
+        0.985,
+        10
+      ],
+      [
+        18.556,
+        0.9901,
+        9
+      ],
+      [
+        19.057,
+        0.9899,
+        8
+      ],
+      [
+        19.558,
+        0.9802,
+        10
+      ],
+      [
+        20.058,
+        0.9598,
+        11
+      ],
+      [
+        20.559,
+        0.995,
+        8
+      ],
+      [
+        21.06,
+        0.985,
+        13
+      ],
+      [
+        21.561,
+        0.99,
+        11
+      ],
+      [
+        22.063,
+        0.9698,
+        11
+      ],
+      [
+        22.564,
+        0.995,
+        11
+      ],
+      [
+        23.065,
+        0.99,
+        13
+      ],
+      [
+        23.566,
+        0.99,
+        13
+      ],
+      [
+        24.067,
+        0.9949,
+        14
+      ],
+      [
+        24.571,
+        0.9851,
+        15
+      ],
+      [
+        25.073,
+        0.975,
+        15
+      ],
+      [
+        25.573,
+        0.9703,
+        15
+      ],
+      [
+        26.074,
+        0.9899,
+        18
+      ],
+      [
+        26.575,
+        0.98,
+        12
+      ],
+      [
+        27.077,
+        0.9801,
+        12
+      ],
+      [
+        27.578,
+        0.99,
+        12
+      ],
+      [
+        28.08,
+        0.995,
+        17
+      ],
+      [
+        28.581,
+        0.9848,
+        12
+      ],
+      [
+        29.082,
+        0.9901,
+        10
+      ],
+      [
+        29.582,
+        0.985,
+        12
+      ],
+      [
+        30.083,
+        0.9849,
+        11
+      ],
+      [
+        30.584,
+        0.9798,
+        14
+      ],
+      [
+        31.085,
+        0.995,
+        9
+      ],
+      [
+        31.586,
+        0.995,
+        11
+      ],
+      [
+        32.087,
+        0.9851,
+        12
+      ],
+      [
+        32.589,
+        0.995,
+        11
+      ],
+      [
+        33.09,
+        0.995,
+        7
+      ],
+      [
+        33.591,
+        0.8342,
+        10
+      ],
+      [
+        34.092,
+        0.9697,
+        11
+      ],
+      [
+        34.593,
+        1.0,
+        11
+      ],
+      [
+        35.094,
+        0.995,
+        12
+      ],
+      [
+        35.595,
+        1.0,
+        10
+      ],
+      [
+        36.096,
+        0.99,
+        17
+      ],
+      [
+        36.598,
+        0.9801,
+        19
+      ],
+      [
+        37.1,
+        0.9799,
+        15
+      ],
+      [
+        37.601,
+        0.995,
+        16
+      ],
+      [
+        38.102,
+        0.995,
+        16
+      ],
+      [
+        38.603,
+        0.9801,
+        16
+      ],
+      [
+        39.104,
+        0.985,
+        14
+      ],
+      [
+        39.605,
+        0.9801,
+        12
+      ],
+      [
+        40.106,
+        0.9751,
+        10
+      ],
+      [
+        40.607,
+        0.9444,
+        11
+      ],
+      [
+        41.108,
+        0.9899,
+        10
+      ],
+      [
+        41.609,
+        0.995,
+        9
+      ],
+      [
+        42.111,
+        0.99,
+        11
+      ],
+      [
+        42.612,
+        0.9899,
+        9
+      ],
+      [
+        43.113,
+        0.995,
+        11
+      ],
+      [
+        43.614,
+        0.99,
+        8
+      ],
+      [
+        44.115,
+        0.9801,
+        12
+      ],
+      [
+        44.616,
+        0.9849,
+        11
+      ],
+      [
+        45.117,
+        0.9754,
+        9
+      ],
+      [
+        45.618,
+        0.9799,
+        12
+      ],
+      [
+        46.119,
+        0.9746,
+        6
+      ],
+      [
+        46.62,
+        0.99,
+        8
+      ],
+      [
+        47.121,
+        0.8894,
+        7
+      ],
+      [
+        47.625,
+        0.9802,
+        9
+      ],
+      [
+        48.13,
+        0.9652,
+        7
+      ],
+      [
+        48.631,
+        0.9799,
+        12
+      ],
+      [
+        49.132,
+        0.9849,
+        10
+      ],
+      [
+        49.633,
+        0.995,
+        8
+      ],
+      [
+        50.133,
+        0.9706,
+        7
+      ],
+      [
+        50.635,
+        0.9798,
+        6
+      ],
+      [
+        51.136,
+        0.9848,
+        11
+      ],
+      [
+        51.637,
+        0.7857,
+        9
+      ],
+      [
+        52.139,
+        0.3198,
+        1
+      ],
+      [
+        52.64,
+        0.598,
+        4
+      ],
+      [
+        53.141,
+        0.7677,
+        3
+      ],
+      [
+        53.39,
+        0.3434,
+        2
+      ]
+    ]
+  },
+  "database": {
+    "claim": {
+      "calls": 72,
+      "seconds": 0.380116,
+      "max_seconds": 0.01831
+    },
+    "claim_empty": {
+      "calls": 374,
+      "seconds": 0.667688,
+      "max_seconds": 0.047398
+    },
+    "heartbeat": {
+      "calls": 44,
+      "seconds": 0.272531,
+      "max_seconds": 0.012397
+    },
+    "live_attempts": {
+      "calls": 86,
+      "seconds": 0.181469,
+      "max_seconds": 0.01492
+    },
+    "publish": {
+      "calls": 72,
+      "seconds": 0.47071,
+      "max_seconds": 0.016836
+    },
+    "reap": {
+      "calls": 273,
+      "seconds": 0.864576,
+      "max_seconds": 0.058316
+    },
+    "record_execution": {
+      "calls": 72,
+      "seconds": 0.307571,
+      "max_seconds": 0.013632
+    },
+    "start": {
+      "calls": 72,
+      "seconds": 0.247567,
+      "max_seconds": 0.011762
+    }
+  }
+}

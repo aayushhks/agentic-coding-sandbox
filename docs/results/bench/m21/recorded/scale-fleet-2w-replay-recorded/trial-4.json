@@ -1,0 +1,3912 @@
+{
+  "schema_version": 1,
+  "record": "trial",
+  "label": "scale-fleet-2w-replay-recorded",
+  "trial": 4,
+  "started_at": "2026-10-01T23:52:39+00:00",
+  "interrupted": null,
+  "config": {
+    "mode": "replay",
+    "latency": "recorded",
+    "executor": "fleet",
+    "workers": 2,
+    "topology": "single host: 2 fleet worker processes, the fleet api and PostgreSQL 16.13, all on this machine",
+    "tasks": 72,
+    "seed": 1,
+    "taskset_version": "v1",
+    "taskset_digest": "207fa64b283eb781dbd0cc0f767089134f5f8d5bf1adbdeaaca576885ba95f3e",
+    "recordings_digest": "d5958d3fdd62ab5d4f4a84917e5557de723099940b9e46cc41f4cc47dbfe1574",
+    "provider": "replay",
+    "model": "qwen/qwen3.8-27b",
+    "agent_configs": {
+      "benchmark": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": false
+      },
+      "ticket": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": true
+      }
+    },
+    "sandbox_config": {
+      "timeout_seconds": 10.0,
+      "max_output_bytes": 10000,
+      "memory_mb": 4096,
+      "cpu_seconds": 15,
+      "max_file_size_mb": 64,
+      "network_disabled": true,
+      "require_isolation": false,
+      "hidden_paths": []
+    },
+    "tool_transport": "in_process",
+    "percentile_method": "linear interpolation between closest ranks (numpy's default)",
+    "execution": {
+      "mode": "process",
+      "policy": {
+        "cpus": 1.0,
+        "memory_mb": 1024,
+        "pids": 256,
+        "tmp_mb": 512,
+        "timeout_seconds": 600.0,
+        "egress": []
+      }
+    }
+  },
+  "environment": {
+    "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+    "git_dirty": false,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "logical_cpus": 4,
+    "usable_cpus": 4,
+    "cpu_quota_cores": null,
+    "memory_total_gib": 15.72,
+    "memory_limit_gib": null,
+    "virtualized": true,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.18.44-fc-v51",
+    "python": "3.13.12",
+    "sandbox_network_isolated": true
+  },
+  "metrics": {
+    "batch_wall_clock_seconds": 181.57423,
+    "tasks_per_minute": 23.79192245507526,
+    "queue_wait_seconds": {
+      "n": 72,
+      "mean": 87.91881815277777,
+      "p50": 89.4309105,
+      "p95": 169.16504690000002,
+      "p99": 175.65399485,
+      "max": 175.687553
+    },
+    "service_time_seconds": {
+      "n": 72,
+      "mean": 5.000074875,
+      "p50": 4.588368499999999,
+      "p95": 10.14680025,
+      "p99": 10.629029250000004,
+      "max": 10.683433000000008
+    },
+    "service_time_excluding_retry_waits_seconds": {
+      "n": 72,
+      "mean": 5.000074875,
+      "p50": 4.588368499999999,
+      "p95": 10.14680025,
+      "p99": 10.629029250000004,
+      "max": 10.683433000000008
+    },
+    "utilization": 0.9913449474630844,
+    "utilization_bucket_seconds": 1.0,
+    "utilization_timeline": [
+      0.8812,
+      1.0,
+      1.0,
+      0.9945,
+      1.0,
+      1.0,
+      1.0,
+      0.9967,
+      1.0,
+      0.9973,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9973,
+      1.0,
+      1.0,
+      1.0,
+      0.9948,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9966,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9946,
+      0.9978,
+      1.0,
+      1.0,
+      0.998,
+      1.0,
+      0.9968,
+      1.0,
+      1.0,
+      0.9982,
+      0.9953,
+      1.0,
+      1.0,
+      0.9971,
+      1.0,
+      1.0,
+      0.9974,
+      1.0,
+      0.9978,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9983,
+      0.9975,
+      1.0,
+      1.0,
+      0.9979,
+      1.0,
+      1.0,
+      0.9979,
+      0.9966,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9967,
+      1.0,
+      1.0,
+      0.9978,
+      0.9976,
+      1.0,
+      0.998,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9979,
+      1.0,
+      1.0,
+      0.9968,
+      1.0,
+      0.996,
+      1.0,
+      1.0,
+      1.0,
+      0.9979,
+      1.0,
+      0.9952,
+      0.9975,
+      0.9977,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9946,
+      1.0,
+      1.0,
+      1.0,
+      0.9978,
+      0.9953,
+      1.0,
+      1.0,
+      0.9973,
+      0.9979,
+      1.0,
+      1.0,
+      0.9978,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9957,
+      0.9971,
+      1.0,
+      1.0,
+      0.9979,
+      1.0,
+      1.0,
+      0.9981,
+      0.9974,
+      1.0,
+      1.0,
+      1.0,
+      0.9978,
+      0.9979,
+      1.0,
+      1.0,
+      1.0,
+      0.9972,
+      0.9982,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9973,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9978,
+      0.9979,
+      0.9984,
+      0.9985,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9976,
+      0.9965,
+      1.0,
+      0.9985,
+      1.0,
+      1.0,
+      0.9982,
+      1.0,
+      0.9965,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9968,
+      1.0,
+      0.9966,
+      1.0,
+      1.0,
+      1.0,
+      0.9976,
+      0.9976,
+      1.0,
+      1.0,
+      0.9971,
+      1.0,
+      1.0,
+      1.0,
+      0.5059,
+      0.5,
+      0.5
+    ],
+    "counts": {
+      "jobs": 72,
+      "solved": 60,
+      "escalated": 8,
+      "failed_task": 4,
+      "failed_infra": 0,
+      "failed_harness": 0,
+      "retries": 0,
+      "matched_expectation": 72
+    },
+    "tokens_per_task": {
+      "n": 72,
+      "mean": 6044.666666666667,
+      "p50": 5081.0,
+      "p95": 15059.500000000013,
+      "p99": 17375.0,
+      "max": 17375.0
+    },
+    "prompt_tokens": 364332,
+    "completion_tokens": 70884,
+    "llm_calls": 368,
+    "retry_wait_seconds": 0.0,
+    "cost_usd": null
+  },
+  "jobs": [
+    {
+      "job_id": "fix_average#0",
+      "task_id": "fix_average",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.115299,
+      "finished_at": 3.187367,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "factorial#0",
+      "task_id": "factorial",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.122338,
+      "finished_at": 3.623087,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "merge_sorted#0",
+      "task_id": "merge_sorted",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 3.192984,
+      "finished_at": 7.73148,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "count_vowels#0",
+      "task_id": "count_vowels",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 3.628399,
+      "finished_at": 9.328012,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "lru_cache#0",
+      "task_id": "lru_cache",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 7.738021,
+      "finished_at": 15.002879,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "topological_sort#0",
+      "task_id": "topological_sort",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 9.333486,
+      "finished_at": 19.017786,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "two_sum#0",
+      "task_id": "two_sum",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 15.00823,
+      "finished_at": 19.590332,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "roman_to_int#0",
+      "task_id": "roman_to_int",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 19.02428,
+      "finished_at": 24.970587,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fizzbuzz#0",
+      "task_id": "fizzbuzz",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 19.594261,
+      "finished_at": 30.183856,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fibonacci_fast#0",
+      "task_id": "fibonacci_fast",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 24.977408,
+      "finished_at": 30.047151,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "valid_parentheses#0",
+      "task_id": "valid_parentheses",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 30.05264,
+      "finished_at": 34.181465,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-04#0",
+      "task_id": "TCK-04",
+      "repeat": 0,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 30.189104,
+      "finished_at": 31.500916,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "add_numbers#0",
+      "task_id": "add_numbers",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 31.505392,
+      "finished_at": 36.054922,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "multi_file_shapes#0",
+      "task_id": "multi_file_shapes",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 34.185373,
+      "finished_at": 40.1577,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "unsatisfiable_spec#0",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 36.06133,
+      "finished_at": 39.508555,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-08#0",
+      "task_id": "TCK-08",
+      "repeat": 0,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 39.512187,
+      "finished_at": 40.195707,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fix_binary_search#0",
+      "task_id": "fix_binary_search",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 40.16337,
+      "finished_at": 46.70361,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "reverse_string#0",
+      "task_id": "reverse_string",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 40.199431,
+      "finished_at": 43.515577,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "merge_sorted#1",
+      "task_id": "merge_sorted",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 43.521446,
+      "finished_at": 48.137658,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "lru_cache#1",
+      "task_id": "lru_cache",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 46.708889,
+      "finished_at": 54.072876,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fibonacci_fast#1",
+      "task_id": "fibonacci_fast",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 48.142056,
+      "finished_at": 53.180333,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "valid_parentheses#1",
+      "task_id": "valid_parentheses",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 53.183658,
+      "finished_at": 57.284348,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fix_binary_search#1",
+      "task_id": "fix_binary_search",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 54.077809,
+      "finished_at": 60.57659,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "add_numbers#1",
+      "task_id": "add_numbers",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 57.288579,
+      "finished_at": 61.866473,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "topological_sort#1",
+      "task_id": "topological_sort",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 60.580751,
+      "finished_at": 70.226585,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "roman_to_int#1",
+      "task_id": "roman_to_int",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 61.873241,
+      "finished_at": 67.821088,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "unsatisfiable_spec#1",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 67.827719,
+      "finished_at": 71.209376,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "reverse_string#1",
+      "task_id": "reverse_string",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 70.231052,
+      "finished_at": 73.568149,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fizzbuzz#1",
+      "task_id": "fizzbuzz",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 71.21417,
+      "finished_at": 81.787223,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "two_sum#1",
+      "task_id": "two_sum",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 73.572224,
+      "finished_at": 78.166859,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "count_vowels#1",
+      "task_id": "count_vowels",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 78.17099,
+      "finished_at": 83.849624,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-04#1",
+      "task_id": "TCK-04",
+      "repeat": 1,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 81.793572,
+      "finished_at": 83.106533,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "multi_file_shapes#1",
+      "task_id": "multi_file_shapes",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 83.110433,
+      "finished_at": 89.081556,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "factorial#1",
+      "task_id": "factorial",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 83.853767,
+      "finished_at": 87.316096,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fix_average#1",
+      "task_id": "fix_average",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 87.320258,
+      "finished_at": 90.378911,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-08#1",
+      "task_id": "TCK-08",
+      "repeat": 1,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 89.086142,
+      "finished_at": 89.7707,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-04#2",
+      "task_id": "TCK-04",
+      "repeat": 2,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 89.775679,
+      "finished_at": 91.087983,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "lru_cache#2",
+      "task_id": "lru_cache",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 90.383922,
+      "finished_at": 97.715885,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "roman_to_int#2",
+      "task_id": "roman_to_int",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 91.092486,
+      "finished_at": 97.074103,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fibonacci_fast#2",
+      "task_id": "fibonacci_fast",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 97.078914,
+      "finished_at": 102.199931,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "reverse_string#2",
+      "task_id": "reverse_string",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 97.721891,
+      "finished_at": 101.012651,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "valid_parentheses#2",
+      "task_id": "valid_parentheses",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 101.017107,
+      "finished_at": 105.156039,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-08#2",
+      "task_id": "TCK-08",
+      "repeat": 2,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 102.205687,
+      "finished_at": 102.891376,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fix_average#2",
+      "task_id": "fix_average",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 102.894933,
+      "finished_at": 106.001853,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "add_numbers#2",
+      "task_id": "add_numbers",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 105.161539,
+      "finished_at": 109.845446,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fizzbuzz#2",
+      "task_id": "fizzbuzz",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 106.006068,
+      "finished_at": 116.689501,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "count_vowels#2",
+      "task_id": "count_vowels",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 109.849782,
+      "finished_at": 115.691878,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "unsatisfiable_spec#2",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 115.700545,
+      "finished_at": 119.104094,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fix_binary_search#2",
+      "task_id": "fix_binary_search",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 116.695293,
+      "finished_at": 123.201559,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "factorial#2",
+      "task_id": "factorial",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 119.108357,
+      "finished_at": 122.568856,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "multi_file_shapes#2",
+      "task_id": "multi_file_shapes",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 122.572652,
+      "finished_at": 128.516044,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "two_sum#2",
+      "task_id": "two_sum",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 123.206722,
+      "finished_at": 127.811321,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "merge_sorted#2",
+      "task_id": "merge_sorted",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 127.815658,
+      "finished_at": 132.38561,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "topological_sort#2",
+      "task_id": "topological_sort",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 128.520157,
+      "finished_at": 138.318205,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-08#3",
+      "task_id": "TCK-08",
+      "repeat": 3,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 132.391131,
+      "finished_at": 133.073172,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fizzbuzz#3",
+      "task_id": "fizzbuzz",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 133.076705,
+      "finished_at": 143.683513,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "multi_file_shapes#3",
+      "task_id": "multi_file_shapes",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 138.323631,
+      "finished_at": 144.256651,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fix_average#3",
+      "task_id": "fix_average",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 143.688003,
+      "finished_at": 146.755426,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "TCK-04#3",
+      "task_id": "TCK-04",
+      "repeat": 3,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 144.26091,
+      "finished_at": 145.570642,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "lru_cache#3",
+      "task_id": "lru_cache",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 145.57384,
+      "finished_at": 152.903416,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "merge_sorted#3",
+      "task_id": "merge_sorted",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 146.758359,
+      "finished_at": 151.294862,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "unsatisfiable_spec#3",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 151.299704,
+      "finished_at": 154.741792,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "two_sum#3",
+      "task_id": "two_sum",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 152.91032,
+      "finished_at": 157.472025,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "add_numbers#3",
+      "task_id": "add_numbers",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 154.744834,
+      "finished_at": 159.306692,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "topological_sort#3",
+      "task_id": "topological_sort",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 157.47565,
+      "finished_at": 167.200886,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "count_vowels#3",
+      "task_id": "count_vowels",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 159.313717,
+      "finished_at": 165.025833,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fix_binary_search#3",
+      "task_id": "fix_binary_search",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 165.032316,
+      "finished_at": 171.552553,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "fibonacci_fast#3",
+      "task_id": "fibonacci_fast",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 167.20769,
+      "finished_at": 172.240329,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "valid_parentheses#3",
+      "task_id": "valid_parentheses",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 171.557372,
+      "finished_at": 175.637112,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "factorial#3",
+      "task_id": "factorial",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 172.245203,
+      "finished_at": 175.684996,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "roman_to_int#3",
+      "task_id": "roman_to_int",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 175.640288,
+      "finished_at": 181.57423,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    },
+    {
+      "job_id": "reverse_string#3",
+      "task_id": "reverse_string",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 175.687553,
+      "finished_at": 179.011866,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": null
+    }
+  ],
+  "resources": {
+    "window_seconds": 181.657,
+    "cpus": 4,
+    "sample_seconds": 0.5,
+    "host_busy_cpu_seconds": 66.15,
+    "host_busy_fraction": 0.0906,
+    "host_steal_fraction": 0.0024,
+    "cpu_wait_fraction": 0.0011,
+    "processes": {
+      "workers": 48.52,
+      "api": 4.99,
+      "postgres": 1.55,
+      "docker": 0.17,
+      "harness": 3.78
+    },
+    "timeline": [
+      [
+        0.509,
+        0.0878,
+        2
+      ],
+      [
+        1.011,
+        0.0248,
+        1
+      ],
+      [
+        1.512,
+        0.0248,
+        1
+      ],
+      [
+        2.014,
+        0.0248,
+        1
+      ],
+      [
+        2.514,
+        0.185,
+        1
+      ],
+      [
+        3.018,
+        0.267,
+        2
+      ],
+      [
+        3.518,
+        0.24,
+        2
+      ],
+      [
+        4.02,
+        0.095,
+        1
+      ],
+      [
+        4.521,
+        0.0249,
+        1
+      ],
+      [
+        5.022,
+        0.0248,
+        1
+      ],
+      [
+        5.523,
+        0.0248,
+        1
+      ],
+      [
+        6.024,
+        0.0101,
+        1
+      ],
+      [
+        6.525,
+        0.0439,
+        1
+      ],
+      [
+        7.025,
+        0.191,
+        1
+      ],
+      [
+        7.526,
+        0.0644,
+        2
+      ],
+      [
+        8.027,
+        0.335,
+        1
+      ],
+      [
+        8.529,
+        0.015,
+        1
+      ],
+      [
+        9.03,
+        0.0249,
+        2
+      ],
+      [
+        9.531,
+        0.18,
+        1
+      ],
+      [
+        10.033,
+        0.015,
+        1
+      ],
+      [
+        10.534,
+        0.0297,
+        1
+      ],
+      [
+        11.035,
+        0.0149,
+        1
+      ],
+      [
+        11.536,
+        0.0249,
+        1
+      ],
+      [
+        12.037,
+        0.015,
+        1
+      ],
+      [
+        12.538,
+        0.0198,
+        1
+      ],
+      [
+        13.039,
+        0.015,
+        1
+      ],
+      [
+        13.541,
+        0.0248,
+        1
+      ],
+      [
+        14.041,
+        0.194,
+        1
+      ],
+      [
+        14.543,
+        0.0296,
+        2
+      ],
+      [
+        15.044,
+        0.1881,
+        1
+      ],
+      [
+        15.545,
+        0.03,
+        1
+      ],
+      [
+        16.046,
+        0.0101,
+        1
+      ],
+      [
+        16.547,
+        0.0248,
+        1
+      ],
+      [
+        17.048,
+        0.0248,
+        1
+      ],
+      [
+        17.549,
+        0.2293,
+        1
+      ],
+      [
+        18.051,
+        0.0594,
+        2
+      ],
+      [
+        18.552,
+        0.15,
+        1
+      ],
+      [
+        19.052,
+        0.185,
+        2
+      ],
+      [
+        19.553,
+        0.1796,
+        2
+      ],
+      [
+        20.054,
+        0.0553,
+        1
+      ],
+      [
+        20.555,
+        0.0249,
+        1
+      ],
+      [
+        21.057,
+        0.0246,
+        1
+      ],
+      [
+        21.558,
+        0.0198,
+        1
+      ],
+      [
+        22.06,
+        0.015,
+        1
+      ],
+      [
+        22.561,
+        0.0297,
+        1
+      ],
+      [
+        23.061,
+        0.085,
+        2
+      ],
+      [
+        23.562,
+        0.135,
+        1
+      ],
+      [
+        24.063,
+        0.2059,
+        1
+      ],
+      [
+        24.564,
+        0.0297,
+        1
+      ],
+      [
+        25.065,
+        0.194,
+        1
+      ],
+      [
+        25.566,
+        0.0249,
+        1
+      ],
+      [
+        26.066,
+        0.0199,
+        1
+      ],
+      [
+        26.568,
+        0.0101,
+        1
+      ],
+      [
+        27.069,
+        0.0101,
+        1
+      ],
+      [
+        27.57,
+        0.0739,
+        2
+      ],
+      [
+        28.071,
+        0.15,
+        1
+      ],
+      [
+        28.572,
+        0.0199,
+        1
+      ],
+      [
+        29.073,
+        0.1561,
+        2
+      ],
+      [
+        29.575,
+        0.0846,
+        1
+      ],
+      [
+        30.075,
+        0.3005,
+        3
+      ],
+      [
+        30.576,
+        0.1089,
+        1
+      ],
+      [
+        31.078,
+        0.0201,
+        1
+      ],
+      [
+        31.578,
+        0.0249,
+        1
+      ],
+      [
+        32.079,
+        0.02,
+        1
+      ],
+      [
+        32.58,
+        0.0297,
+        1
+      ],
+      [
+        33.081,
+        0.2139,
+        2
+      ],
+      [
+        33.581,
+        0.2087,
+        2
+      ],
+      [
+        34.083,
+        0.1471,
+        2
+      ],
+      [
+        34.584,
+        0.0945,
+        1
+      ],
+      [
+        35.084,
+        0.085,
+        2
+      ],
+      [
+        35.586,
+        0.1268,
+        1
+      ],
+      [
+        36.087,
+        0.1841,
+        2
+      ],
+      [
+        36.588,
+        0.0398,
+        1
+      ],
+      [
+        37.089,
+        0.0151,
+        1
+      ],
+      [
+        37.591,
+        0.0297,
+        1
+      ],
+      [
+        38.092,
+        0.0199,
+        1
+      ],
+      [
+        38.594,
+        0.0941,
+        2
+      ],
+      [
+        39.096,
+        0.2239,
+        3
+      ],
+      [
+        39.596,
+        0.2871,
+        1
+      ],
+      [
+        40.098,
+        0.1535,
+        2
+      ],
+      [
+        40.599,
+        0.075,
+        1
+      ],
+      [
+        41.1,
+        0.02,
+        1
+      ],
+      [
+        41.601,
+        0.0296,
+        1
+      ],
+      [
+        42.102,
+        0.03,
+        2
+      ],
+      [
+        42.603,
+        0.1642,
+        1
+      ],
+      [
+        43.104,
+        0.0199,
+        2
+      ],
+      [
+        43.605,
+        0.2255,
+        1
+      ],
+      [
+        44.107,
+        0.0101,
+        1
+      ],
+      [
+        44.61,
+        0.0199,
+        1
+      ],
+      [
+        45.111,
+        0.1872,
+        2
+      ],
+      [
+        45.612,
+        0.03,
+        1
+      ],
+      [
+        46.113,
+        0.0198,
+        1
+      ],
+      [
+        46.614,
+        0.1642,
+        2
+      ],
+      [
+        47.115,
+        0.1931,
+        2
+      ],
+      [
+        47.616,
+        0.11,
+        1
+      ],
+      [
+        48.117,
+        0.199,
+        2
+      ],
+      [
+        48.62,
+        0.0448,
+        1
+      ],
+      [
+        49.12,
+        0.015,
+        1
+      ],
+      [
+        49.622,
+        0.0297,
+        1
+      ],
+      [
+        50.123,
+        0.0199,
+        1
+      ],
+      [
+        50.623,
+        0.02,
+        1
+      ],
+      [
+        51.125,
+        0.0199,
+        1
+      ],
+      [
+        51.626,
+        0.0249,
+        1
+      ],
+      [
+        52.128,
+        0.0891,
+        2
+      ],
+      [
+        52.629,
+        0.1478,
+        2
+      ],
+      [
+        53.13,
+        0.3495,
+        2
+      ],
+      [
+        53.631,
+        0.0743,
+        1
+      ],
+      [
+        54.132,
+        0.2293,
+        1
+      ],
+      [
+        54.633,
+        0.0101,
+        1
+      ],
+      [
+        55.135,
+        0.0199,
+        1
+      ],
+      [
+        55.636,
+        0.0151,
+        1
+      ],
+      [
+        56.136,
+        0.201,
+        2
+      ],
+      [
+        56.638,
+        0.025,
+        1
+      ],
+      [
+        57.139,
+        0.0995,
+        2
+      ],
+      [
+        57.641,
+        0.12,
+        1
+      ],
+      [
+        58.142,
+        0.0296,
+        1
+      ],
+      [
+        58.643,
+        0.0198,
+        1
+      ],
+      [
+        59.144,
+        0.2637,
+        2
+      ],
+      [
+        59.646,
+        0.1561,
+        1
+      ],
+      [
+        60.147,
+        0.02,
+        1
+      ],
+      [
+        60.647,
+        0.197,
+        2
+      ],
+      [
+        61.149,
+        0.1881,
+        2
+      ],
+      [
+        61.649,
+        0.0697,
+        2
+      ],
+      [
+        62.15,
+        0.1592,
+        1
+      ],
+      [
+        62.651,
+        0.01,
+        1
+      ],
+      [
+        63.152,
+        0.0249,
+        1
+      ],
+      [
+        63.653,
+        0.02,
+        1
+      ],
+      [
+        64.154,
+        0.0149,
+        1
+      ],
+      [
+        64.656,
+        0.0248,
+        1
+      ],
+      [
+        65.157,
+        0.02,
+        1
+      ],
+      [
+        65.657,
+        0.0248,
+        1
+      ],
+      [
+        66.158,
+        0.015,
+        1
+      ],
+      [
+        66.659,
+        0.1144,
+        2
+      ],
+      [
+        67.161,
+        0.1139,
+        1
+      ],
+      [
+        67.661,
+        0.1078,
+        2
+      ],
+      [
+        68.163,
+        0.12,
+        1
+      ],
+      [
+        68.663,
+        0.1592,
+        2
+      ],
+      [
+        69.164,
+        0.05,
+        2
+      ],
+      [
+        69.665,
+        0.0248,
+        1
+      ],
+      [
+        70.167,
+        0.1393,
+        2
+      ],
+      [
+        70.668,
+        0.2388,
+        1
+      ],
+      [
+        71.169,
+        0.1576,
+        2
+      ],
+      [
+        71.67,
+        0.0644,
+        1
+      ],
+      [
+        72.172,
+        0.0547,
+        2
+      ],
+      [
+        72.672,
+        0.155,
+        1
+      ],
+      [
+        73.173,
+        0.015,
+        1
+      ],
+      [
+        73.674,
+        0.215,
+        1
+      ],
+      [
+        74.176,
+        0.0199,
+        1
+      ],
+      [
+        74.677,
+        0.0796,
+        3
+      ],
+      [
+        75.179,
+        0.1393,
+        1
+      ],
+      [
+        75.679,
+        0.0199,
+        1
+      ],
+      [
+        76.18,
+        0.0198,
+        2
+      ],
+      [
+        76.683,
+        0.0962,
+        2
+      ],
+      [
+        77.202,
+        0.1422,
+        1
+      ],
+      [
+        77.703,
+        0.0249,
+        1
+      ],
+      [
+        78.204,
+        0.1841,
+        2
+      ],
+      [
+        78.705,
+        0.0249,
+        1
+      ],
+      [
+        79.206,
+        0.0837,
+        2
+      ],
+      [
+        79.707,
+        0.14,
+        1
+      ],
+      [
+        80.208,
+        0.0199,
+        1
+      ],
+      [
+        80.709,
+        0.01,
+        1
+      ],
+      [
+        81.21,
+        0.0101,
+        1
+      ],
+      [
+        81.711,
+        0.1493,
+        2
+      ],
+      [
+        82.212,
+        0.145,
+        2
+      ],
+      [
+        82.713,
+        0.133,
+        1
+      ],
+      [
+        83.214,
+        0.03,
+        1
+      ],
+      [
+        83.715,
+        0.1089,
+        2
+      ],
+      [
+        84.216,
+        0.1095,
+        1
+      ],
+      [
+        84.718,
+        0.015,
+        1
+      ],
+      [
+        85.218,
+        0.0199,
+        1
+      ],
+      [
+        85.719,
+        0.0199,
+        1
+      ],
+      [
+        86.221,
+        0.015,
+        1
+      ],
+      [
+        86.722,
+        0.2059,
+        1
+      ],
+      [
+        87.223,
+        0.1294,
+        2
+      ],
+      [
+        87.724,
+        0.085,
+        1
+      ],
+      [
+        88.226,
+        0.197,
+        1
+      ],
+      [
+        88.728,
+        0.0249,
+        1
+      ],
+      [
+        89.229,
+        0.2079,
+        2
+      ],
+      [
+        89.73,
+        0.1881,
+        1
+      ],
+      [
+        90.233,
+        0.1275,
+        2
+      ],
+      [
+        90.734,
+        0.1281,
+        1
+      ],
+      [
+        91.234,
+        0.0345,
+        1
+      ],
+      [
+        91.735,
+        0.0199,
+        1
+      ],
+      [
+        92.237,
+        0.0199,
+        1
+      ],
+      [
+        92.738,
+        0.0249,
+        2
+      ],
+      [
+        93.239,
+        0.0297,
+        1
+      ],
+      [
+        93.74,
+        0.0051,
+        1
+      ],
+      [
+        94.241,
+        0.0198,
+        1
+      ],
+      [
+        94.742,
+        0.0149,
+        1
+      ],
+      [
+        95.243,
+        0.0151,
+        1
+      ],
+      [
+        95.745,
+        0.0542,
+        2
+      ],
+      [
+        96.246,
+        0.17,
+        1
+      ],
+      [
+        96.747,
+        0.2195,
+        2
+      ],
+      [
+        97.248,
+        0.2139,
+        1
+      ],
+      [
+        97.749,
+        0.233,
+        2
+      ],
+      [
+        98.25,
+        0.0249,
+        1
+      ],
+      [
+        98.751,
+        0.0249,
+        1
+      ],
+      [
+        99.252,
+        0.0249,
+        1
+      ],
+      [
+        99.752,
+        0.099,
+        2
+      ],
+      [
+        100.253,
+        0.1268,
+        1
+      ],
+      [
+        100.754,
+        0.0402,
+        2
+      ],
+      [
+        101.255,
+        0.3431,
+        2
+      ],
+      [
+        101.756,
+        0.0251,
+        1
+      ],
+      [
+        102.257,
+        0.2277,
+        1
+      ],
+      [
+        102.757,
+        0.02,
+        1
+      ],
+      [
+        103.259,
+        0.02,
+        1
+      ],
+      [
+        103.762,
+        0.0941,
+        2
+      ],
+      [
+        104.263,
+        0.13,
+        1
+      ],
+      [
+        104.764,
+        0.0246,
+        1
+      ],
+      [
+        105.266,
+        0.4,
+        1
+      ],
+      [
+        105.767,
+        0.0784,
+        2
+      ],
+      [
+        106.268,
+        0.1542,
+        1
+      ],
+      [
+        106.769,
+        0.0248,
+        1
+      ],
+      [
+        107.27,
+        0.194,
+        2
+      ],
+      [
+        107.771,
+        0.0792,
+        1
+      ],
+      [
+        108.272,
+        0.015,
+        1
+      ],
+      [
+        108.773,
+        0.0493,
+        2
+      ],
+      [
+        109.275,
+        0.1608,
+        1
+      ],
+      [
+        109.775,
+        0.3317,
+        2
+      ],
+      [
+        110.276,
+        0.0837,
+        1
+      ],
+      [
+        110.778,
+        0.0151,
+        1
+      ],
+      [
+        111.279,
+        0.0198,
+        2
+      ],
+      [
+        111.781,
+        0.0199,
+        1
+      ],
+      [
+        112.281,
+        0.0249,
+        1
+      ],
+      [
+        112.782,
+        0.02,
+        1
+      ],
+      [
+        113.283,
+        0.0249,
+        1
+      ],
+      [
+        113.784,
+        0.0396,
+        2
+      ],
+      [
+        114.285,
+        0.4363,
+        2
+      ],
+      [
+        114.786,
+        0.0498,
+        1
+      ],
+      [
+        115.288,
+        0.0299,
+        1
+      ],
+      [
+        115.789,
+        0.2217,
+        2
+      ],
+      [
+        116.291,
+        0.0246,
+        1
+      ],
+      [
+        116.791,
+        0.21,
+        1
+      ],
+      [
+        117.292,
+        0.0297,
+        1
+      ],
+      [
+        117.793,
+        0.02,
+        2
+      ],
+      [
+        118.294,
+        0.1095,
+        2
+      ],
+      [
+        118.795,
+        0.0945,
+        1
+      ],
+      [
+        119.296,
+        0.2118,
+        1
+      ],
+      [
+        119.798,
+        0.0199,
+        1
+      ],
+      [
+        120.299,
+        0.0248,
+        1
+      ],
+      [
+        120.799,
+        0.0248,
+        1
+      ],
+      [
+        121.3,
+        0.015,
+        1
+      ],
+      [
+        121.802,
+        0.361,
+        2
+      ],
+      [
+        122.303,
+        0.055,
+        2
+      ],
+      [
+        122.804,
+        0.1658,
+        1
+      ],
+      [
+        123.305,
+        0.2,
+        1
+      ],
+      [
+        123.806,
+        0.0249,
+        1
+      ],
+      [
+        124.307,
+        0.0101,
+        1
+      ],
+      [
+        124.808,
+        0.015,
+        1
+      ],
+      [
+        125.309,
+        0.0199,
+        1
+      ],
+      [
+        125.81,
+        0.0297,
+        1
+      ],
+      [
+        126.312,
+        0.0936,
+        2
+      ],
+      [
+        126.813,
+        0.1422,
+        1
+      ],
+      [
+        127.314,
+        0.045,
+        2
+      ],
+      [
+        127.815,
+        0.3333,
+        2
+      ],
+      [
+        128.316,
+        0.1,
+        2
+      ],
+      [
+        128.818,
+        0.1594,
+        2
+      ],
+      [
+        129.319,
+        0.0199,
+        1
+      ],
+      [
+        129.82,
+        0.01,
+        1
+      ],
+      [
+        130.321,
+        0.0248,
+        1
+      ],
+      [
+        130.823,
+        0.02,
+        1
+      ],
+      [
+        131.324,
+        0.065,
+        2
+      ],
+      [
+        131.825,
+        0.135,
+        1
+      ],
+      [
+        132.326,
+        0.1485,
+        2
+      ],
+      [
+        132.827,
+        0.0606,
+        1
+      ],
+      [
+        133.329,
+        0.025,
+        1
+      ],
+      [
+        133.83,
+        0.015,
+        1
+      ],
+      [
+        134.33,
+        0.0149,
+        1
+      ],
+      [
+        134.831,
+        0.0199,
+        1
+      ],
+      [
+        135.333,
+        0.0392,
+        1
+      ],
+      [
+        135.835,
+        0.015,
+        1
+      ],
+      [
+        136.335,
+        0.0299,
+        2
+      ],
+      [
+        136.837,
+        0.43,
+        1
+      ],
+      [
+        137.339,
+        0.0249,
+        1
+      ],
+      [
+        137.84,
+        0.0249,
+        2
+      ],
+      [
+        138.341,
+        0.2217,
+        2
+      ],
+      [
+        138.842,
+        0.035,
+        1
+      ],
+      [
+        139.344,
+        0.0198,
+        1
+      ],
+      [
+        139.845,
+        0.0149,
+        1
+      ],
+      [
+        140.346,
+        0.02,
+        1
+      ],
+      [
+        140.847,
+        0.015,
+        1
+      ],
+      [
+        141.348,
+        0.1931,
+        2
+      ],
+      [
+        141.849,
+        0.0201,
+        1
+      ],
+      [
+        142.35,
+        0.0199,
+        1
+      ],
+      [
+        142.851,
+        0.0347,
+        1
+      ],
+      [
+        143.352,
+        0.18,
+        1
+      ],
+      [
+        143.853,
+        0.2039,
+        1
+      ],
+      [
+        144.354,
+        0.195,
+        1
+      ],
+      [
+        144.855,
+        0.02,
+        1
+      ],
+      [
+        145.355,
+        0.0199,
+        1
+      ],
+      [
+        145.856,
+        0.1634,
+        2
+      ],
+      [
+        146.358,
+        0.0739,
+        1
+      ],
+      [
+        146.859,
+        0.203,
+        1
+      ],
+      [
+        147.36,
+        0.015,
+        1
+      ],
+      [
+        147.862,
+        0.0246,
+        1
+      ],
+      [
+        148.364,
+        0.0199,
+        1
+      ],
+      [
+        148.865,
+        0.0101,
+        1
+      ],
+      [
+        149.366,
+        0.0248,
+        1
+      ],
+      [
+        149.868,
+        0.015,
+        1
+      ],
+      [
+        150.369,
+        0.1244,
+        2
+      ],
+      [
+        150.87,
+        0.0704,
+        1
+      ],
+      [
+        151.371,
+        0.1891,
+        1
+      ],
+      [
+        151.872,
+        0.2108,
+        1
+      ],
+      [
+        152.373,
+        0.0249,
+        1
+      ],
+      [
+        152.874,
+        0.1841,
+        3
+      ],
+      [
+        153.375,
+        0.0597,
+        1
+      ],
+      [
+        153.877,
+        0.1133,
+        2
+      ],
+      [
+        154.378,
+        0.1055,
+        1
+      ],
+      [
+        154.878,
+        0.197,
+        2
+      ],
+      [
+        155.379,
+        0.02,
+        1
+      ],
+      [
+        155.88,
+        0.01,
+        3
+      ],
+      [
+        156.382,
+        0.1872,
+        1
+      ],
+      [
+        156.883,
+        0.191,
+        1
+      ],
+      [
+        157.384,
+        0.1343,
+        2
+      ],
+      [
+        157.885,
+        0.1073,
+        1
+      ],
+      [
+        158.387,
+        0.1238,
+        2
+      ],
+      [
+        158.889,
+        0.09,
+        1
+      ],
+      [
+        159.39,
+        0.197,
+        2
+      ],
+      [
+        159.891,
+        0.015,
+        1
+      ],
+      [
+        160.393,
+        0.0248,
+        5
+      ],
+      [
+        160.893,
+        0.0199,
+        1
+      ],
+      [
+        161.394,
+        0.0151,
+        1
+      ],
+      [
+        161.896,
+        0.0101,
+        1
+      ],
+      [
+        162.397,
+        0.0248,
+        1
+      ],
+      [
+        162.898,
+        0.0198,
+        1
+      ],
+      [
+        163.399,
+        0.0955,
+        2
+      ],
+      [
+        163.9,
+        0.1005,
+        1
+      ],
+      [
+        164.401,
+        0.0199,
+        1
+      ],
+      [
+        164.902,
+        0.1232,
+        2
+      ],
+      [
+        165.403,
+        0.165,
+        2
+      ],
+      [
+        165.905,
+        0.1782,
+        1
+      ],
+      [
+        166.406,
+        0.0198,
+        2
+      ],
+      [
+        166.907,
+        0.02,
+        2
+      ],
+      [
+        167.409,
+        0.1961,
+        3
+      ],
+      [
+        167.911,
+        0.1034,
+        1
+      ],
+      [
+        168.412,
+        0.01,
+        1
+      ],
+      [
+        168.913,
+        0.0248,
+        1
+      ],
+      [
+        169.415,
+        0.0149,
+        1
+      ],
+      [
+        169.916,
+        0.1436,
+        3
+      ],
+      [
+        170.417,
+        0.0846,
+        1
+      ],
+      [
+        170.918,
+        0.005,
+        1
+      ],
+      [
+        171.42,
+        0.2878,
+        2
+      ],
+      [
+        171.921,
+        0.1089,
+        1
+      ],
+      [
+        172.424,
+        0.198,
+        1
+      ],
+      [
+        172.924,
+        0.0347,
+        1
+      ],
+      [
+        173.427,
+        0.0199,
+        1
+      ],
+      [
+        173.928,
+        0.0441,
+        1
+      ],
+      [
+        174.428,
+        0.1592,
+        2
+      ],
+      [
+        174.93,
+        0.2157,
+        2
+      ],
+      [
+        175.431,
+        0.1089,
+        3
+      ],
+      [
+        175.932,
+        0.299,
+        1
+      ],
+      [
+        176.432,
+        0.0597,
+        1
+      ],
+      [
+        176.933,
+        0.015,
+        1
+      ],
+      [
+        177.434,
+        0.0299,
+        1
+      ],
+      [
+        177.936,
+        0.204,
+        2
+      ],
+      [
+        178.437,
+        0.0249,
+        1
+      ],
+      [
+        178.938,
+        0.1337,
+        2
+      ],
+      [
+        179.439,
+        0.0936,
+        1
+      ],
+      [
+        179.94,
+        0.02,
+        1
+      ],
+      [
+        180.441,
+        0.133,
+        2
+      ],
+      [
+        180.942,
+        0.0891,
+        1
+      ],
+      [
+        181.443,
+        0.1188,
+        2
+      ],
+      [
+        181.657,
+        0.2299,
+        1
+      ]
+    ]
+  },
+  "database": {
+    "claim": {
+      "calls": 72,
+      "seconds": 0.244604,
+      "max_seconds": 0.006465
+    },
+    "claim_empty": {
+      "calls": 28,
+      "seconds": 0.04415,
+      "max_seconds": 0.002799
+    },
+    "heartbeat": {
+      "calls": 4,
+      "seconds": 0.018583,
+      "max_seconds": 0.005366
+    },
+    "publish": {
+      "calls": 72,
+      "seconds": 0.408361,
+      "max_seconds": 0.009131
+    },
+    "reap": {
+      "calls": 60,
+      "seconds": 0.121198,
+      "max_seconds": 0.016066
+    },
+    "start": {
+      "calls": 72,
+      "seconds": 0.144392,
+      "max_seconds": 0.005529
+    }
+  }
+}

@@ -1,0 +1,500 @@
+{
+  "schema_version": 1,
+  "record": "summary",
+  "label": "scale-fleet-8w-replay-recorded",
+  "trials": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "interrupted_trials": [],
+  "config": {
+    "mode": "replay",
+    "latency": "recorded",
+    "executor": "fleet",
+    "workers": 8,
+    "topology": "single host: 8 fleet worker processes, the fleet api and PostgreSQL 16.13, all on this machine",
+    "tasks": 72,
+    "seed": 1,
+    "taskset_version": "v1",
+    "taskset_digest": "207fa64b283eb781dbd0cc0f767089134f5f8d5bf1adbdeaaca576885ba95f3e",
+    "recordings_digest": "d5958d3fdd62ab5d4f4a84917e5557de723099940b9e46cc41f4cc47dbfe1574",
+    "provider": "replay",
+    "model": "qwen/qwen3.8-27b",
+    "agent_configs": {
+      "benchmark": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": false
+      },
+      "ticket": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": true
+      }
+    },
+    "sandbox_config": {
+      "timeout_seconds": 10.0,
+      "max_output_bytes": 10000,
+      "memory_mb": 4096,
+      "cpu_seconds": 15,
+      "max_file_size_mb": 64,
+      "network_disabled": true,
+      "require_isolation": false,
+      "hidden_paths": []
+    },
+    "tool_transport": "in_process",
+    "percentile_method": "linear interpolation between closest ranks (numpy's default)",
+    "execution": {
+      "mode": "process",
+      "policy": {
+        "cpus": 1.0,
+        "memory_mb": 1024,
+        "pids": 256,
+        "tmp_mb": 512,
+        "timeout_seconds": 600.0,
+        "egress": []
+      }
+    }
+  },
+  "environments": [
+    {
+      "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+      "git_dirty": false,
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+      "logical_cpus": 4,
+      "usable_cpus": 4,
+      "cpu_quota_cores": null,
+      "memory_total_gib": 15.72,
+      "memory_limit_gib": null,
+      "virtualized": true,
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "6.18.44-fc-v51",
+      "python": "3.13.12",
+      "sandbox_network_isolated": true
+    },
+    {
+      "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+      "git_dirty": false,
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+      "logical_cpus": 4,
+      "usable_cpus": 4,
+      "cpu_quota_cores": null,
+      "memory_total_gib": 15.72,
+      "memory_limit_gib": null,
+      "virtualized": true,
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "6.18.44-fc-v51",
+      "python": "3.13.12",
+      "sandbox_network_isolated": true
+    },
+    {
+      "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+      "git_dirty": false,
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+      "logical_cpus": 4,
+      "usable_cpus": 4,
+      "cpu_quota_cores": null,
+      "memory_total_gib": 15.72,
+      "memory_limit_gib": null,
+      "virtualized": true,
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "6.18.44-fc-v51",
+      "python": "3.13.12",
+      "sandbox_network_isolated": true
+    },
+    {
+      "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+      "git_dirty": false,
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+      "logical_cpus": 4,
+      "usable_cpus": 4,
+      "cpu_quota_cores": null,
+      "memory_total_gib": 15.72,
+      "memory_limit_gib": null,
+      "virtualized": true,
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "6.18.44-fc-v51",
+      "python": "3.13.12",
+      "sandbox_network_isolated": true
+    },
+    {
+      "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+      "git_dirty": false,
+      "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+      "logical_cpus": 4,
+      "usable_cpus": 4,
+      "cpu_quota_cores": null,
+      "memory_total_gib": 15.72,
+      "memory_limit_gib": null,
+      "virtualized": true,
+      "os": "Ubuntu 24.04.4 LTS",
+      "kernel": "6.18.44-fc-v51",
+      "python": "3.13.12",
+      "sandbox_network_isolated": true
+    }
+  ],
+  "outcomes_identical": true,
+  "metrics": {
+    "batch_wall_clock_seconds": {
+      "median": 47.041716,
+      "min": 47.027163,
+      "max": 47.108959
+    },
+    "completion_tokens": {
+      "median": 70884.0,
+      "min": 70884.0,
+      "max": 70884.0
+    },
+    "counts.escalated": {
+      "median": 8.0,
+      "min": 8.0,
+      "max": 8.0
+    },
+    "counts.failed_harness": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "counts.failed_infra": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "counts.failed_task": {
+      "median": 4.0,
+      "min": 4.0,
+      "max": 4.0
+    },
+    "counts.jobs": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "counts.matched_expectation": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "counts.retries": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "counts.solved": {
+      "median": 60.0,
+      "min": 60.0,
+      "max": 60.0
+    },
+    "database.claim.calls": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "database.claim.max_seconds": {
+      "median": 0.006804,
+      "min": 0.005552,
+      "max": 0.008088
+    },
+    "database.claim.seconds": {
+      "median": 0.249415,
+      "min": 0.241945,
+      "max": 0.254953
+    },
+    "database.claim_empty.calls": {
+      "median": 142.0,
+      "min": 139.0,
+      "max": 156.0
+    },
+    "database.claim_empty.max_seconds": {
+      "median": 0.006761,
+      "min": 0.004849,
+      "max": 0.008443
+    },
+    "database.claim_empty.seconds": {
+      "median": 0.217509,
+      "min": 0.211179,
+      "max": 0.247644
+    },
+    "database.heartbeat.calls": {
+      "median": 4.0,
+      "min": 4.0,
+      "max": 4.0
+    },
+    "database.heartbeat.max_seconds": {
+      "median": 0.006052,
+      "min": 0.005287,
+      "max": 0.008862
+    },
+    "database.heartbeat.seconds": {
+      "median": 0.020375,
+      "min": 0.019535,
+      "max": 0.027145
+    },
+    "database.publish.calls": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "database.publish.max_seconds": {
+      "median": 0.011774,
+      "min": 0.011283,
+      "max": 0.015253
+    },
+    "database.publish.seconds": {
+      "median": 0.444189,
+      "min": 0.434022,
+      "max": 0.449351
+    },
+    "database.reap.calls": {
+      "median": 124.0,
+      "min": 122.0,
+      "max": 132.0
+    },
+    "database.reap.max_seconds": {
+      "median": 0.025935,
+      "min": 0.018576,
+      "max": 0.031471
+    },
+    "database.reap.seconds": {
+      "median": 0.331525,
+      "min": 0.327991,
+      "max": 0.372271
+    },
+    "database.start.calls": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "database.start.max_seconds": {
+      "median": 0.004559,
+      "min": 0.003335,
+      "max": 0.011454
+    },
+    "database.start.seconds": {
+      "median": 0.14875,
+      "min": 0.140234,
+      "max": 0.162844
+    },
+    "llm_calls": {
+      "median": 368.0,
+      "min": 368.0,
+      "max": 368.0
+    },
+    "prompt_tokens": {
+      "median": 364332.0,
+      "min": 364332.0,
+      "max": 364332.0
+    },
+    "queue_wait_seconds.max": {
+      "median": 41.879772,
+      "min": 41.656751,
+      "max": 41.940551
+    },
+    "queue_wait_seconds.mean": {
+      "median": 19.76755909722222,
+      "min": 19.662275430555557,
+      "max": 19.794137055555556
+    },
+    "queue_wait_seconds.n": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "queue_wait_seconds.p50": {
+      "median": 19.984064,
+      "min": 19.908607500000002,
+      "max": 20.140048
+    },
+    "queue_wait_seconds.p95": {
+      "median": 40.3179071,
+      "min": 40.1699615,
+      "max": 40.3498595
+    },
+    "queue_wait_seconds.p99": {
+      "median": 41.19340506,
+      "min": 41.078271400000006,
+      "max": 41.28328209
+    },
+    "resources.cpu_wait_fraction": {
+      "median": 0.0049,
+      "min": 0.0047,
+      "max": 0.0054
+    },
+    "resources.cpus": {
+      "median": 4.0,
+      "min": 4.0,
+      "max": 4.0
+    },
+    "resources.host_busy_cpu_seconds": {
+      "median": 54.53,
+      "min": 54.35,
+      "max": 55.13
+    },
+    "resources.host_busy_fraction": {
+      "median": 0.2874,
+      "min": 0.2849,
+      "max": 0.2897
+    },
+    "resources.host_steal_fraction": {
+      "median": 0.0051,
+      "min": 0.0049,
+      "max": 0.006
+    },
+    "resources.processes.api": {
+      "median": 1.29,
+      "min": 1.27,
+      "max": 1.3
+    },
+    "resources.processes.docker": {
+      "median": 0.03,
+      "min": 0.02,
+      "max": 0.04
+    },
+    "resources.processes.harness": {
+      "median": 0.97,
+      "min": 0.96,
+      "max": 0.99
+    },
+    "resources.processes.postgres": {
+      "median": 0.65,
+      "min": 0.62,
+      "max": 0.68
+    },
+    "resources.processes.workers": {
+      "median": 48.76,
+      "min": 48.05,
+      "max": 49.4
+    },
+    "resources.sample_seconds": {
+      "median": 0.5,
+      "min": 0.5,
+      "max": 0.5
+    },
+    "resources.window_seconds": {
+      "median": 47.143,
+      "min": 47.086,
+      "max": 47.249
+    },
+    "retry_wait_seconds": {
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "service_time_excluding_retry_waits_seconds.max": {
+      "median": 10.633033000000001,
+      "min": 10.621287,
+      "max": 10.670271
+    },
+    "service_time_excluding_retry_waits_seconds.mean": {
+      "median": 5.002802902777777,
+      "min": 4.993984319444444,
+      "max": 5.013975569444444
+    },
+    "service_time_excluding_retry_waits_seconds.n": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "service_time_excluding_retry_waits_seconds.p50": {
+      "median": 4.630963000000001,
+      "min": 4.594463,
+      "max": 4.6527829999999994
+    },
+    "service_time_excluding_retry_waits_seconds.p95": {
+      "median": 10.081294500000002,
+      "min": 10.055646950000003,
+      "max": 10.103132100000003
+    },
+    "service_time_excluding_retry_waits_seconds.p99": {
+      "median": 10.61857551,
+      "min": 10.584996030000001,
+      "max": 10.64306948
+    },
+    "service_time_seconds.max": {
+      "median": 10.633033000000001,
+      "min": 10.621287,
+      "max": 10.670271
+    },
+    "service_time_seconds.mean": {
+      "median": 5.002802902777777,
+      "min": 4.993984319444444,
+      "max": 5.013975569444444
+    },
+    "service_time_seconds.n": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "service_time_seconds.p50": {
+      "median": 4.630963000000001,
+      "min": 4.594463,
+      "max": 4.6527829999999994
+    },
+    "service_time_seconds.p95": {
+      "median": 10.081294500000002,
+      "min": 10.055646950000003,
+      "max": 10.103132100000003
+    },
+    "service_time_seconds.p99": {
+      "median": 10.61857551,
+      "min": 10.584996030000001,
+      "max": 10.64306948
+    },
+    "tasks_per_minute": {
+      "median": 91.83338464948855,
+      "min": 91.70230231578668,
+      "max": 91.8618033581996
+    },
+    "tokens_per_task.max": {
+      "median": 17375.0,
+      "min": 17375.0,
+      "max": 17375.0
+    },
+    "tokens_per_task.mean": {
+      "median": 6044.666666666667,
+      "min": 6044.666666666667,
+      "max": 6044.666666666667
+    },
+    "tokens_per_task.n": {
+      "median": 72.0,
+      "min": 72.0,
+      "max": 72.0
+    },
+    "tokens_per_task.p50": {
+      "median": 5081.0,
+      "min": 5081.0,
+      "max": 5081.0
+    },
+    "tokens_per_task.p95": {
+      "median": 15059.500000000013,
+      "min": 15059.500000000013,
+      "max": 15059.500000000013
+    },
+    "tokens_per_task.p99": {
+      "median": 17375.0,
+      "min": 17375.0,
+      "max": 17375.0
+    },
+    "utilization": {
+      "median": 0.9573898713742269,
+      "min": 0.9548772824718967,
+      "max": 0.9595684120898383
+    },
+    "utilization_bucket_seconds": {
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+    }
+  }
+}

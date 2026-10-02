@@ -1,0 +1,6334 @@
+{
+  "schema_version": 1,
+  "record": "trial",
+  "label": "scale-fleet-2w-container-replay-recorded",
+  "trial": 3,
+  "started_at": "2026-10-02T00:55:14+00:00",
+  "interrupted": null,
+  "config": {
+    "mode": "replay",
+    "latency": "recorded",
+    "executor": "fleet",
+    "workers": 2,
+    "topology": "single host: 2 fleet worker processes, the fleet api and PostgreSQL 16.13, all on this machine; each job in a container of its own",
+    "tasks": 72,
+    "seed": 1,
+    "taskset_version": "v1",
+    "taskset_digest": "207fa64b283eb781dbd0cc0f767089134f5f8d5bf1adbdeaaca576885ba95f3e",
+    "recordings_digest": "d5958d3fdd62ab5d4f4a84917e5557de723099940b9e46cc41f4cc47dbfe1574",
+    "provider": "replay",
+    "model": "qwen/qwen3.8-27b",
+    "agent_configs": {
+      "benchmark": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": false
+      },
+      "ticket": {
+        "max_iterations": 15,
+        "max_consecutive_malformed": 3,
+        "temperature": 0.0,
+        "max_tokens": 1024,
+        "include_initial_listing": true,
+        "require_verified_finish": true,
+        "allow_escalation": true
+      }
+    },
+    "sandbox_config": {
+      "timeout_seconds": 10.0,
+      "max_output_bytes": 10000,
+      "memory_mb": 4096,
+      "cpu_seconds": 15,
+      "max_file_size_mb": 64,
+      "network_disabled": true,
+      "require_isolation": false,
+      "hidden_paths": []
+    },
+    "tool_transport": "in_process",
+    "percentile_method": "linear interpolation between closest ranks (numpy's default)",
+    "execution": {
+      "mode": "container",
+      "policy": {
+        "cpus": 1.0,
+        "memory_mb": 1024,
+        "pids": 256,
+        "tmp_mb": 512,
+        "timeout_seconds": 600.0,
+        "egress": []
+      },
+      "image": "fleet-task:local",
+      "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69"
+    }
+  },
+  "environment": {
+    "git_sha": "f74eb3973d3f18b0431e63ce4d9d94106831c02b",
+    "git_dirty": false,
+    "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "logical_cpus": 4,
+    "usable_cpus": 4,
+    "cpu_quota_cores": null,
+    "memory_total_gib": 15.72,
+    "memory_limit_gib": null,
+    "virtualized": true,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.18.44-fc-v51",
+    "python": "3.13.12",
+    "sandbox_network_isolated": true
+  },
+  "metrics": {
+    "batch_wall_clock_seconds": 243.454349,
+    "tasks_per_minute": 17.74459983050046,
+    "queue_wait_seconds": {
+      "n": 72,
+      "mean": 118.05696706944445,
+      "p50": 119.8323715,
+      "p95": 225.88171365000002,
+      "p99": 235.88593766,
+      "max": 236.375095
+    },
+    "service_time_seconds": {
+      "n": 72,
+      "mean": 6.710650277777779,
+      "p50": 6.56775549999999,
+      "p95": 11.99656625,
+      "p99": 12.637114200000006,
+      "max": 12.656909000000013
+    },
+    "service_time_excluding_retry_waits_seconds": {
+      "n": 72,
+      "mean": 6.710650277777779,
+      "p50": 6.56775549999999,
+      "p95": 11.99656625,
+      "p99": 12.637114200000006,
+      "max": 12.656909000000013
+    },
+    "utilization": 0.992315031513362,
+    "utilization_bucket_seconds": 1.0,
+    "utilization_timeline": [
+      0.8443,
+      1.0,
+      1.0,
+      1.0,
+      0.9882,
+      0.9879,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9891,
+      0.9873,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9892,
+      1.0,
+      1.0,
+      1.0,
+      0.9888,
+      1.0,
+      0.9902,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9877,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.989,
+      0.9895,
+      1.0,
+      0.9984,
+      1.0,
+      1.0,
+      0.984,
+      1.0,
+      1.0,
+      1.0,
+      0.9868,
+      1.0,
+      1.0,
+      1.0,
+      0.9907,
+      0.989,
+      0.9988,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9906,
+      1.0,
+      0.9881,
+      1.0,
+      1.0,
+      1.0,
+      0.9963,
+      0.9908,
+      1.0,
+      1.0,
+      1.0,
+      0.9883,
+      1.0,
+      0.99,
+      1.0,
+      1.0,
+      1.0,
+      0.9906,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9888,
+      1.0,
+      0.9913,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9897,
+      1.0,
+      0.9898,
+      1.0,
+      1.0,
+      0.9878,
+      1.0,
+      0.9897,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9893,
+      1.0,
+      1.0,
+      1.0,
+      0.9907,
+      1.0,
+      1.0,
+      0.9876,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9909,
+      1.0,
+      0.9896,
+      1.0,
+      0.998,
+      0.9982,
+      1.0,
+      0.9984,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9784,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9891,
+      0.9908,
+      1.0,
+      0.9988,
+      1.0,
+      0.9888,
+      1.0,
+      1.0,
+      0.9885,
+      1.0,
+      1.0,
+      1.0,
+      0.9863,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9909,
+      0.9881,
+      0.9982,
+      1.0,
+      1.0,
+      1.0,
+      0.991,
+      1.0,
+      1.0,
+      1.0,
+      0.9899,
+      0.9914,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.978,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9888,
+      1.0,
+      0.9984,
+      1.0,
+      1.0,
+      1.0,
+      0.9903,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9897,
+      0.9908,
+      1.0,
+      0.9987,
+      1.0,
+      0.998,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9877,
+      0.9882,
+      1.0,
+      1.0,
+      1.0,
+      0.9842,
+      1.0,
+      1.0,
+      0.9906,
+      1.0,
+      1.0,
+      1.0,
+      0.9897,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9817,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.9898,
+      1.0,
+      0.9901,
+      1.0,
+      1.0,
+      1.0,
+      0.9874,
+      0.9856,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.6852,
+      0.5,
+      0.5
+    ],
+    "counts": {
+      "jobs": 72,
+      "solved": 60,
+      "escalated": 8,
+      "failed_task": 4,
+      "failed_infra": 0,
+      "failed_harness": 0,
+      "retries": 0,
+      "matched_expectation": 72
+    },
+    "tokens_per_task": {
+      "n": 72,
+      "mean": 6044.666666666667,
+      "p50": 5081.0,
+      "p95": 15059.500000000013,
+      "p99": 17375.0,
+      "max": 17375.0
+    },
+    "prompt_tokens": 364332,
+    "completion_tokens": 70884,
+    "llm_calls": 368,
+    "retry_wait_seconds": 0.0,
+    "cost_usd": null
+  },
+  "jobs": [
+    {
+      "job_id": "fix_average#0",
+      "task_id": "fix_average",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.085348,
+      "finished_at": 4.914335,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.578125,
+          "cpu_seconds": 1.6974479999999998,
+          "max_child_rss_mb": 52.03515625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.732,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "43275aec8ec4",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1483
+      }
+    },
+    {
+      "job_id": "factorial#0",
+      "task_id": "factorial",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 0.226075,
+      "finished_at": 5.342239,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.99609375,
+          "cpu_seconds": 1.6631109999999998,
+          "max_child_rss_mb": 52.5625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.019,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "c8c17a0584cf",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1480
+      }
+    },
+    {
+      "job_id": "merge_sorted#0",
+      "task_id": "merge_sorted",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 4.938025,
+      "finished_at": 11.167592,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.546875,
+          "cpu_seconds": 1.678471,
+          "max_child_rss_mb": 51.98828125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.155,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "a4be27b6c659",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "count_vowels#0",
+      "task_id": "count_vowels",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 5.366458,
+      "finished_at": 12.768878,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.36328125,
+          "cpu_seconds": 1.7545119999999998,
+          "max_child_rss_mb": 52.0546875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.323,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "91a270c4f2e7",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1485
+      }
+    },
+    {
+      "job_id": "lru_cache#0",
+      "task_id": "lru_cache",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 11.1893,
+      "finished_at": 20.275301,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.58203125,
+          "cpu_seconds": 1.8211460000000002,
+          "max_child_rss_mb": 52.0078125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 9.009,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "fc1dc9839ecf",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1487
+      }
+    },
+    {
+      "job_id": "topological_sort#0",
+      "task_id": "topological_sort",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 12.794351,
+      "finished_at": 24.265754,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8828125,
+          "cpu_seconds": 1.747741,
+          "max_child_rss_mb": 52.609375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.378,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "a4fd435b0473",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1660
+      }
+    },
+    {
+      "job_id": "two_sum#0",
+      "task_id": "two_sum",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 20.296905,
+      "finished_at": 26.560926,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.62109375,
+          "cpu_seconds": 1.706792,
+          "max_child_rss_mb": 52.2265625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.183,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "0de4317bbc59",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1475
+      }
+    },
+    {
+      "job_id": "roman_to_int#0",
+      "task_id": "roman_to_int",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 24.288067,
+      "finished_at": 32.019351,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.87109375,
+          "cpu_seconds": 1.816499,
+          "max_child_rss_mb": 52.46875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.657,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "67b393368e03",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "fizzbuzz#0",
+      "task_id": "fizzbuzz",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 26.58054,
+      "finished_at": 39.139165,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.64453125,
+          "cpu_seconds": 2.3468050000000003,
+          "max_child_rss_mb": 52.0546875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.476,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "2e7fed03f3e9",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2252
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#0",
+      "task_id": "fibonacci_fast",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 32.044,
+      "finished_at": 38.945833,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.3359375,
+          "cpu_seconds": 1.816624,
+          "max_child_rss_mb": 52.67578125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.813,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "a0d9d40c3647",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1475
+      }
+    },
+    {
+      "job_id": "valid_parentheses#0",
+      "task_id": "valid_parentheses",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 38.967872,
+      "finished_at": 44.808351,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.40625,
+          "cpu_seconds": 1.729093,
+          "max_child_rss_mb": 51.84765625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.764,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "cfdf2e1b8922",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1285
+      }
+    },
+    {
+      "job_id": "TCK-04#0",
+      "task_id": "TCK-04",
+      "repeat": 0,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 39.160245,
+      "finished_at": 41.563864,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.44921875,
+          "cpu_seconds": 0.43719199999999997,
+          "max_child_rss_mb": 51.92578125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 2.327,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ebbc7f9097d6",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 920
+      }
+    },
+    {
+      "job_id": "add_numbers#0",
+      "task_id": "add_numbers",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 41.567116,
+      "finished_at": 48.223351,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.50390625,
+          "cpu_seconds": 2.42092,
+          "max_child_rss_mb": 52.09765625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.581,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "10fe346920af",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1855
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#0",
+      "task_id": "multi_file_shapes",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 44.840309,
+      "finished_at": 52.561439,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.6953125,
+          "cpu_seconds": 1.7557070000000001,
+          "max_child_rss_mb": 52.171875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.644,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "463e5339db28",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2240
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#0",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 48.249748,
+      "finished_at": 53.261238,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.484375,
+          "cpu_seconds": 1.6671490000000002,
+          "max_child_rss_mb": 51.953125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.94,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "e51b7f128734",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1490
+      }
+    },
+    {
+      "job_id": "TCK-08#0",
+      "task_id": "TCK-08",
+      "repeat": 0,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 52.579968,
+      "finished_at": 54.394415,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.08203125,
+          "cpu_seconds": 0.49577699999999997,
+          "max_child_rss_mb": 51.9375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 1.741,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1e9fe6ac0c11",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 727
+      }
+    },
+    {
+      "job_id": "fix_binary_search#0",
+      "task_id": "fix_binary_search",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 53.283199,
+      "finished_at": 61.516571,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.18359375,
+          "cpu_seconds": 1.740317,
+          "max_child_rss_mb": 51.9140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.148,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "2c948d7816a2",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1477
+      }
+    },
+    {
+      "job_id": "reverse_string#0",
+      "task_id": "reverse_string",
+      "repeat": 0,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 54.396833,
+      "finished_at": 59.580447,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.39453125,
+          "cpu_seconds": 1.8446879999999999,
+          "max_child_rss_mb": 51.9765625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.11,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "b31a5e5b74c7",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1294
+      }
+    },
+    {
+      "job_id": "merge_sorted#1",
+      "task_id": "merge_sorted",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 59.599284,
+      "finished_at": 65.992652,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.0234375,
+          "cpu_seconds": 1.845491,
+          "max_child_rss_mb": 52.6171875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.317,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8e1b076ab5dd",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "lru_cache#1",
+      "task_id": "lru_cache",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 61.540405,
+      "finished_at": 70.591006,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.12109375,
+          "cpu_seconds": 1.7581470000000001,
+          "max_child_rss_mb": 52.609375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.978,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "a273b5d7c320",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1486
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#1",
+      "task_id": "fibonacci_fast",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 66.018437,
+      "finished_at": 72.952845,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8515625,
+          "cpu_seconds": 1.830785,
+          "max_child_rss_mb": 52.1875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.85,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8c47c9786f75",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1471
+      }
+    },
+    {
+      "job_id": "valid_parentheses#1",
+      "task_id": "valid_parentheses",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 70.614416,
+      "finished_at": 76.419884,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.97265625,
+          "cpu_seconds": 1.741264,
+          "max_child_rss_mb": 52.68359375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.727,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "6d133f09d517",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1288
+      }
+    },
+    {
+      "job_id": "fix_binary_search#1",
+      "task_id": "fix_binary_search",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 72.972928,
+      "finished_at": 81.185296,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.35546875,
+          "cpu_seconds": 1.7232949999999998,
+          "max_child_rss_mb": 52.06640625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.14,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "9419130f590b",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1488
+      }
+    },
+    {
+      "job_id": "add_numbers#1",
+      "task_id": "add_numbers",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 76.438699,
+      "finished_at": 83.052623,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.58984375,
+          "cpu_seconds": 2.3934009999999994,
+          "max_child_rss_mb": 52.21484375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.543,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "fc39ebe89339",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1866
+      }
+    },
+    {
+      "job_id": "topological_sort#1",
+      "task_id": "topological_sort",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 81.207632,
+      "finished_at": 92.547116,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.63671875,
+          "cpu_seconds": 1.717043,
+          "max_child_rss_mb": 52.08984375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.257,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "687b8fe7947f",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1663
+      }
+    },
+    {
+      "job_id": "roman_to_int#1",
+      "task_id": "roman_to_int",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 83.070088,
+      "finished_at": 90.779299,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.5859375,
+          "cpu_seconds": 1.766197,
+          "max_child_rss_mb": 52.1875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.644,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ca0622e74c93",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1472
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#1",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 90.799994,
+      "finished_at": 95.876626,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.91015625,
+          "cpu_seconds": 1.674979,
+          "max_child_rss_mb": 52.50390625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.994,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "4022732913da",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1484
+      }
+    },
+    {
+      "job_id": "reverse_string#1",
+      "task_id": "reverse_string",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 92.567469,
+      "finished_at": 97.640091,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.82421875,
+          "cpu_seconds": 1.759959,
+          "max_child_rss_mb": 52.4375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.998,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "e8a21ea04e3d",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1281
+      }
+    },
+    {
+      "job_id": "fizzbuzz#1",
+      "task_id": "fizzbuzz",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 95.901097,
+      "finished_at": 108.530126,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.63671875,
+          "cpu_seconds": 2.452314,
+          "max_child_rss_mb": 51.921875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.556,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "04a1181f1404",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2241
+      }
+    },
+    {
+      "job_id": "two_sum#1",
+      "task_id": "two_sum",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 97.660715,
+      "finished_at": 104.038733,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.734375,
+          "cpu_seconds": 1.7862359999999997,
+          "max_child_rss_mb": 52.2265625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.308,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "f17b5da288c9",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1483
+      }
+    },
+    {
+      "job_id": "count_vowels#1",
+      "task_id": "count_vowels",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 104.060065,
+      "finished_at": 111.599477,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8828125,
+          "cpu_seconds": 1.855467,
+          "max_child_rss_mb": 52.48828125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.462,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "c6ea2c1ce409",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1475
+      }
+    },
+    {
+      "job_id": "TCK-04#1",
+      "task_id": "TCK-04",
+      "repeat": 1,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 108.548661,
+      "finished_at": 111.042002,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.45703125,
+          "cpu_seconds": 0.516353,
+          "max_child_rss_mb": 51.8125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 2.415,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ba822c62aa31",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 905
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#1",
+      "task_id": "multi_file_shapes",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 111.04507,
+      "finished_at": 118.845698,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.37109375,
+          "cpu_seconds": 1.8390870000000001,
+          "max_child_rss_mb": 51.9375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.705,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8bdff874fbb9",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2239
+      }
+    },
+    {
+      "job_id": "factorial#1",
+      "task_id": "factorial",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 111.621285,
+      "finished_at": 116.897086,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.08984375,
+          "cpu_seconds": 1.772745,
+          "max_child_rss_mb": 52.69140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.177,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "328b5a5d0ff7",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "fix_average#1",
+      "task_id": "fix_average",
+      "repeat": 1,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 116.915262,
+      "finished_at": 121.839395,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.58203125,
+          "cpu_seconds": 1.8493959999999998,
+          "max_child_rss_mb": 52.0625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.851,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "a6878cc60832",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1481
+      }
+    },
+    {
+      "job_id": "TCK-08#1",
+      "task_id": "TCK-08",
+      "repeat": 1,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 118.866457,
+      "finished_at": 120.794263,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.3671875,
+          "cpu_seconds": 0.5130429999999999,
+          "max_child_rss_mb": 52.3671875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 1.858,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "6ed798b0cd34",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 728
+      }
+    },
+    {
+      "job_id": "TCK-04#2",
+      "task_id": "TCK-04",
+      "repeat": 2,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 120.798286,
+      "finished_at": 123.288024,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.0234375,
+          "cpu_seconds": 0.442878,
+          "max_child_rss_mb": 52.62890625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 2.399,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "c0e2ea527172",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 908
+      }
+    },
+    {
+      "job_id": "lru_cache#2",
+      "task_id": "lru_cache",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 121.843002,
+      "finished_at": 130.886411,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.01171875,
+          "cpu_seconds": 1.7468219999999999,
+          "max_child_rss_mb": 52.61328125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.971,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ccab9c8c5ae1",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1488
+      }
+    },
+    {
+      "job_id": "roman_to_int#2",
+      "task_id": "roman_to_int",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 123.291298,
+      "finished_at": 130.971242,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.984375,
+          "cpu_seconds": 1.75692,
+          "max_child_rss_mb": 52.5859375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.598,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "111a45c92873",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1473
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#2",
+      "task_id": "fibonacci_fast",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 130.907884,
+      "finished_at": 137.709004,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.00390625,
+          "cpu_seconds": 1.739509,
+          "max_child_rss_mb": 52.609375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.731,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "0479a61a0d50",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "reverse_string#2",
+      "task_id": "reverse_string",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 130.993003,
+      "finished_at": 136.08147,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.68359375,
+          "cpu_seconds": 1.798383,
+          "max_child_rss_mb": 52.140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.014,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "e1f95bf472fd",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1283
+      }
+    },
+    {
+      "job_id": "valid_parentheses#2",
+      "task_id": "valid_parentheses",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 136.103186,
+      "finished_at": 141.908755,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.96484375,
+          "cpu_seconds": 1.7156219999999998,
+          "max_child_rss_mb": 52.55078125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.732,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "e6b7dac24eb5",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1298
+      }
+    },
+    {
+      "job_id": "TCK-08#2",
+      "task_id": "TCK-08",
+      "repeat": 2,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 137.72734,
+      "finished_at": 139.514975,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8671875,
+          "cpu_seconds": 0.456176,
+          "max_child_rss_mb": 52.68359375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 1.711,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "2c92a7a28a4a",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 719
+      }
+    },
+    {
+      "job_id": "fix_average#2",
+      "task_id": "fix_average",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 139.51734,
+      "finished_at": 144.296409,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.80078125,
+          "cpu_seconds": 1.73971,
+          "max_child_rss_mb": 52.53125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.71,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "fc957843f1da",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1471
+      }
+    },
+    {
+      "job_id": "add_numbers#2",
+      "task_id": "add_numbers",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 141.931196,
+      "finished_at": 148.555006,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.50390625,
+          "cpu_seconds": 2.414733,
+          "max_child_rss_mb": 51.96484375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.548,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "0281604e6c68",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1856
+      }
+    },
+    {
+      "job_id": "fizzbuzz#2",
+      "task_id": "fizzbuzz",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 144.319324,
+      "finished_at": 156.976233,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.5,
+          "cpu_seconds": 2.430429,
+          "max_child_rss_mb": 52.19140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.577,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8764a260f58b",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2236
+      }
+    },
+    {
+      "job_id": "count_vowels#2",
+      "task_id": "count_vowels",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 148.58243,
+      "finished_at": 155.971235,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.3125,
+          "cpu_seconds": 1.7202030000000001,
+          "max_child_rss_mb": 52.65234375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.318,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "def3fb82800e",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1482
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#2",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 155.989496,
+      "finished_at": 161.070443,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.17578125,
+          "cpu_seconds": 1.688429,
+          "max_child_rss_mb": 52.6328125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.01,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "3d6f8ab3aa27",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1483
+      }
+    },
+    {
+      "job_id": "fix_binary_search#2",
+      "task_id": "fix_binary_search",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 157.003626,
+      "finished_at": 165.174112,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.0078125,
+          "cpu_seconds": 1.720183,
+          "max_child_rss_mb": 52.61328125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.093,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "3499453237eb",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1477
+      }
+    },
+    {
+      "job_id": "factorial#2",
+      "task_id": "factorial",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 161.088507,
+      "finished_at": 166.216364,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.43359375,
+          "cpu_seconds": 1.7093909999999999,
+          "max_child_rss_mb": 52.140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.061,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1035bec0d0e0",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1482
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#2",
+      "task_id": "multi_file_shapes",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 165.194236,
+      "finished_at": 172.798639,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.66015625,
+          "cpu_seconds": 1.68118,
+          "max_child_rss_mb": 52.26171875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.535,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "7ba518feef4e",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2232
+      }
+    },
+    {
+      "job_id": "two_sum#2",
+      "task_id": "two_sum",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 166.233571,
+      "finished_at": 172.495445,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.37109375,
+          "cpu_seconds": 1.6799819999999999,
+          "max_child_rss_mb": 51.9765625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.189,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "911a31cd0f21",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1485
+      }
+    },
+    {
+      "job_id": "merge_sorted#2",
+      "task_id": "merge_sorted",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 172.520714,
+      "finished_at": 178.820579,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.60546875,
+          "cpu_seconds": 1.760497,
+          "max_child_rss_mb": 51.921875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.224,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "71663bf4c630",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "topological_sort#2",
+      "task_id": "topological_sort",
+      "repeat": 2,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 172.817319,
+      "finished_at": 184.260217,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.61328125,
+          "cpu_seconds": 1.7760369999999999,
+          "max_child_rss_mb": 51.96484375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.367,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "9d5df94502c6",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1673
+      }
+    },
+    {
+      "job_id": "TCK-08#3",
+      "task_id": "TCK-08",
+      "repeat": 3,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 178.842992,
+      "finished_at": 180.601855,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 1,
+      "llm_calls": 1,
+      "prompt_tokens": 534,
+      "completion_tokens": 260,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.23046875,
+          "cpu_seconds": 0.442137,
+          "max_child_rss_mb": 52.06640625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 1.673,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "7a73cdc5fbf1",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 720
+      }
+    },
+    {
+      "job_id": "fizzbuzz#3",
+      "task_id": "fizzbuzz",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 180.605021,
+      "finished_at": 193.165477,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 15282,
+      "completion_tokens": 2093,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.30078125,
+          "cpu_seconds": 2.3564809999999996,
+          "max_child_rss_mb": 51.88671875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 12.492,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ea4d0a4638a2",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2253
+      }
+    },
+    {
+      "job_id": "multi_file_shapes#3",
+      "task_id": "multi_file_shapes",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 184.279666,
+      "finished_at": 192.168285,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 9,
+      "llm_calls": 9,
+      "prompt_tokens": 7412,
+      "completion_tokens": 784,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.26171875,
+          "cpu_seconds": 1.852228,
+          "max_child_rss_mb": 51.828125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.807,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "edcafca7b842",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 2231
+      }
+    },
+    {
+      "job_id": "fix_average#3",
+      "task_id": "fix_average",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 192.188866,
+      "finished_at": 197.014805,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3528,
+      "completion_tokens": 510,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.171875,
+          "cpu_seconds": 1.771456,
+          "max_child_rss_mb": 52.59375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.755,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1f500901a1c5",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1470
+      }
+    },
+    {
+      "job_id": "TCK-04#3",
+      "task_id": "TCK-04",
+      "repeat": 3,
+      "kind": "ticket",
+      "expected": "escalate",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 193.18396,
+      "finished_at": 195.564052,
+      "outcome": "escalated",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "escalated",
+      "iterations": 2,
+      "llm_calls": 2,
+      "prompt_tokens": 1134,
+      "completion_tokens": 220,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.8984375,
+          "cpu_seconds": 0.42362099999999997,
+          "max_child_rss_mb": 52.62890625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 2.305,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "d0f6b2e400da",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 919
+      }
+    },
+    {
+      "job_id": "lru_cache#3",
+      "task_id": "lru_cache",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 195.566712,
+      "finished_at": 204.565054,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 6624,
+      "completion_tokens": 1883,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.4921875,
+          "cpu_seconds": 1.7133859999999999,
+          "max_child_rss_mb": 52.11328125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.919,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "5a43e76bcf80",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1487
+      }
+    },
+    {
+      "job_id": "merge_sorted#3",
+      "task_id": "merge_sorted",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 197.018807,
+      "finished_at": 203.241139,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4289,
+      "completion_tokens": 952,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.2734375,
+          "cpu_seconds": 1.704558,
+          "max_child_rss_mb": 52.1484375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.146,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "a846b8f549e8",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "unsatisfiable_spec#3",
+      "task_id": "unsatisfiable_spec",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "fail",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 203.265728,
+      "finished_at": 208.623968,
+      "outcome": "failed",
+      "failure_mode": "wrong_solution",
+      "failure_kind": "task",
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3120,
+      "completion_tokens": 413,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.18359375,
+          "cpu_seconds": 1.8750369999999998,
+          "max_child_rss_mb": 52.65234375
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.261,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "1dbe5aa31fe8",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1494
+      }
+    },
+    {
+      "job_id": "two_sum#3",
+      "task_id": "two_sum",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 204.588725,
+      "finished_at": 211.110312,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4084,
+      "completion_tokens": 837,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.95703125,
+          "cpu_seconds": 1.927652,
+          "max_child_rss_mb": 52.66796875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.448,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "67efa9e3dd94",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1476
+      }
+    },
+    {
+      "job_id": "add_numbers#3",
+      "task_id": "add_numbers",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 208.655565,
+      "finished_at": 215.304963,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 7,
+      "llm_calls": 7,
+      "prompt_tokens": 6302,
+      "completion_tokens": 778,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.4375,
+          "cpu_seconds": 2.415496,
+          "max_child_rss_mb": 52.14453125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.566,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "8aaf83719445",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1852
+      }
+    },
+    {
+      "job_id": "topological_sort#3",
+      "task_id": "topological_sort",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 211.129066,
+      "finished_at": 222.665766,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 6,
+      "llm_calls": 6,
+      "prompt_tokens": 10454,
+      "completion_tokens": 2711,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.78125,
+          "cpu_seconds": 1.8716890000000002,
+          "max_child_rss_mb": 52.47265625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 11.462,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "9e1f44c5e511",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1670
+      }
+    },
+    {
+      "job_id": "count_vowels#3",
+      "task_id": "count_vowels",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 215.325603,
+      "finished_at": 222.73135,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3851,
+      "completion_tokens": 739,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.09765625,
+          "cpu_seconds": 1.735374,
+          "max_child_rss_mb": 52.453125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.332,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ee2da07e7e91",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "fix_binary_search#3",
+      "task_id": "fix_binary_search",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 222.69245,
+      "finished_at": 231.052075,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5171,
+      "completion_tokens": 1269,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.49609375,
+          "cpu_seconds": 1.774116,
+          "max_child_rss_mb": 52.0625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 8.28,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "fcdceac9d1f9",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1474
+      }
+    },
+    {
+      "job_id": "fibonacci_fast#3",
+      "task_id": "fibonacci_fast",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 222.7413,
+      "finished_at": 229.699663,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 4477,
+      "completion_tokens": 982,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.85546875,
+          "cpu_seconds": 1.802356,
+          "max_child_rss_mb": 52.29296875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 6.866,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "858999fb609b",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1476
+      }
+    },
+    {
+      "job_id": "valid_parentheses#3",
+      "task_id": "valid_parentheses",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 229.719997,
+      "finished_at": 235.660879,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 3769,
+      "completion_tokens": 950,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 52.43359375,
+          "cpu_seconds": 1.8418679999999998,
+          "max_child_rss_mb": 51.875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.867,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "ca3c429481d1",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1293
+      }
+    },
+    {
+      "job_id": "factorial#3",
+      "task_id": "factorial",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 231.071854,
+      "finished_at": 236.346257,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 3496,
+      "completion_tokens": 581,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.171875,
+          "cpu_seconds": 1.77054,
+          "max_child_rss_mb": 52.76171875
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 5.187,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "f6121f708e4e",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1471
+      }
+    },
+    {
+      "job_id": "roman_to_int#3",
+      "task_id": "roman_to_int",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w0",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 235.686141,
+      "finished_at": 243.454349,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 5,
+      "llm_calls": 5,
+      "prompt_tokens": 5046,
+      "completion_tokens": 1304,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.09765625,
+          "cpu_seconds": 1.796887,
+          "max_child_rss_mb": 52.69140625
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 7.694,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "6aa513d26029",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1477
+      }
+    },
+    {
+      "job_id": "reverse_string#3",
+      "task_id": "reverse_string",
+      "repeat": 3,
+      "kind": "benchmark",
+      "expected": "solve",
+      "worker": "w1",
+      "attempts": 1,
+      "submitted_at": 0.0,
+      "claimed_at": 236.375095,
+      "finished_at": 241.370369,
+      "outcome": "solved",
+      "failure_mode": null,
+      "failure_kind": null,
+      "matched_expectation": true,
+      "termination_reason": "finished",
+      "iterations": 4,
+      "llm_calls": 4,
+      "prompt_tokens": 2510,
+      "completion_tokens": 455,
+      "retry_wait_seconds": 0.0,
+      "divergence": null,
+      "execution": {
+        "mode": "container",
+        "image": "fleet-task:local",
+        "usage": {
+          "max_rss_mb": 53.01171875,
+          "cpu_seconds": 1.713153,
+          "max_child_rss_mb": 52.61328125
+        },
+        "policy": {
+          "cpus": 1.0,
+          "pids": 256,
+          "egress": [],
+          "tmp_mb": 512,
+          "memory_mb": 1024,
+          "timeout_seconds": 600.0
+        },
+        "network": "none",
+        "seconds": 4.906,
+        "image_id": "sha256:9e32697053b73b4910e1cce599d0fd8b4adff14a9c9dedc505e34b1f53a89b69",
+        "container": "f78cd69b58e4",
+        "exit_code": 0,
+        "timed_out": false,
+        "oom_killed": false,
+        "stdout_bytes": 1285
+      }
+    }
+  ],
+  "resources": {
+    "window_seconds": 243.584,
+    "cpus": 4,
+    "sample_seconds": 0.5,
+    "host_busy_cpu_seconds": 198.82,
+    "host_busy_fraction": 0.2033,
+    "host_steal_fraction": 0.0051,
+    "cpu_wait_fraction": 0.009,
+    "processes": {
+      "workers": 1.61,
+      "api": 6.72,
+      "postgres": 2.1,
+      "docker": 12.74,
+      "harness": 5.09
+    },
+    "timeline": [
+      [
+        0.509,
+        0.402,
+        4
+      ],
+      [
+        1.01,
+        0.5147,
+        3
+      ],
+      [
+        1.511,
+        0.1045,
+        1
+      ],
+      [
+        2.012,
+        0.0249,
+        1
+      ],
+      [
+        2.513,
+        0.0149,
+        1
+      ],
+      [
+        3.014,
+        0.07,
+        2
+      ],
+      [
+        3.515,
+        0.2786,
+        3
+      ],
+      [
+        4.016,
+        0.3137,
+        2
+      ],
+      [
+        4.517,
+        0.2687,
+        2
+      ],
+      [
+        5.019,
+        0.52,
+        7
+      ],
+      [
+        5.52,
+        0.5389,
+        3
+      ],
+      [
+        6.021,
+        0.4541,
+        2
+      ],
+      [
+        6.523,
+        0.1436,
+        1
+      ],
+      [
+        7.024,
+        0.02,
+        1
+      ],
+      [
+        7.525,
+        0.0248,
+        1
+      ],
+      [
+        8.027,
+        0.015,
+        1
+      ],
+      [
+        8.528,
+        0.0248,
+        1
+      ],
+      [
+        9.028,
+        0.0101,
+        1
+      ],
+      [
+        9.529,
+        0.1881,
+        2
+      ],
+      [
+        10.03,
+        0.1841,
+        1
+      ],
+      [
+        10.531,
+        0.3186,
+        3
+      ],
+      [
+        11.033,
+        0.4216,
+        2
+      ],
+      [
+        11.534,
+        0.2959,
+        2
+      ],
+      [
+        12.034,
+        0.3186,
+        3
+      ],
+      [
+        12.535,
+        0.3512,
+        2
+      ],
+      [
+        13.036,
+        0.2857,
+        3
+      ],
+      [
+        13.538,
+        0.2673,
+        2
+      ],
+      [
+        14.039,
+        0.1414,
+        1
+      ],
+      [
+        14.54,
+        0.025,
+        1
+      ],
+      [
+        15.041,
+        0.0151,
+        1
+      ],
+      [
+        15.542,
+        0.0343,
+        1
+      ],
+      [
+        16.043,
+        0.0248,
+        1
+      ],
+      [
+        16.544,
+        0.0249,
+        2
+      ],
+      [
+        17.045,
+        0.0198,
+        1
+      ],
+      [
+        17.546,
+        0.0151,
+        1
+      ],
+      [
+        18.046,
+        0.0299,
+        2
+      ],
+      [
+        18.547,
+        0.2786,
+        2
+      ],
+      [
+        19.048,
+        0.0936,
+        1
+      ],
+      [
+        19.55,
+        0.0896,
+        2
+      ],
+      [
+        20.051,
+        0.2723,
+        2
+      ],
+      [
+        20.552,
+        0.301,
+        2
+      ],
+      [
+        21.053,
+        0.2687,
+        2
+      ],
+      [
+        21.553,
+        0.099,
+        1
+      ],
+      [
+        22.054,
+        0.2537,
+        2
+      ],
+      [
+        22.555,
+        0.1194,
+        1
+      ],
+      [
+        23.057,
+        0.0199,
+        1
+      ],
+      [
+        23.557,
+        0.0891,
+        3
+      ],
+      [
+        24.058,
+        0.2637,
+        2
+      ],
+      [
+        24.559,
+        0.5127,
+        3
+      ],
+      [
+        25.059,
+        0.3725,
+        2
+      ],
+      [
+        25.561,
+        0.1244,
+        1
+      ],
+      [
+        26.062,
+        0.2039,
+        2
+      ],
+      [
+        26.563,
+        0.2687,
+        2
+      ],
+      [
+        27.064,
+        0.2732,
+        2
+      ],
+      [
+        27.565,
+        0.2463,
+        1
+      ],
+      [
+        28.066,
+        0.015,
+        1
+      ],
+      [
+        28.567,
+        0.025,
+        1
+      ],
+      [
+        29.068,
+        0.01,
+        1
+      ],
+      [
+        29.57,
+        0.0296,
+        1
+      ],
+      [
+        30.07,
+        0.1493,
+        2
+      ],
+      [
+        30.572,
+        0.2315,
+        1
+      ],
+      [
+        31.073,
+        0.1465,
+        2
+      ],
+      [
+        31.574,
+        0.4279,
+        2
+      ],
+      [
+        32.075,
+        0.2714,
+        5
+      ],
+      [
+        32.575,
+        0.3,
+        2
+      ],
+      [
+        33.076,
+        0.2587,
+        1
+      ],
+      [
+        33.578,
+        0.02,
+        1
+      ],
+      [
+        34.079,
+        0.0248,
+        1
+      ],
+      [
+        34.581,
+        0.0101,
+        1
+      ],
+      [
+        35.082,
+        0.0151,
+        1
+      ],
+      [
+        35.584,
+        0.0941,
+        1
+      ],
+      [
+        36.086,
+        0.2414,
+        2
+      ],
+      [
+        36.587,
+        0.11,
+        1
+      ],
+      [
+        37.089,
+        0.1294,
+        2
+      ],
+      [
+        37.589,
+        0.2696,
+        1
+      ],
+      [
+        38.093,
+        0.015,
+        1
+      ],
+      [
+        38.594,
+        0.4476,
+        3
+      ],
+      [
+        39.095,
+        0.5473,
+        3
+      ],
+      [
+        39.597,
+        0.5419,
+        3
+      ],
+      [
+        40.098,
+        0.4406,
+        1
+      ],
+      [
+        40.599,
+        0.025,
+        1
+      ],
+      [
+        41.1,
+        0.0297,
+        1
+      ],
+      [
+        41.601,
+        0.1429,
+        1
+      ],
+      [
+        42.101,
+        0.2843,
+        2
+      ],
+      [
+        42.604,
+        0.3218,
+        2
+      ],
+      [
+        43.105,
+        0.2864,
+        2
+      ],
+      [
+        43.606,
+        0.0347,
+        1
+      ],
+      [
+        44.107,
+        0.1127,
+        2
+      ],
+      [
+        44.609,
+        0.4532,
+        3
+      ],
+      [
+        45.11,
+        0.4242,
+        2
+      ],
+      [
+        45.611,
+        0.2624,
+        2
+      ],
+      [
+        46.113,
+        0.1393,
+        1
+      ],
+      [
+        46.614,
+        0.19,
+        2
+      ],
+      [
+        47.115,
+        0.1782,
+        1
+      ],
+      [
+        47.617,
+        0.1287,
+        2
+      ],
+      [
+        48.118,
+        0.2808,
+        2
+      ],
+      [
+        48.619,
+        0.3081,
+        2
+      ],
+      [
+        49.119,
+        0.2794,
+        1
+      ],
+      [
+        49.62,
+        0.0101,
+        1
+      ],
+      [
+        50.122,
+        0.0249,
+        1
+      ],
+      [
+        50.623,
+        0.0936,
+        2
+      ],
+      [
+        51.124,
+        0.26,
+        2
+      ],
+      [
+        51.625,
+        0.1089,
+        2
+      ],
+      [
+        52.128,
+        0.4527,
+        3
+      ],
+      [
+        52.63,
+        0.3663,
+        4
+      ],
+      [
+        53.132,
+        0.5388,
+        3
+      ],
+      [
+        53.633,
+        0.5,
+        2
+      ],
+      [
+        54.135,
+        0.2611,
+        2
+      ],
+      [
+        54.636,
+        0.3134,
+        4
+      ],
+      [
+        55.136,
+        0.26,
+        2
+      ],
+      [
+        55.637,
+        0.1386,
+        1
+      ],
+      [
+        56.139,
+        0.0249,
+        1
+      ],
+      [
+        56.64,
+        0.015,
+        1
+      ],
+      [
+        57.141,
+        0.0101,
+        1
+      ],
+      [
+        57.642,
+        0.2402,
+        2
+      ],
+      [
+        58.143,
+        0.1642,
+        1
+      ],
+      [
+        58.644,
+        0.02,
+        1
+      ],
+      [
+        59.145,
+        0.4098,
+        3
+      ],
+      [
+        59.646,
+        0.4559,
+        5
+      ],
+      [
+        60.147,
+        0.2915,
+        2
+      ],
+      [
+        60.648,
+        0.2239,
+        1
+      ],
+      [
+        61.151,
+        0.2574,
+        2
+      ],
+      [
+        61.652,
+        0.2806,
+        3
+      ],
+      [
+        62.154,
+        0.275,
+        2
+      ],
+      [
+        62.655,
+        0.195,
+        1
+      ],
+      [
+        63.156,
+        0.0101,
+        2
+      ],
+      [
+        63.657,
+        0.0248,
+        1
+      ],
+      [
+        64.158,
+        0.1478,
+        2
+      ],
+      [
+        64.659,
+        0.245,
+        1
+      ],
+      [
+        65.16,
+        0.0398,
+        2
+      ],
+      [
+        65.661,
+        0.265,
+        2
+      ],
+      [
+        66.162,
+        0.2879,
+        3
+      ],
+      [
+        66.664,
+        0.2786,
+        3
+      ],
+      [
+        67.165,
+        0.155,
+        1
+      ],
+      [
+        67.666,
+        0.0297,
+        1
+      ],
+      [
+        68.166,
+        0.02,
+        1
+      ],
+      [
+        68.667,
+        0.1508,
+        2
+      ],
+      [
+        69.168,
+        0.2118,
+        1
+      ],
+      [
+        69.67,
+        0.0199,
+        1
+      ],
+      [
+        70.17,
+        0.2304,
+        2
+      ],
+      [
+        70.672,
+        0.2864,
+        2
+      ],
+      [
+        71.173,
+        0.4604,
+        3
+      ],
+      [
+        71.673,
+        0.4,
+        1
+      ],
+      [
+        72.174,
+        0.065,
+        2
+      ],
+      [
+        72.675,
+        0.2736,
+        2
+      ],
+      [
+        73.178,
+        0.2995,
+        2
+      ],
+      [
+        73.679,
+        0.2587,
+        3
+      ],
+      [
+        74.18,
+        0.1634,
+        2
+      ],
+      [
+        74.681,
+        0.2808,
+        2
+      ],
+      [
+        75.181,
+        0.0603,
+        2
+      ],
+      [
+        75.682,
+        0.05,
+        2
+      ],
+      [
+        76.183,
+        0.2772,
+        2
+      ],
+      [
+        76.684,
+        0.3035,
+        2
+      ],
+      [
+        77.185,
+        0.2723,
+        2
+      ],
+      [
+        77.686,
+        0.1225,
+        1
+      ],
+      [
+        78.187,
+        0.0299,
+        1
+      ],
+      [
+        78.688,
+        0.115,
+        2
+      ],
+      [
+        79.189,
+        0.3284,
+        2
+      ],
+      [
+        79.691,
+        0.2709,
+        2
+      ],
+      [
+        80.193,
+        0.0547,
+        1
+      ],
+      [
+        80.693,
+        0.1841,
+        2
+      ],
+      [
+        81.194,
+        0.3267,
+        2
+      ],
+      [
+        81.695,
+        0.5282,
+        3
+      ],
+      [
+        82.196,
+        0.2759,
+        2
+      ],
+      [
+        82.697,
+        0.266,
+        2
+      ],
+      [
+        83.198,
+        0.302,
+        3
+      ],
+      [
+        83.698,
+        0.2778,
+        2
+      ],
+      [
+        84.2,
+        0.1642,
+        1
+      ],
+      [
+        84.701,
+        0.0198,
+        2
+      ],
+      [
+        85.202,
+        0.0249,
+        1
+      ],
+      [
+        85.703,
+        0.0151,
+        1
+      ],
+      [
+        86.203,
+        0.01,
+        1
+      ],
+      [
+        86.705,
+        0.0249,
+        1
+      ],
+      [
+        87.206,
+        0.0199,
+        1
+      ],
+      [
+        87.707,
+        0.0101,
+        1
+      ],
+      [
+        88.208,
+        0.0296,
+        1
+      ],
+      [
+        88.71,
+        0.1176,
+        2
+      ],
+      [
+        89.212,
+        0.2745,
+        2
+      ],
+      [
+        89.714,
+        0.0201,
+        1
+      ],
+      [
+        90.215,
+        0.3284,
+        3
+      ],
+      [
+        90.716,
+        0.4423,
+        2
+      ],
+      [
+        91.217,
+        0.3137,
+        2
+      ],
+      [
+        91.718,
+        0.2637,
+        2
+      ],
+      [
+        92.219,
+        0.2709,
+        2
+      ],
+      [
+        92.72,
+        0.2821,
+        2
+      ],
+      [
+        93.221,
+        0.2759,
+        2
+      ],
+      [
+        93.722,
+        0.197,
+        1
+      ],
+      [
+        94.223,
+        0.0707,
+        2
+      ],
+      [
+        94.724,
+        0.2745,
+        1
+      ],
+      [
+        95.225,
+        0.1095,
+        2
+      ],
+      [
+        95.726,
+        0.4341,
+        3
+      ],
+      [
+        96.228,
+        0.4365,
+        2
+      ],
+      [
+        96.729,
+        0.2624,
+        2
+      ],
+      [
+        97.231,
+        0.2759,
+        2
+      ],
+      [
+        97.732,
+        0.2915,
+        2
+      ],
+      [
+        98.233,
+        0.2778,
+        2
+      ],
+      [
+        98.734,
+        0.1717,
+        1
+      ],
+      [
+        99.235,
+        0.0296,
+        1
+      ],
+      [
+        99.736,
+        0.02,
+        1
+      ],
+      [
+        100.238,
+        0.0891,
+        3
+      ],
+      [
+        100.739,
+        0.2637,
+        2
+      ],
+      [
+        101.239,
+        0.0396,
+        1
+      ],
+      [
+        101.741,
+        0.135,
+        2
+      ],
+      [
+        102.242,
+        0.2388,
+        1
+      ],
+      [
+        102.743,
+        0.025,
+        1
+      ],
+      [
+        103.244,
+        0.0503,
+        2
+      ],
+      [
+        103.745,
+        0.2709,
+        2
+      ],
+      [
+        104.247,
+        0.3054,
+        2
+      ],
+      [
+        104.747,
+        0.2822,
+        2
+      ],
+      [
+        105.249,
+        0.3168,
+        2
+      ],
+      [
+        105.749,
+        0.19,
+        1
+      ],
+      [
+        106.251,
+        0.0249,
+        1
+      ],
+      [
+        106.752,
+        0.0199,
+        1
+      ],
+      [
+        107.253,
+        0.0199,
+        1
+      ],
+      [
+        107.754,
+        0.104,
+        2
+      ],
+      [
+        108.256,
+        0.2709,
+        2
+      ],
+      [
+        108.759,
+        0.2798,
+        2
+      ],
+      [
+        109.26,
+        0.4559,
+        3
+      ],
+      [
+        109.761,
+        0.3578,
+        1
+      ],
+      [
+        110.262,
+        0.0348,
+        1
+      ],
+      [
+        110.764,
+        0.0394,
+        2
+      ],
+      [
+        111.265,
+        0.4876,
+        3
+      ],
+      [
+        111.766,
+        0.5404,
+        2
+      ],
+      [
+        112.268,
+        0.3781,
+        2
+      ],
+      [
+        112.769,
+        0.1634,
+        1
+      ],
+      [
+        113.27,
+        0.0249,
+        2
+      ],
+      [
+        113.771,
+        0.015,
+        1
+      ],
+      [
+        114.271,
+        0.0249,
+        1
+      ],
+      [
+        114.772,
+        0.0249,
+        1
+      ],
+      [
+        115.274,
+        0.2118,
+        2
+      ],
+      [
+        115.775,
+        0.1832,
+        1
+      ],
+      [
+        116.276,
+        0.1386,
+        2
+      ],
+      [
+        116.777,
+        0.3561,
+        5
+      ],
+      [
+        117.279,
+        0.5178,
+        3
+      ],
+      [
+        117.781,
+        0.299,
+        2
+      ],
+      [
+        118.282,
+        0.2549,
+        2
+      ],
+      [
+        118.782,
+        0.2736,
+        2
+      ],
+      [
+        119.284,
+        0.2843,
+        2
+      ],
+      [
+        119.785,
+        0.2836,
+        3
+      ],
+      [
+        120.286,
+        0.3495,
+        2
+      ],
+      [
+        120.787,
+        0.1791,
+        2
+      ],
+      [
+        121.288,
+        0.48,
+        3
+      ],
+      [
+        121.791,
+        0.5074,
+        2
+      ],
+      [
+        122.292,
+        0.2786,
+        2
+      ],
+      [
+        122.793,
+        0.2624,
+        1
+      ],
+      [
+        123.294,
+        0.1206,
+        2
+      ],
+      [
+        123.796,
+        0.3073,
+        2
+      ],
+      [
+        124.297,
+        0.206,
+        1
+      ],
+      [
+        124.798,
+        0.0248,
+        1
+      ],
+      [
+        125.3,
+        0.0296,
+        1
+      ],
+      [
+        125.801,
+        0.0297,
+        1
+      ],
+      [
+        126.302,
+        0.0249,
+        1
+      ],
+      [
+        126.803,
+        0.015,
+        1
+      ],
+      [
+        127.304,
+        0.015,
+        1
+      ],
+      [
+        127.805,
+        0.0199,
+        1
+      ],
+      [
+        128.306,
+        0.0199,
+        1
+      ],
+      [
+        128.806,
+        0.1478,
+        3
+      ],
+      [
+        129.308,
+        0.5049,
+        2
+      ],
+      [
+        129.809,
+        0.0743,
+        1
+      ],
+      [
+        130.31,
+        0.285,
+        3
+      ],
+      [
+        130.811,
+        0.5099,
+        5
+      ],
+      [
+        131.312,
+        0.5487,
+        3
+      ],
+      [
+        131.813,
+        0.5288,
+        3
+      ],
+      [
+        132.315,
+        0.1256,
+        1
+      ],
+      [
+        132.816,
+        0.0246,
+        1
+      ],
+      [
+        133.317,
+        0.0249,
+        1
+      ],
+      [
+        133.818,
+        0.015,
+        1
+      ],
+      [
+        134.32,
+        0.266,
+        2
+      ],
+      [
+        134.821,
+        0.1089,
+        1
+      ],
+      [
+        135.321,
+        0.069,
+        2
+      ],
+      [
+        135.822,
+        0.3515,
+        3
+      ],
+      [
+        136.323,
+        0.53,
+        3
+      ],
+      [
+        136.824,
+        0.2976,
+        2
+      ],
+      [
+        137.325,
+        0.3448,
+        2
+      ],
+      [
+        137.826,
+        0.2915,
+        1
+      ],
+      [
+        138.327,
+        0.2764,
+        2
+      ],
+      [
+        138.828,
+        0.1859,
+        1
+      ],
+      [
+        139.329,
+        0.0199,
+        1
+      ],
+      [
+        139.83,
+        0.3814,
+        3
+      ],
+      [
+        140.331,
+        0.4709,
+        2
+      ],
+      [
+        140.832,
+        0.055,
+        1
+      ],
+      [
+        141.332,
+        0.1642,
+        2
+      ],
+      [
+        141.833,
+        0.2808,
+        2
+      ],
+      [
+        142.335,
+        0.33,
+        3
+      ],
+      [
+        142.836,
+        0.5196,
+        2
+      ],
+      [
+        143.337,
+        0.0644,
+        1
+      ],
+      [
+        143.839,
+        0.2304,
+        2
+      ],
+      [
+        144.339,
+        0.2927,
+        3
+      ],
+      [
+        144.843,
+        0.4631,
+        3
+      ],
+      [
+        145.344,
+        0.403,
+        1
+      ],
+      [
+        145.845,
+        0.02,
+        1
+      ],
+      [
+        146.346,
+        0.0199,
+        1
+      ],
+      [
+        146.847,
+        0.1707,
+        2
+      ],
+      [
+        147.349,
+        0.2255,
+        1
+      ],
+      [
+        147.851,
+        0.0754,
+        2
+      ],
+      [
+        148.352,
+        0.2673,
+        2
+      ],
+      [
+        148.853,
+        0.4541,
+        3
+      ],
+      [
+        149.355,
+        0.4879,
+        2
+      ],
+      [
+        149.856,
+        0.0955,
+        1
+      ],
+      [
+        150.356,
+        0.0249,
+        1
+      ],
+      [
+        150.858,
+        0.0151,
+        1
+      ],
+      [
+        151.358,
+        0.0296,
+        1
+      ],
+      [
+        151.859,
+        0.0101,
+        1
+      ],
+      [
+        152.36,
+        0.0199,
+        1
+      ],
+      [
+        152.861,
+        0.0199,
+        1
+      ],
+      [
+        153.362,
+        0.0151,
+        1
+      ],
+      [
+        153.863,
+        0.4537,
+        3
+      ],
+      [
+        154.364,
+        0.2596,
+        1
+      ],
+      [
+        154.865,
+        0.02,
+        1
+      ],
+      [
+        155.366,
+        0.1238,
+        2
+      ],
+      [
+        155.866,
+        0.2794,
+        2
+      ],
+      [
+        156.368,
+        0.4103,
+        3
+      ],
+      [
+        156.868,
+        0.5194,
+        3
+      ],
+      [
+        157.37,
+        0.3093,
+        2
+      ],
+      [
+        157.871,
+        0.2759,
+        3
+      ],
+      [
+        158.372,
+        0.0303,
+        1
+      ],
+      [
+        158.874,
+        0.0248,
+        1
+      ],
+      [
+        159.375,
+        0.0842,
+        2
+      ],
+      [
+        159.875,
+        0.25,
+        3
+      ],
+      [
+        160.377,
+        0.104,
+        2
+      ],
+      [
+        160.878,
+        0.2759,
+        2
+      ],
+      [
+        161.379,
+        0.2872,
+        2
+      ],
+      [
+        161.88,
+        0.26,
+        2
+      ],
+      [
+        162.381,
+        0.0746,
+        1
+      ],
+      [
+        162.882,
+        0.2189,
+        2
+      ],
+      [
+        163.384,
+        0.1642,
+        1
+      ],
+      [
+        163.886,
+        0.0198,
+        1
+      ],
+      [
+        164.387,
+        0.069,
+        3
+      ],
+      [
+        164.889,
+        0.5314,
+        5
+      ],
+      [
+        165.39,
+        0.3283,
+        3
+      ],
+      [
+        165.891,
+        0.5099,
+        3
+      ],
+      [
+        166.391,
+        0.3807,
+        2
+      ],
+      [
+        166.893,
+        0.2906,
+        2
+      ],
+      [
+        167.394,
+        0.1294,
+        1
+      ],
+      [
+        167.895,
+        0.0101,
+        1
+      ],
+      [
+        168.396,
+        0.0297,
+        1
+      ],
+      [
+        168.897,
+        0.0299,
+        1
+      ],
+      [
+        169.398,
+        0.0198,
+        1
+      ],
+      [
+        169.899,
+        0.0151,
+        1
+      ],
+      [
+        170.401,
+        0.1931,
+        2
+      ],
+      [
+        170.902,
+        0.245,
+        3
+      ],
+      [
+        171.403,
+        0.2611,
+        1
+      ],
+      [
+        171.904,
+        0.1407,
+        2
+      ],
+      [
+        172.406,
+        0.4879,
+        3
+      ],
+      [
+        172.908,
+        0.5397,
+        5
+      ],
+      [
+        173.409,
+        0.5359,
+        3
+      ],
+      [
+        173.91,
+        0.1869,
+        1
+      ],
+      [
+        174.411,
+        0.0347,
+        1
+      ],
+      [
+        174.912,
+        0.0101,
+        1
+      ],
+      [
+        175.413,
+        0.0248,
+        1
+      ],
+      [
+        175.913,
+        0.0151,
+        1
+      ],
+      [
+        176.415,
+        0.0101,
+        1
+      ],
+      [
+        176.916,
+        0.152,
+        4
+      ],
+      [
+        177.418,
+        0.265,
+        2
+      ],
+      [
+        177.92,
+        0.0545,
+        1
+      ],
+      [
+        178.421,
+        0.2414,
+        2
+      ],
+      [
+        178.922,
+        0.2965,
+        2
+      ],
+      [
+        179.423,
+        0.285,
+        2
+      ],
+      [
+        179.924,
+        0.1823,
+        1
+      ],
+      [
+        180.427,
+        0.0296,
+        2
+      ],
+      [
+        180.927,
+        0.2708,
+        2
+      ],
+      [
+        181.428,
+        0.2673,
+        2
+      ],
+      [
+        181.93,
+        0.2822,
+        2
+      ],
+      [
+        182.431,
+        0.12,
+        1
+      ],
+      [
+        182.932,
+        0.0345,
+        1
+      ],
+      [
+        183.433,
+        0.0746,
+        2
+      ],
+      [
+        183.934,
+        0.2587,
+        2
+      ],
+      [
+        184.435,
+        0.285,
+        1
+      ],
+      [
+        184.936,
+        0.3399,
+        3
+      ],
+      [
+        185.436,
+        0.451,
+        2
+      ],
+      [
+        185.938,
+        0.0251,
+        1
+      ],
+      [
+        186.44,
+        0.0199,
+        1
+      ],
+      [
+        186.941,
+        0.0249,
+        2
+      ],
+      [
+        187.442,
+        0.0246,
+        1
+      ],
+      [
+        187.943,
+        0.02,
+        1
+      ],
+      [
+        188.445,
+        0.0198,
+        1
+      ],
+      [
+        188.946,
+        0.0199,
+        1
+      ],
+      [
+        189.447,
+        0.02,
+        1
+      ],
+      [
+        189.948,
+        0.1683,
+        3
+      ],
+      [
+        190.45,
+        0.466,
+        4
+      ],
+      [
+        190.952,
+        0.1055,
+        1
+      ],
+      [
+        191.453,
+        0.1188,
+        2
+      ],
+      [
+        191.955,
+        0.2732,
+        2
+      ],
+      [
+        192.456,
+        0.3402,
+        3
+      ],
+      [
+        192.956,
+        0.5291,
+        3
+      ],
+      [
+        193.458,
+        0.3622,
+        4
+      ],
+      [
+        193.959,
+        0.2808,
+        2
+      ],
+      [
+        194.46,
+        0.0842,
+        1
+      ],
+      [
+        194.961,
+        0.0299,
+        2
+      ],
+      [
+        195.462,
+        0.3137,
+        3
+      ],
+      [
+        195.964,
+        0.3869,
+        2
+      ],
+      [
+        196.464,
+        0.4089,
+        3
+      ],
+      [
+        196.965,
+        0.299,
+        2
+      ],
+      [
+        197.466,
+        0.2959,
+        2
+      ],
+      [
+        197.966,
+        0.2438,
+        1
+      ],
+      [
+        198.467,
+        0.0297,
+        1
+      ],
+      [
+        198.968,
+        0.02,
+        1
+      ],
+      [
+        199.469,
+        0.0248,
+        1
+      ],
+      [
+        199.969,
+        0.0151,
+        1
+      ],
+      [
+        200.47,
+        0.015,
+        1
+      ],
+      [
+        200.972,
+        0.02,
+        1
+      ],
+      [
+        201.472,
+        0.1045,
+        2
+      ],
+      [
+        201.973,
+        0.2537,
+        1
+      ],
+      [
+        202.474,
+        0.0941,
+        3
+      ],
+      [
+        202.975,
+        0.5268,
+        3
+      ],
+      [
+        203.476,
+        0.3268,
+        4
+      ],
+      [
+        203.977,
+        0.3971,
+        3
+      ],
+      [
+        204.479,
+        0.4183,
+        2
+      ],
+      [
+        204.98,
+        0.2944,
+        2
+      ],
+      [
+        205.481,
+        0.2687,
+        2
+      ],
+      [
+        205.983,
+        0.0697,
+        1
+      ],
+      [
+        206.483,
+        0.02,
+        1
+      ],
+      [
+        206.985,
+        0.2167,
+        2
+      ],
+      [
+        207.487,
+        0.1791,
+        1
+      ],
+      [
+        207.987,
+        0.18,
+        2
+      ],
+      [
+        208.489,
+        0.2864,
+        2
+      ],
+      [
+        208.991,
+        0.5381,
+        4
+      ],
+      [
+        209.492,
+        0.4293,
+        2
+      ],
+      [
+        209.992,
+        0.0842,
+        1
+      ],
+      [
+        210.494,
+        0.1471,
+        2
+      ],
+      [
+        210.995,
+        0.2673,
+        2
+      ],
+      [
+        211.496,
+        0.3949,
+        3
+      ],
+      [
+        211.997,
+        0.5,
+        2
+      ],
+      [
+        212.499,
+        0.0547,
+        1
+      ],
+      [
+        213.0,
+        0.015,
+        1
+      ],
+      [
+        213.502,
+        0.133,
+        2
+      ],
+      [
+        214.003,
+        0.2574,
+        1
+      ],
+      [
+        214.504,
+        0.04,
+        2
+      ],
+      [
+        215.005,
+        0.27,
+        2
+      ],
+      [
+        215.506,
+        0.2929,
+        2
+      ],
+      [
+        216.007,
+        0.27,
+        2
+      ],
+      [
+        216.508,
+        0.1182,
+        1
+      ],
+      [
+        217.009,
+        0.0151,
+        1
+      ],
+      [
+        217.509,
+        0.0151,
+        1
+      ],
+      [
+        218.011,
+        0.0149,
+        1
+      ],
+      [
+        218.512,
+        0.0151,
+        1
+      ],
+      [
+        219.013,
+        0.0199,
+        1
+      ],
+      [
+        219.515,
+        0.0199,
+        1
+      ],
+      [
+        220.015,
+        0.1005,
+        2
+      ],
+      [
+        220.516,
+        0.4951,
+        2
+      ],
+      [
+        221.016,
+        0.1139,
+        1
+      ],
+      [
+        221.518,
+        0.015,
+        1
+      ],
+      [
+        222.02,
+        0.2772,
+        3
+      ],
+      [
+        222.522,
+        0.5217,
+        3
+      ],
+      [
+        223.022,
+        0.5104,
+        3
+      ],
+      [
+        223.523,
+        0.5122,
+        3
+      ],
+      [
+        224.024,
+        0.2794,
+        1
+      ],
+      [
+        224.525,
+        0.0151,
+        1
+      ],
+      [
+        225.027,
+        0.0199,
+        1
+      ],
+      [
+        225.528,
+        0.0392,
+        1
+      ],
+      [
+        226.029,
+        0.02,
+        1
+      ],
+      [
+        226.53,
+        0.0199,
+        1
+      ],
+      [
+        227.031,
+        0.015,
+        1
+      ],
+      [
+        227.533,
+        0.02,
+        1
+      ],
+      [
+        228.034,
+        0.2239,
+        2
+      ],
+      [
+        228.534,
+        0.2327,
+        2
+      ],
+      [
+        229.035,
+        0.3744,
+        2
+      ],
+      [
+        229.536,
+        0.2745,
+        2
+      ],
+      [
+        230.038,
+        0.3065,
+        2
+      ],
+      [
+        230.538,
+        0.4406,
+        3
+      ],
+      [
+        231.04,
+        0.3235,
+        2
+      ],
+      [
+        231.541,
+        0.2929,
+        2
+      ],
+      [
+        232.044,
+        0.2362,
+        1
+      ],
+      [
+        232.545,
+        0.02,
+        1
+      ],
+      [
+        233.046,
+        0.02,
+        1
+      ],
+      [
+        233.547,
+        0.202,
+        2
+      ],
+      [
+        234.049,
+        0.2239,
+        1
+      ],
+      [
+        234.549,
+        0.1194,
+        2
+      ],
+      [
+        235.051,
+        0.3756,
+        2
+      ],
+      [
+        235.553,
+        0.3366,
+        3
+      ],
+      [
+        236.054,
+        0.5306,
+        3
+      ],
+      [
+        236.555,
+        0.5204,
+        3
+      ],
+      [
+        237.056,
+        0.365,
+        2
+      ],
+      [
+        237.557,
+        0.1485,
+        1
+      ],
+      [
+        238.058,
+        0.0347,
+        1
+      ],
+      [
+        238.559,
+        0.0199,
+        1
+      ],
+      [
+        239.06,
+        0.0249,
+        1
+      ],
+      [
+        239.562,
+        0.2239,
+        2
+      ],
+      [
+        240.063,
+        0.1443,
+        1
+      ],
+      [
+        240.565,
+        0.0248,
+        1
+      ],
+      [
+        241.067,
+        0.2723,
+        2
+      ],
+      [
+        241.568,
+        0.3532,
+        2
+      ],
+      [
+        242.069,
+        0.209,
+        1
+      ],
+      [
+        242.57,
+        0.0199,
+        1
+      ],
+      [
+        243.071,
+        0.2438,
+        2
+      ],
+      [
+        243.573,
+        0.2426,
+        1
+      ],
+      [
+        243.584,
+        0.2,
+        1
+      ]
+    ]
+  },
+  "database": {
+    "claim": {
+      "calls": 72,
+      "seconds": 0.221727,
+      "max_seconds": 0.006745
+    },
+    "claim_empty": {
+      "calls": 28,
+      "seconds": 0.039944,
+      "max_seconds": 0.002367
+    },
+    "heartbeat": {
+      "calls": 8,
+      "seconds": 0.031311,
+      "max_seconds": 0.004899
+    },
+    "live_attempts": {
+      "calls": 64,
+      "seconds": 0.08296,
+      "max_seconds": 0.004791
+    },
+    "publish": {
+      "calls": 72,
+      "seconds": 0.29633,
+      "max_seconds": 0.007517
+    },
+    "reap": {
+      "calls": 78,
+      "seconds": 0.141206,
+      "max_seconds": 0.015265
+    },
+    "record_execution": {
+      "calls": 72,
+      "seconds": 0.183447,
+      "max_seconds": 0.004347
+    },
+    "start": {
+      "calls": 72,
+      "seconds": 0.130502,
+      "max_seconds": 0.003388
+    }
+  }
+}
