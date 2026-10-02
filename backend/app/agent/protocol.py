@@ -1,6 +1,7 @@
 """The ReAct tool-call protocol: system prompt, parsing, and observation formatting."""
 
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from app.sandbox.tools import TOOL_SPECS, ToolCall, ToolName, ToolResult
@@ -19,13 +20,17 @@ class ParsedStep:
 
 
 def build_system_prompt(
-    require_verified_finish: bool = False, allow_escalation: bool = False
+    require_verified_finish: bool = False,
+    allow_escalation: bool = False,
+    extra_rules: Sequence[str] = (),
 ) -> str:
     """Construct the system prompt describing the tools and required output format.
 
     When ``require_verified_finish`` is set, the prompt tells the agent it must author and pass its
     own tests before finishing. When ``allow_escalation`` is set, the escalate tool is offered and
     the agent is told to escalate rather than guess on tickets it cannot or should not resolve.
+    ``extra_rules`` are appended to the rules as they are, so an experiment can change the prompt
+    by configuration alone; without them the prompt is exactly what it always was.
     """
     lines = [
         "You are an autonomous coding agent working inside a sandboxed workspace.",
@@ -68,6 +73,7 @@ def build_system_prompt(
             "exist, or asks for something you should not do, call escalate with a clear reason "
             "instead of guessing."
         )
+    lines += [f"- {rule}" for rule in extra_rules]
     return "\n".join(lines)
 
 

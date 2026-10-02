@@ -28,6 +28,8 @@ class AgentConfig:
     # when set, the agent is offered an escalate tool and told to escalate rather than guess or
     # comply on tickets it cannot or should not resolve; off for the benchmark
     allow_escalation: bool = False
+    # rules appended to the system prompt as they are, for an experiment that changes the prompt
+    extra_rules: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)

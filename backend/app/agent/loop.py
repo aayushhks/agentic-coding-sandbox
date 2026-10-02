@@ -201,7 +201,9 @@ class Agent:
             Message(
                 role=Role.SYSTEM,
                 content=build_system_prompt(
-                    self._config.require_verified_finish, self._config.allow_escalation
+                    self._config.require_verified_finish,
+                    self._config.allow_escalation,
+                    self._config.extra_rules,
                 ),
             ),
             Message(role=Role.USER, content="\n".join(parts)),

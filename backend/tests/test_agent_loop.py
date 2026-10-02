@@ -1,10 +1,11 @@
 import json
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 import pytest
 
 from app.agent.loop import Agent
 from app.agent.types import AgentConfig, TerminationReason
+from app.llm.base import CompletionResult, Message, Role
 from app.llm.mock_provider import MockProvider
 from app.sandbox.base import SandboxConfig
 from app.sandbox.subprocess_sandbox import SubprocessSandbox
@@ -49,6 +50,29 @@ async def test_agent_solves_a_task_with_the_real_sandbox(sandbox: SubprocessSand
     assert test_step.tool_result is not None
     assert test_step.tool_result.ok
     assert (sandbox.workspace / "solution.py").is_file()
+
+
+class _Listening(MockProvider):
+    def __init__(self, responses: Sequence[str]) -> None:
+        super().__init__(responses=responses)
+        self.sent: list[Sequence[Message]] = []
+
+    async def complete(
+        self, messages: Sequence[Message], *, temperature: float = 0.0, max_tokens: int = 1024
+    ) -> CompletionResult:
+        self.sent.append(list(messages))
+        return await super().complete(messages, temperature=temperature, max_tokens=max_tokens)
+
+
+async def test_the_agent_sends_its_extra_rules_in_its_system_prompt(
+    sandbox: SubprocessSandbox,
+) -> None:
+    provider = _Listening([_call("finish", answer="done")])
+    rule = "Keep the thought field to one short sentence."
+    await Agent(provider, sandbox, AgentConfig(extra_rules=(rule,))).run("Do nothing.")
+    [system, *_] = provider.sent[0]
+    assert system.role == Role.SYSTEM
+    assert system.content.endswith(f"\n- {rule}")
 
 
 async def test_every_step_is_reported_as_soon_as_it_is_recorded(
