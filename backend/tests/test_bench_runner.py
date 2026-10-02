@@ -135,6 +135,29 @@ async def test_a_real_job_calls_the_model_from_the_worker_and_sends_back_every_r
     assert (again.outcome, again.divergence) == (Outcome.SOLVED, None)
 
 
+async def test_a_real_job_reports_with_each_step_the_time_its_calls_took_and_waited(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task = MINI_TASKSET.get("adder")
+    monkeypatch.setattr(
+        bench.runner, "real_provider", lambda model: MockProvider(SCRIPTS["adder"], model=model)
+    )
+    payload = real_payload(task, "mock-model", taskset_version="test", git_sha="abc")
+    events: list[dict[str, Any]] = []
+    with reporting_to(events.append):
+        outcome = await run_job(task.id, payload)
+    recording = recording_from_body(outcome.body)
+    assert recording is not None
+    # every call is counted once, with the step it produced
+    assert len(events) == len(recording.calls)
+    assert sum(event["model_seconds"] for event in events) == pytest.approx(
+        sum(call.latency_seconds for call in recording.calls)
+    )
+    assert sum(event["retry_wait_seconds"] for event in events) == pytest.approx(
+        sum(call.retry_wait_seconds for call in recording.calls)
+    )
+
+
 def test_a_worker_without_the_key_fails_the_job_as_infrastructure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -4,11 +4,12 @@ A replay job carries its recording; a real job names the model, and the worker c
 key from its own environment, never from the payload, and sends back every response it got.
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from app.agent.types import AgentStep
 from app.core.config import get_settings
 from app.llm.base import LLMProvider
 from app.llm.groq_provider import GroqProvider
@@ -97,13 +98,33 @@ def real_provider(model: str) -> LLMProvider:
     return GroqProvider(key, model=model, max_retries=0)
 
 
+def _with_waits(provider: RecordingProvider) -> Callable[[AgentStep], None]:
+    """Report each step with the time its model calls took and waited out the rate limit, so a
+    job stopped before it returns still says where its time went."""
+    reported = 0
+
+    def on_step(step: AgentStep) -> None:
+        nonlocal reported
+        calls = provider.calls[reported:]
+        reported = len(provider.calls)
+        report(
+            step_event(step)
+            | {
+                "model_seconds": sum(call.latency_seconds for call in calls),
+                "retry_wait_seconds": sum(call.retry_wait_seconds for call in calls),
+            }
+        )
+
+    return on_step
+
+
 async def _run_real(job: RealJob) -> RunnerOutcome:
     provider = RecordingProvider(real_provider(job.model), retry_delay=retry_delay)
     execution = await execute_task(
         job.task,
         provider,
         configs=agent_configs(job.extra_rules),
-        on_step=lambda step: report(step_event(step)),
+        on_step=_with_waits(provider),
     )
     recording = build_recording(
         provider,
