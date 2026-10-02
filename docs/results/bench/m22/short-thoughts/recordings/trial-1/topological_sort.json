@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task_id": "topological_sort",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-10-02T02:59:20+00:00",
+  "git_sha": "fa79733f54a330b16dc5946fa077dbaa37fa70e7",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "f7800f791e7ff78f1f834b90bca7a3fe2203f5423cf16cb057fbd7df1b57a1e7",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"I'll create solution.py with a topological sort using Kahn's algorithm.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"from collections import deque\\n\\n\\ndef topo_sort(graph):\\n    \\\"\\\"\\\"Return a valid topological ordering of the nodes in a DAG.\\n\\n    graph: dict mapping each node to a list of nodes it points to.\\n    A node must appear before any node it points to.\\n    \\\"\\\"\\\"\\n    # Ensure every node appears as a key (even if it has no outgoing edges).\\n    nodes = set(graph.keys())\\n    for targets in graph.values():\\n        nodes.update(targets)\\n\\n    in_degree = {node: 0 for node in nodes}\\n    for node, targets in graph.items():\\n        for target in targets:\\n            in_degree[target] += 1\\n\\n    queue = deque(node for node in nodes if in_degree[node] == 0)\\n    order = []\\n    while queue:\\n        node = queue.popleft()\\n        order.append(node)\\n        for target in graph.get(node, []):\\n            in_degree[target] -= 1\\n            if in_degree[target] == 0:\\n                queue.append(target)\\n\\n    return order\"}}",
+      "prompt_tokens": 465,
+      "completion_tokens": 281,
+      "latency_seconds": 1.4417313119997743,
+      "retry_wait_seconds": 1.3700000636163168e-6,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_5e14805ce3"
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now I'll write a test file to verify the solution works correctly.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"from solution import topo_sort\\n\\n\\ndef is_valid_order(graph, order):\\n    \\\"\\\"\\\"Check that order is a valid topological ordering of graph.\\\"\\\"\\\"\\n    # Every node must appear exactly once.\\n    nodes = set(graph.keys())\\n    for targets in graph.values():\\n        nodes.update(targets)\\n    if set(order) != nodes or len(order) != len(nodes):\\n        return False\\n    # Each node must appear before any node it points to.\\n    pos = {node: i for i, node in enumerate(order)}\\n    for node, targets in graph.items():\\n        for target in targets:\\n            if pos[node] >= pos[target]:\\n                return False\\n    return True\\n\\n\\ndef test_simple_chain():\\n    graph = {\\\"a\\\": [\\\"b\\\"], \\\"b\\\": [\\\"c\\\"], \\\"c\\\": []}\\n    order = topo_sort(graph)\\n    assert is_valid_order(graph, order)\\n    assert order == [\\\"a\\\", \\\"b\\\", \\\"c\\\"]\\n\\n\\ndef test_diamond():\\n    graph = {\\\"a\\\": [\\\"b\\\", \\\"c\\\"], \\\"b\\\": [\\\"d\\\"], \\\"c\\\": [\\\"d\\\"], \\\"d\\\": []}\\n    order = topo_sort(graph)\\n    assert is_valid_order(graph, order)\\n\\n\\ndef test_disconnected():\\n    graph = {\\\"a\\\": [\\\"b\\\"], \\\"b\\\": [], \\\"x\\\": [\\\"y\\\"], \\\"y\\\": []}\\n    order = topo_sort(graph)\\n    assert is_valid_order(graph, order)\\n\\n\\ndef test_single_node():\\n    graph = {\\\"a\\\": []}\\n    order = topo_sort(graph)\\n    assert order == [\\\"a\\\"]\\n\\n\\ndef test_node_only_as_target():\\n    # 'c' only appears as a target, not as a key.\\n    graph = {\\\"a\\\": [\\\"b\\\"], \\\"b\\\": [\\\"c\\\"]}\\n    order = topo_sort(graph)\\n    assert is_valid_order(graph, order)\\n    assert set(order) == {\\\"a\\\", \\\"b\\\", \\\"c\\\"}\\n\\n\\ndef test_empty_graph():\\n    graph = {}\\n    order = topo_sort(graph)\\n    assert order == []\"}}",
+      "prompt_tokens": 773,
+      "completion_tokens": 539,
+      "latency_seconds": 1.7461580640001557,
+      "retry_wait_seconds": 20.098991095999736,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now I'll run the tests to verify the solution.\", \"tool\": \"run_tests\", \"arguments\": {}}",
+      "prompt_tokens": 1341,
+      "completion_tokens": 28,
+      "latency_seconds": 0.9154309300001842,
+      "retry_wait_seconds": 28.098261705999903,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c14f15bfae"
+    },
+    {
+      "index": 3,
+      "prefix_sha256": null,
+      "observation_head": "[ok] exit_code=0",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"All 6 tests pass. The solution correctly handles chains, diamonds, disconnected components, single nodes, nodes that only appear as targets, and empty graphs.\", \"tool\": \"finish\", \"arguments\": {\"answer\": \"Created solution.py with topo_sort(graph) using Kahn's algorithm. It computes in-degrees for all nodes (including nodes that only appear as targets), processes zero-in-degree nodes via a queue, and returns a valid topological order. Verified with 6 passing tests covering chains, diamonds, disconnected components, single nodes, target-only nodes, and empty graphs.\"}}",
+      "prompt_tokens": 1408,
+      "completion_tokens": 123,
+      "latency_seconds": 0.48602044000017486,
+      "retry_wait_seconds": 8.160000106727239e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_fea14bdc83"
+    }
+  ],
+  "error": null
+}

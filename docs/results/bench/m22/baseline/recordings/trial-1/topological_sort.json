@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "task_id": "topological_sort",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-10-02T02:45:21+00:00",
+  "git_sha": "fa79733f54a330b16dc5946fa077dbaa37fa70e7",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "4acd3abe7c61c8348b7a7b5955806d4c0bfe819e8ee4300402792c8c6f35eb98",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Let me start by understanding the task. I need to create a `solution.py` file with a `topo_sort(graph)` function that performs topological sorting on a directed acyclic graph. Let me first check the workspace contents.\", \"tool\": \"list_dir\", \"arguments\": {\"path\": \".\"}}",
+      "prompt_tokens": 454,
+      "completion_tokens": 67,
+      "latency_seconds": 0.6008276439997644,
+      "retry_wait_seconds": 5.444410839000284,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"The workspace is empty. I need to create `solution.py` with a `topo_sort(graph)` function. The function takes a dict mapping each node to a list of nodes it points to, and returns a list of nodes in topological order (a node appears before any node it points to).\\n\\nI'll use Kahn's algorithm (BFS-based) for topological sorting:\\n1. Calculate in-degree of each node\\n2. Start with nodes that have in-degree 0\\n3. Process nodes, reducing in-degrees of their neighbors\\n4. If a neighbor's in-degree becomes 0, add it to the queue\\n\\nLet me write the solution.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"from collections import deque\\n\\n\\ndef topo_sort(graph):\\n    \\\"\\\"\\\"\\n    Perform topological sort on a directed acyclic graph.\\n    \\n    Args:\\n        graph: A dict mapping each node to a list of nodes it points to.\\n               e.g., {A: [B, C], B: [D], C: [D], D: []}\\n               means A points to B and C, B points to D, C points to D.\\n    \\n    Returns:\\n        A list containing every node in a valid topological order:\\n        a node must appear before any node it points to.\\n    \\\"\\\"\\\"\\n    # Collect all nodes (both keys and values)\\n    nodes = set(graph.keys())\\n    for neighbors in graph.values():\\n        nodes.update(neighbors)\\n    \\n    # Calculate in-degree for each node\\n    in_degree = {node: 0 for node in nodes}\\n    for node, neighbors in graph.items():\\n        for neighbor in neighbors:\\n            in_degree[neighbor] += 1\\n    \\n    # Initialize queue with nodes that have in-degree 0\\n    queue = deque(sorted(node for node in nodes if in_degree[node] == 0))\\n    \\n    result = []\\n    while queue:\\n        node = queue.popleft()\\n        result.append(node)\\n        for neighbor in graph.get(node, []):\\n            in_degree[neighbor] -= 1\\n            if in_degree[neighbor] == 0:\\n                queue.append(neighbor)\\n    \\n    return result\\n\"}}",
+      "prompt_tokens": 540,
+      "completion_tokens": 513,
+      "latency_seconds": 1.6024544850001803,
+      "retry_wait_seconds": 15.933589539999957,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_ddcc9cf349"
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now let me write a test file to verify the solution works correctly with various cases.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"from solution import topo_sort\\n\\n\\ndef is_valid_topo_order(graph, order):\\n    \\\"\\\"\\\"Check if the given order is a valid topological ordering.\\\"\\\"\\\"\\n    # Every node must appear exactly once\\n    all_nodes = set(graph.keys())\\n    for neighbors in graph.values():\\n        all_nodes.update(neighbors)\\n    \\n    if set(order) != all_nodes:\\n        return False\\n    if len(order) != len(all_nodes):\\n        return False\\n    \\n    # Each node must appear before any node it points to\\n    position = {node: i for i, node in enumerate(order)}\\n    for node, neighbors in graph.items():\\n        for neighbor in neighbors:\\n            if position[node] >= position[neighbor]:\\n                return False\\n    return True\\n\\n\\ndef test_simple_chain():\\n    # A -> B -> C\\n    graph = {'A': ['B'], 'B': ['C'], 'C': []}\\n    result = topo_sort(graph)\\n    assert is_valid_topo_order(graph, result), f\\\"Invalid order: {result}\\\"\\n    assert result == ['A', 'B', 'C'], f\\\"Expected ['A', 'B', 'C'], got {result}\\\"\\n\\n\\ndef test_diamond():\\n    # A -> B, A -> C, B -> D, C -> D\\n    graph = {'A': ['B', 'C'], 'B': ['D'], 'C': ['D'], 'D': []}\\n    result = topo_sort(graph)\\n    assert is_valid_topo_order(graph, result), f\\\"Invalid order: {result}\\\"\\n\\n\\ndef test_single_node():\\n    graph = {'A': []}\\n    result = topo_sort(graph)\\n    assert result == ['A'], f\\\"Expected ['A'], got {result}\\\"\\n\\n\\ndef test_disconnected():\\n    # Two disconnected components: A -> B, C -> D\\n    graph = {'A': ['B'], 'B': [], 'C': ['D'], 'D': []}\\n    result = topo_sort(graph)\\n    assert is_valid_topo_order(graph, result), f\\\"Invalid order: {result}\\\"\\n\\n\\ndef test_empty_graph():\\n    graph = {}\\n    result = topo_sort(graph)\\n    assert result == [], f\\\"Expected [], got {result}\\\"\\n\\n\\ndef test_node_only_in_values():\\n    # Node 'D' only appears as a value, not as a key\\n    graph = {'A': ['B'], 'B': ['D']}\\n    result = topo_sort(graph)\\n    assert is_valid_topo_order(graph, result), f\\\"Invalid order: {result}\\\"\\n    assert set(result) == {'A', 'B', 'D'}, f\\\"Expected nodes A, B, D, got {result}\\\"\\n\\n\\ndef test_wider_graph():\\n    # A -> B, A -> C, B -> D, C -> D, D -> E\\n    graph = {'A': ['B', 'C'], 'B': ['D'], 'C': ['D'], 'D': ['E'], 'E': []}\\n    result = topo_sort(graph)\\n    assert is_valid_topo_order(graph, result), f\\\"Invalid order: {result}\\\"\\n\\n\\ndef test_multiple_sources():\\n    # A -> C, B -> C\\n    graph = {'A': ['C'], 'B': ['C'], 'C': []}\\n    result = topo_sort(graph)\\n    assert is_valid_topo_order(graph, result), f\\\"Invalid order: {result}\\\"\\n\"}}",
+      "prompt_tokens": 1081,
+      "completion_tokens": 836,
+      "latency_seconds": 2.213030685999911,
+      "retry_wait_seconds": 25.26973068999996,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_ddcc9cf349"
+    },
+    {
+      "index": 3,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now let me run the tests to verify the solution works correctly.\", \"tool\": \"run_tests\", \"arguments\": {\"target\": \"test_solution.py\"}}",
+      "prompt_tokens": 1946,
+      "completion_tokens": 36,
+      "latency_seconds": 0.8092162170000847,
+      "retry_wait_seconds": 62.050375857999825,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    },
+    {
+      "index": 4,
+      "prefix_sha256": null,
+      "observation_head": "[ok] exit_code=0",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"All 8 tests pass. The solution correctly handles:\\n1. Simple chains\\n2. Diamond-shaped graphs\\n3. Single nodes\\n4. Disconnected components\\n5. Empty graphs\\n6. Nodes that only appear as values (not keys)\\n7. Wider graphs\\n8. Multiple sources\\n\\nThe solution uses Kahn's algorithm (BFS-based topological sort) which is efficient and correct for DAGs.\", \"tool\": \"finish\", \"arguments\": {\"answer\": \"Created `solution.py` with a `topo_sort(graph)` function that performs topological sorting using Kahn's algorithm (BFS-based). The function:\\n1. Collects all nodes from both keys and values of the graph dict\\n2. Calculates in-degrees for each node\\n3. Uses a queue starting with nodes that have in-degree 0\\n4. Processes nodes, reducing in-degrees of neighbors and adding them to the queue when their in-degree reaches 0\\n\\nAll 8 test cases pass, covering simple chains, diamond graphs, single nodes, disconnected components, empty graphs, nodes only in values, wider graphs, and multiple sources.\"}}",
+      "prompt_tokens": 2021,
+      "completion_tokens": 241,
+      "latency_seconds": 0.8048422319998281,
+      "retry_wait_seconds": 8.630004231235944e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    }
+  ],
+  "error": null
+}

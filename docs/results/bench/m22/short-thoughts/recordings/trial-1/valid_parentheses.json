@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task_id": "valid_parentheses",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-10-02T03:01:33+00:00",
+  "git_sha": "fa79733f54a330b16dc5946fa077dbaa37fa70e7",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "bf622390bd315c50530538ef2e79ec5b453c4f1aff2ac6a244e7b6e25866794a",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"I'll create solution.py with a stack-based bracket balancing function.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"def is_valid(s):\\n    \\\"\\\"\\\"Return True if the string of brackets (), [], {} is correctly balanced and nested.\\\"\\\"\\\"\\n    stack = []\\n    matching = {')': '(', ']': '[', '}': '{'}\\n    for ch in s:\\n        if ch in '([{':\\n            stack.append(ch)\\n        elif ch in ')]}':\\n            if not stack or stack.pop() != matching[ch]:\\n                return False\\n    return not stack\\n\"}}",
+      "prompt_tokens": 433,
+      "completion_tokens": 148,
+      "latency_seconds": 0.9092986790001305,
+      "retry_wait_seconds": 1.0310000106983352e-6,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_fea14bdc83"
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now I'll write a test file covering various cases.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"from solution import is_valid\\n\\n\\ndef test_valid_cases():\\n    assert is_valid(\\\"()\\\") is True\\n    assert is_valid(\\\"()[]{}\\\") is True\\n    assert is_valid(\\\"([{}])\\\") is True\\n    assert is_valid(\\\"{[()]}\\\") is True\\n    assert is_valid(\\\"\\\") is True\\n\\n\\ndef test_invalid_cases():\\n    assert is_valid(\\\"(\\\") is False\\n    assert is_valid(\\\")\\\") is False\\n    assert is_valid(\\\"(]\\\") is False\\n    assert is_valid(\\\"([)]\\\") is False\\n    assert is_valid(\\\"{[}]\\\" ) is False\\n    assert is_valid(\\\"(()\\\") is False\\n    assert is_valid(\\\"())\\\") is False\\n\"}}",
+      "prompt_tokens": 608,
+      "completion_tokens": 195,
+      "latency_seconds": 0.5790774289998808,
+      "retry_wait_seconds": 8.689999049238395e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_fea14bdc83"
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Run the tests to verify.\", \"tool\": \"run_tests\", \"arguments\": {}}",
+      "prompt_tokens": 831,
+      "completion_tokens": 23,
+      "latency_seconds": 0.2517767270001059,
+      "retry_wait_seconds": 5.560000317927916e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c14f15bfae"
+    },
+    {
+      "index": 3,
+      "prefix_sha256": null,
+      "observation_head": "[ok] exit_code=0",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"All tests pass. Task complete.\", \"tool\": \"finish\", \"arguments\": {\"answer\": \"Created solution.py with is_valid(s) using a stack to check balanced brackets, and verified with passing tests.\"}}",
+      "prompt_tokens": 893,
+      "completion_tokens": 48,
+      "latency_seconds": 0.31394667799986564,
+      "retry_wait_seconds": 8.380002327612601e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_fea14bdc83"
+    }
+  ],
+  "error": null
+}

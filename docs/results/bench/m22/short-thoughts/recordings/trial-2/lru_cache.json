@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task_id": "lru_cache",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-10-02T03:07:20+00:00",
+  "git_sha": "fa79733f54a330b16dc5946fa077dbaa37fa70e7",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "35d20b1eb6e350de6ab66f99571aadb920e2e9930dd03f2ee9c0f4eb20ce1c3c",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"I'll create solution.py with an LRUCache using a dict plus an OrderedDict for O(1) operations.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"from collections import OrderedDict\\n\\n\\nclass LRUCache:\\n    def __init__(self, capacity):\\n        self.capacity = capacity\\n        self.cache = OrderedDict()\\n\\n    def get(self, key):\\n        if key not in self.cache:\\n            return -1\\n        self.cache.move_to_end(key)\\n        return self.cache[key]\\n\\n    def put(self, key, value):\\n        if key in self.cache:\\n            self.cache.move_to_end(key)\\n        self.cache[key] = value\\n        if len(self.cache) > self.capacity:\\n            self.cache.popitem(last=False)\\n\"}}",
+      "prompt_tokens": 476,
+      "completion_tokens": 182,
+      "latency_seconds": 1.2275585560000764,
+      "retry_wait_seconds": 1.1209999684069771e-6,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c14f15bfae"
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now I'll write a test file to verify the LRUCache behavior.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"from solution import LRUCache\\n\\n\\ndef test_basic_get_put():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    assert cache.get(1) == 1\\n    assert cache.get(2) == 2\\n\\n\\ndef test_eviction():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.put(3, 3)  # evicts key 1\\n    assert cache.get(1) == -1\\n    assert cache.get(2) == 2\\n    assert cache.get(3) == 3\\n\\n\\ndef test_get_updates_recency():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.get(1)  # key 1 becomes most recently used\\n    cache.put(3, 3)  # evicts key 2\\n    assert cache.get(2) == -1\\n    assert cache.get(1) == 1\\n    assert cache.get(3) == 3\\n\\n\\ndef test_put_updates_existing():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.put(1, 10)  # update key 1, no eviction\\n    assert cache.get(1) == 10\\n    assert cache.get(2) == 2\\n\\n\\ndef test_capacity_one():\\n    cache = LRUCache(1)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    assert cache.get(1) == -1\\n    assert cache.get(2) == 2\\n\\n\\ndef test_put_updates_recency():\\n    cache = LRUCache(2)\\n    cache.put(1, 1)\\n    cache.put(2, 2)\\n    cache.put(1, 10)  # key 1 becomes most recently used\\n    cache.put(3, 3)  # evicts key 2\\n    assert cache.get(2) == -1\\n    assert cache.get(1) == 10\\n    assert cache.get(3) == 3\\n\"}}",
+      "prompt_tokens": 685,
+      "completion_tokens": 564,
+      "latency_seconds": 1.5833406960000502,
+      "retry_wait_seconds": 20.110685734999606,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_ddcc9cf349"
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Run the tests to verify the implementation.\", \"tool\": \"run_tests\", \"arguments\": {}}",
+      "prompt_tokens": 1278,
+      "completion_tokens": 25,
+      "latency_seconds": 5.327251855000213,
+      "retry_wait_seconds": 39.604733048999606,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    },
+    {
+      "index": 3,
+      "prefix_sha256": null,
+      "observation_head": "[ok] exit_code=0",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"All 6 tests pass. The LRUCache implementation is correct.\", \"tool\": \"finish\", \"arguments\": {\"answer\": \"Created solution.py with an LRUCache class using OrderedDict for O(1) get/put operations. The cache evicts the least recently used entry when capacity is exceeded, and both get and put update recency. All 6 tests pass.\"}}",
+      "prompt_tokens": 1342,
+      "completion_tokens": 83,
+      "latency_seconds": 0.7087834590001876,
+      "retry_wait_seconds": 1.309999788645655e-6,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_ddcc9cf349"
+    }
+  ],
+  "error": null
+}

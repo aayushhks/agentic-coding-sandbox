@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task_id": "two_sum",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-10-02T02:59:51+00:00",
+  "git_sha": "fa79733f54a330b16dc5946fa077dbaa37fa70e7",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "8b098d064b85948430e19f2c432088392445d734ced82dd830f439f078fbb613",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"I'll create solution.py with a two_sum function using a hash map for O(n) lookup.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"def two_sum(nums, target):\\n    seen = {}\\n    for i, num in enumerate(nums):\\n        complement = target - num\\n        if complement in seen:\\n            return (seen[complement], i)\\n        seen[num] = i\\n    raise ValueError(\\\"No two sum solution found\\\")\\n\"}}",
+      "prompt_tokens": 450,
+      "completion_tokens": 114,
+      "latency_seconds": 0.6665532669999266,
+      "retry_wait_seconds": 9.390000741404947e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Now I'll write a test file to verify the solution works correctly.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"from solution import two_sum\\n\\ndef test_basic():\\n    assert two_sum([2, 7, 11, 15], 9) == (0, 1)\\n\\ndef test_negative_numbers():\\n    assert two_sum([-1, -2, -3, -4, -5], -8) == (2, 4)\\n\\ndef test_with_zero():\\n    assert two_sum([3, 2, 4], 6) == (1, 2)\\n\\ndef test_single_pair():\\n    assert two_sum([3, 3], 6) == (0, 1)\\n\\ndef test_larger_array():\\n    assert two_sum([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 19) == (8, 9)\\n\"}}",
+      "prompt_tokens": 591,
+      "completion_tokens": 239,
+      "latency_seconds": 0.7459612900001957,
+      "retry_wait_seconds": 1.0409999049443286e-6,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_ddcc9cf349"
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Let me run the tests to verify the solution works.\", \"tool\": \"run_tests\", \"arguments\": {}}",
+      "prompt_tokens": 858,
+      "completion_tokens": 28,
+      "latency_seconds": 0.7640672590000577,
+      "retry_wait_seconds": 13.091940717999933,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_ddcc9cf349"
+    },
+    {
+      "index": 3,
+      "prefix_sha256": null,
+      "observation_head": "[ok] exit_code=0",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"All 5 tests pass. The solution is complete and correct.\", \"tool\": \"finish\", \"arguments\": {\"answer\": \"Created solution.py with a two_sum function that uses a hash map to find two distinct indices (i, j) with i < j such that nums[i] + nums[j] == target. The function runs in O(n) time and O(n) space. All 5 tests pass.\"}}",
+      "prompt_tokens": 925,
+      "completion_tokens": 91,
+      "latency_seconds": 0.8780107180000414,
+      "retry_wait_seconds": 14.135189592999723,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_fea14bdc83"
+    }
+  ],
+  "error": null
+}

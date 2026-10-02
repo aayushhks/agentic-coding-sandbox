@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task_id": "add_numbers",
+  "taskset_version": "v1",
+  "provider": "groq",
+  "model": "qwen/qwen3.8-27b",
+  "recorded_at": "2026-10-02T03:02:22+00:00",
+  "git_sha": "fa79733f54a330b16dc5946fa077dbaa37fa70e7",
+  "outcome": "solved",
+  "calls": [
+    {
+      "index": 0,
+      "prefix_sha256": "09d5f9b6faa36809516941ee9894f4ecd440c479b8e4b1d85f0a05c127daf466",
+      "observation_head": "",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Create solution.py with the add function.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"solution.py\", \"content\": \"def add(a, b):\\n    return a + b\\n\"}}",
+      "prompt_tokens": 423,
+      "completion_tokens": 48,
+      "latency_seconds": 0.929444188999696,
+      "retry_wait_seconds": 8.050001270021312e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_5e14805ce3"
+    },
+    {
+      "index": 1,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Write a test file to verify the add function.\", \"tool\": \"write_file\", \"arguments\": {\"path\": \"test_solution.py\", \"content\": \"from solution import add\\n\\ndef test_add_integers():\\n    assert add(2, 3) == 5\\n\\ndef test_add_negative():\\n    assert add(-1, 1) == 0\\n\\ndef test_add_floats():\\n    assert add(0.5, 0.5) == 1.0\\n\"}}",
+      "prompt_tokens": 497,
+      "completion_tokens": 114,
+      "latency_seconds": 0.7788437559997874,
+      "retry_wait_seconds": 10.094038721000288,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_fea14bdc83"
+    },
+    {
+      "index": 2,
+      "prefix_sha256": null,
+      "observation_head": "[ok]",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"Run the tests to verify the solution works.\", \"tool\": \"run_tests\", \"arguments\": {}}",
+      "prompt_tokens": 639,
+      "completion_tokens": 26,
+      "latency_seconds": 0.2071711469998263,
+      "retry_wait_seconds": 9.010000212583691e-7,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    },
+    {
+      "index": 3,
+      "prefix_sha256": null,
+      "observation_head": "[ok] exit_code=0",
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "content": "{\"thought\": \"All tests pass, the task is complete.\", \"tool\": \"finish\", \"arguments\": {\"answer\": \"Created solution.py with an add(a, b) function that returns the sum of its two arguments. Verified with passing tests.\"}}",
+      "prompt_tokens": 704,
+      "completion_tokens": 53,
+      "latency_seconds": 0.8507549790001576,
+      "retry_wait_seconds": 12.09594822400004,
+      "served_model": "qwen/qwen3.8-27b",
+      "fingerprint": "fp_c7e30c203c"
+    }
+  ],
+  "error": null
+}
