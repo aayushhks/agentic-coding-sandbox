@@ -13,9 +13,9 @@ the list, not the system. Where a write-up already tells the story in full, this
 |---|---|---|
 | **Agent** | the model or the agent's loop did the wrong thing on a platform that worked | [1–2](#agent) |
 | **Platform** | the fleet — its queue, workers, leases and containers — did the wrong thing | [3–6](#platform) |
-| **Harness** | the code that measures and tests the system was wrong, or so was the person running it | [7–14](#harness) |
-| **Provider** | the model's API: its rate limit, its daily cap, the builds behind one name, a retired model | [15–18](#provider) |
-| **Environment** | the machine, the VM, the CI runners and the network policy | [19–23](#environment) |
+| **Harness** | the code that measures and tests the system was wrong, or so was the person running it | [7–16](#harness) |
+| **Provider** | the model's API: its rate limit, its daily cap, the builds behind one name, a retired model | [17–21](#provider) |
+| **Environment** | the machine, the VM, the CI runners and the network policy | [22–26](#environment) |
 
 A failure with two causes is filed under the one whose fix removed it, and the other is named. Every
 run thrown away is listed [at the end](#runs-thrown-away-and-runs-kept-though-superseded), whatever
@@ -26,20 +26,59 @@ its class.
 - **The agent failed twice, both on Llama 3.3 70B in M6, and both times in how it finished, not in
   what it understood**: once it declared a task done without a test, once it lost a correct answer
   to one stray brace. Both fixes, in M7, are in the loop, not the model. On `qwen/qwen3.8-27b`
-  since, every real-model job has met its expectation: 59 of 59 over four trials.
+  since, every real-model job the provider let finish has met its expectation: 59 of 59 over four
+  sequential trials and 13 of 13 through the fleet.
 - **The platform's two real bugs were found by fault injection, not in use**, and each fix is
   guarded by a test that fails without it. Its sharpest trade-off showed under the stress test: a
-  job can use up its retry budget through no fault of its own.
+  job can use up its retry budget through no fault of its own. The first real-model run through it
+  ran each of its 18 jobs once, lost none, and replays to the same result job for job.
 - **The harness had the most failures, and each would have misreported the system, not broken it**:
   a dirty flag on clean runs, a test that passed a broken build, a batch that timed its own
-  start-up, a trial that one stopped job would have wiped out, two configurations stated wrongly.
-  Each was found by a further check — a build broken on purpose, a measurement that looked wrong,
-  reading the code before an expensive run — which is the case for having them.
+  start-up, a trial that one stopped job would have wiped out, two configurations stated wrongly, a
+  comparison that couldn't see the provider's limits change. Each was found by a further check — a
+  build broken on purpose, a measurement that looked wrong, reading the code before an expensive run
+  — which is the case for having them.
 - **The provider shaped every real-model result**: real batches spent 88–91% of their time waiting
-  on its rate limit, its daily cap ended an experiment after one round, and one model name was
-  answered by six or seven builds a trial.
+  on its rate limit, its daily cap ended an experiment after one round, one model name was answered
+  by six or seven builds a trial, and the first run through the fleet lost five jobs to a limit on
+  output tokens that no earlier run had hit.
 - **The environment made timings hard to compare**: the VM's speed moved by up to 8% between
   sessions and by 14% within one, so every comparison here is interleaved within one run.
+
+## The real agent through the whole platform
+
+The first run of the real agent on the real model through the fleet: the 18-task set once, seed 1,
+on 4 fleet workers with each job in its worker's own process under the default execution policy,
+which gives a job 600 seconds, `qwen/qwen3.8-27b` on Groq's free tier, from a clean checkout of
+`cbe7ba9` on a virtualized 4-vCPU Intel Xeon @ 2.80 GHz, starting 2026-10-02 at 18:45 UTC. Its agent
+digest is M22's baseline's, so its prompts and agent settings were those of that sequential run.
+Records: [real-fleet](results/bench/real-fleet/), with [the
+analysis](results/bench/real-fleet/analysis.py), committed before the run, and [the
+comparison](results/bench/real-fleet/comparison.md) with M22.
+
+| The 18 jobs | Jobs | Whose doing |
+|---|---|---|
+| ran to their own end: solved, escalated, or failed as designed | 13 | the agent's, and each came out as it had in M22's sequential run |
+| cut short when the provider refused a call for good | 5 | the provider's ([21](#21-a-limit-on-output-tokens-that-no-earlier-run-hit-cut-five-jobs-short-e2)) |
+| … of those, solved anyway: the files written before the refusal passed the hidden tests | 1, `lru_cache` | |
+| stopped, retried, lost or duplicated by the platform | 0 | |
+
+- **The platform did its part.** Every job ran once, on its first attempt, and ended in its own
+  publish: no lease lapsed, nothing was retried by the fleet or dead-lettered, and the four workers
+  were busy 93.8% of the batch. Every failure was stored with the provider's own words, every job's
+  responses came back from its worker, and replaying them reproduced the run on 18 of 18 jobs:
+  outcome, failure, tokens and calls ([replayed](results/bench/real-fleet/replayed/)).
+- **The agent did its part.** Of the 13 jobs the provider let run to their end, every one met its
+  expectation and came out as it had sequentially.
+- **The provider decided the rest.** Five jobs were refused on a limit of 1,000 output tokens a
+  minute. Four failed underneath the task. `lru_cache` was cut off after three calls, but the
+  solution it had already written passed the hidden tests, so it counts as solved: the hidden tests
+  decide, and its record says it ended on a provider error.
+- **The comparison saw the result, not its cause.** Paired with M22's sequential run job by job,
+  expectations met fell from 100% to 77.8% (95% interval −44.4 to −5.6 points) on the four failed
+  tasks, and service time per job rose from 57.5 s to 127.4 s, with four workers waiting on one
+  key's limits for 79% of their busy time. The platform was the only difference the comparison could
+  see ([15](#15-the-comparison-couldnt-see-the-change-that-moved-four-outcomes-e2)).
 
 ## Agent
 
@@ -289,9 +328,35 @@ says it first said otherwise. The numbers were right in both; what they were mea
 misstated. No M18 conclusion changes, since its comparison was made within one session, but the
 session it found 10% faster than M17's had a different CPU model.
 
+### 15. The comparison couldn't see the change that moved four outcomes (E2)
+
+**What happened.** Set against M22's sequential run of the same prompt and model, the real-model
+fleet run's comparison found expectations met worse, 100% to 77.8%, named the four tasks, and had
+the platform as the only difference between the runs. The four moved because the provider refused
+their calls on a limit no M22 call had hit. A run's configuration doesn't hold the provider's
+limits, so the comparison's check that nothing but the declared change differed passed.
+
+**Found by.** Reading each moved job's record, which carries the provider's refusal.
+
+**Done.** Open, and stated wherever the comparison is shown. The fix is to record what the provider
+says about its limits with every run, so a comparison can name a change in them as an undeclared
+difference. **Evidence.** [the comparison](results/bench/real-fleet/comparison.md).
+
+### 16. Refusals no wait can fix were retried until the attempts ran out (E2)
+
+**What happened.** The provider sent "Request too large … Requested 1024" as a rate-limit error, and
+the recorder retries rate-limit errors after the wait the provider suggests, up to 8 attempts a
+call. A request that is itself too large can't succeed by waiting, so the three jobs it hit failed
+only once their attempts ran out.
+
+**Done.** Open: a refusal that says the request is too large should fail its call at once. It
+changed no outcome here, only when the failures came. **Evidence.** the `factorial`, `fizzbuzz` and
+`two_sum` recordings in [the
+run](results/bench/real-fleet/fleet-4w-real-qwen3.8-27b/recordings/trial-1/).
+
 ## Provider
 
-### 15. The rate limit, not the platform, sets real-model throughput (M16, M21, M22)
+### 17. The rate limit, not the platform, sets real-model throughput (M16, M21, M22)
 
 Groq's free tier allows this key 8,000 tokens a minute on `qwen/qwen3.8-27b`. M16's one-worker real
 batch spent 881.7 s of its 973.0 s (91%) waiting on that limit, and M22's two complete trials 90%
@@ -301,7 +366,7 @@ so M21 measured scaling on replay and says so. **Evidence.**
 [m21](m21-scaling.md#with-the-real-model-the-providers-rate-limit),
 [m22](m22-records.md#the-demonstration-one-sentence-in-the-prompt).
 
-### 16. The daily cap cut the prompt experiment to one round of three (M22)
+### 18. The daily cap cut the prompt experiment to one round of three (M22)
 
 Round 2's second arm stopped after 5 of its 18 jobs, and every trial after it was refused at once:
 "Limit 200000, Used 199523, Requested 2513". The two missing rounds needed about 43 more hours of
@@ -309,7 +374,7 @@ budget. The interrupted trials are kept, marked and left out of the pairing, and
 intervals say what one round can: how the change varies across tasks, not how one task varies from
 run to run. **Evidence.** [m22](m22-records.md#the-demonstration-one-sentence-in-the-prompt).
 
-### 17. One model name, six or seven builds, and temperature 0 isn't deterministic (M22)
+### 19. One model name, six or seven builds, and temperature 0 isn't deterministic (M22)
 
 Every call now records the build that answered it. The baseline trial was answered by 6 builds and
 the other arm's by 7; 33 of the 36 jobs were answered by more than one build, up to 6 in one job.
@@ -317,7 +382,7 @@ The unchanged prompt matched M16's run of it token for token on only 7 of 18 tas
 up to 2.4 times on others (`lru_cache`: 8,507 tokens, then 20,042). **Evidence.**
 [m22](m22-records.md#honest-notes).
 
-### 18. The model behind M6 and M7 was retired (M16)
+### 20. The model behind M6 and M7 was retired (M16)
 
 `llama-3.3-70b-versatile` now returns `model_not_found`, so 86.7% → 100% can't be rerun or compared
 with anything since; M16 started a new baseline on another model. Before that, M7's earlier hardened
@@ -325,9 +390,32 @@ runs were thrown away because the free tier's rate limit injected provider error
 mid-benchmark ([below](#runs-thrown-away-and-runs-kept-though-superseded)). **Evidence.**
 [m16](m16-bench-harness.md#the-real-model-trial), [m7](m7-analysis.md#honest-caveats).
 
+### 21. A limit on output tokens that no earlier run hit cut five jobs short (E2)
+
+**What happened.** In the real-model run through the fleet, the provider refused calls on a limit of
+1,000 output tokens a minute. `factorial`, `fizzbuzz` and `two_sum` were refused as "Request too
+large … on output tokens per minute (OTPM): Limit 1000, Requested 1024", the agent's maximum per
+call; `merge_sorted` and `lru_cache` as "Rate limit reached … Used 726, Requested 641" and "Used
+860, Requested 641", until their attempts ran out. No earlier run had hit it: M16's and M22's 280
+calls asked for the same 1,024 output tokens, and a refusal as too large can't be waited out, so it
+would have failed jobs there; none failed. Over the whole batch the run still produced 1,285 output
+tokens a minute, so the limit is not simply a cap on output per minute; how the provider counts a
+request's expected output isn't stated, and isn't guessed at here.
+
+**Whose fault.** The provider's: the model and the agent's settings were M22's. Named alongside: the
+agent asks for up to 1,024 output tokens a call, above the limit; four workers shared one key's
+per-minute limits; and the recorder retried refusals no wait can fix
+([16](#16-refusals-no-wait-can-fix-were-retried-until-the-attempts-ran-out-e2)).
+
+**Done.** Recorded, not worked around: the run finished as configured, and its records keep the
+provider's words, with the account it named redacted. A rerun with the agent's per-call maximum
+under 1,000, declared as the change, would show whether this limit was all that stood between the
+fleet run and M22's result. **Evidence.** [the run](results/bench/real-fleet/), and each cut-short
+job's recording.
+
 ## Environment
 
-### 19. CI never ran the sandbox's network isolation test (found in M19)
+### 22. CI never ran the sandbox's network isolation test (found in M19)
 
 Before M19, every CI run skipped `test_network_is_blocked_when_isolated` — 351 passed, 1 skipped —
 because Ubuntu 24.04's AppArmor blocks the unprivileged user namespaces the sandbox needs without
@@ -336,10 +424,11 @@ was the cause and a silent skip the harness's part; CI now lifts the restriction
 and container tests fail rather than skip. **Evidence.**
 [m19](m19-controlled-execution.md#what-m19-found-along-the-way).
 
-### 20. A VM whose speed moves (M16, M18, M20, M21)
+### 23. A VM whose speed moves (M16, M18, M20, M21)
 
 - Between sessions the VM's CPU model itself changed: the records name an Intel Xeon @ 2.80 GHz in
-  M16, M17 and M19, and @ 2.10 GHz in M18 and M20–M22.
+  M16, M17 and M19, @ 2.10 GHz in M18 and M20–M22, and @ 2.80 GHz again for the real-model fleet
+  run.
 - Between sessions, the same zero-latency replay measured 12.38 s in one and 13.44 and 13.14 s in
   another: noise of about 8% ([m16](m16-bench-harness.md#determinism-and-how-noisy-the-clock-is)).
 - M18's first A/B found the fleet 5% slower; build against build in one session, it wasn't
@@ -353,20 +442,21 @@ and container tests fail rather than skip. **Evidence.**
 So every comparison in these documents is interleaved within one run, and the deterministic measures
 — outcomes, tokens, calls — come first.
 
-### 21. The session's container was restarted, twice
+### 24. The session's container was restarted, three times
 
 The first restart came between M21's first runs and the rest and moved the work to another VM; every
 M21 run was made again there, and the first VM's are [kept](results/bench/m21-previous-vm/). The
-second came while the first real-model fleet run was waiting for the provider's daily budget, and
-killed the waiting process before it had started anything; it was relaunched.
+second and third came while the session was idle and the first real-model fleet run was waiting for
+the provider's daily budget, and each killed the waiting process before it had started anything. It
+was relaunched each time, and after the third the session was kept busy until the run had finished.
 
-### 22. A Docker daemon nobody supervises
+### 25. A Docker daemon nobody supervises
 
 The session's Docker daemon stopped four times while the session was idle. Each time, local
 container work failed with "connection refused" until the daemon was restarted by hand. No recorded
 run was affected; GitHub's runners have their own.
 
-### 23. The network policy keeps the price unverified (M16, M22)
+### 26. The network policy keeps the price unverified (M16, M22)
 
 This machine's network policy blocks Groq's pages, so the model's list price can't be read from its
 source. M16's records carry `cost_usd: null` rather than an estimate; M22 prices tokens from a web
@@ -383,5 +473,5 @@ key is on the free tier, which charges nothing.
 | M19 | one A/B, thrown away | files were edited while it ran, so two of its trials came from a dirty checkout | harness (the operator) | the same A/B on a clean checkout |
 | M21 | a container run, deleted unread | its script was edited while bash was still reading it, which launched a run nobody meant, on a stale task image | harness (the operator) | none needed; run scripts are now read whole before they start, so editing one mid-run changes nothing |
 | M21 | the first runs, kept as [before-ready](results/bench/m21-before-ready/) | submitted before the workers were up ([11](#11-the-bench-submitted-batches-before-its-workers-were-up-m21)) | harness | the same runs after the fix |
-| M21 | the fixed runs on the first VM, kept as [previous-vm](results/bench/m21-previous-vm/) | the container restart moved the session to another VM ([20](#21-the-sessions-container-was-restarted-twice)) | environment | every run made again on one VM |
-| M22 | four trials stopped by the daily cap, kept and marked interrupted | the provider's daily token cap ([15](#16-the-daily-cap-cut-the-prompt-experiment-to-one-round-of-three-m22)) | provider | left out of the pairing, named in the comparison |
+| M21 | the fixed runs on the first VM, kept as [previous-vm](results/bench/m21-previous-vm/) | the container restart moved the session to another VM ([20](#24-the-sessions-container-was-restarted-three-times)) | environment | every run made again on one VM |
+| M22 | four trials stopped by the daily cap, kept and marked interrupted | the provider's daily token cap ([15](#18-the-daily-cap-cut-the-prompt-experiment-to-one-round-of-three-m22)) | provider | left out of the pairing, named in the comparison |
