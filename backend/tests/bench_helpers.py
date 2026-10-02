@@ -1,13 +1,14 @@
 """Builders shared by the bench tests."""
 
 import json
+from collections.abc import Sequence
 
 from app.benchmark.schema import Task, TaskCategory, TaskDifficulty, TaskMetadata
 from app.llm.base import LLMProvider
 from app.llm.mock_provider import MockProvider
 from app.tickets.loader import load_tickets
 from bench.environment import Environment
-from bench.executor import SequentialExecutor
+from bench.executor import SequentialExecutor, agent_configs
 from bench.jobs import JobResult, Outcome
 from bench.metrics import PERCENTILE_METHOD, compute_metrics
 from bench.probes import UNSATISFIABLE_SPEC
@@ -185,7 +186,7 @@ def scripted_provider(task: BenchTask) -> LLMProvider:
     return MockProvider(SCRIPTS[task.id])
 
 
-async def record_mini_batch() -> dict[str, Recording]:
+async def record_mini_batch(extra_rules: Sequence[str] = ()) -> dict[str, Recording]:
     recordings: dict[str, Recording] = {}
 
     def keep(task: BenchTask, provider: LLMProvider, result: JobResult) -> None:
@@ -204,5 +205,6 @@ async def record_mini_batch() -> dict[str, Recording]:
         plan_jobs(MINI_TASKSET, 3, seed=1),
         lambda task: RecordingProvider(scripted_provider(task)),
         on_result=keep,
+        configs=agent_configs(extra_rules),
     )
     return recordings

@@ -22,6 +22,18 @@ async def test_a_replay_payload_is_plain_json_and_runs_anywhere() -> None:
         assert execution.divergence is None
 
 
+async def test_a_payload_carries_the_experiment_s_rules_to_the_worker() -> None:
+    rule = "Keep the thought field to one short sentence."
+    recordings = await record_mini_batch([rule])
+    task = MINI_TASKSET.get("adder")
+    ruled = replay_payload(task, recordings[task.id], LatencyProfile.ZERO, [rule])
+    execution = execution_from_body((await run_job(task.id, ruled)).body)
+    assert (execution.outcome, execution.divergence) == (Outcome.SOLVED, None)
+    # the same recording without the rule meets a different prompt, and replay refuses it
+    plain = replay_payload(task, recordings[task.id], LatencyProfile.ZERO)
+    assert execution_from_body((await run_job(task.id, plain)).body).divergence is not None
+
+
 async def test_the_runner_reports_what_the_recording_did() -> None:
     recordings = await record_mini_batch()
     task = MINI_TASKSET.get("unsatisfiable_spec")

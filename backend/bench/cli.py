@@ -18,16 +18,19 @@ from app.sandbox.base import SandboxConfig
 from bench.environment import capture_environment
 from bench.executor import (
     AGENT_CONFIGS,
+    AgentConfigs,
     BatchResult,
     Executor,
     JobCallback,
     ProviderFactory,
     SequentialExecutor,
+    agent_configs,
 )
 from bench.fleet_executor import FleetExecutor, pool_topology
 from bench.groq_limits import is_daily_cap, retry_delay
 from bench.jobs import JobResult
 from bench.metrics import PERCENTILE_METHOD, compute_metrics
+from bench.provenance import agent_digest, system_prompts
 from bench.records import (
     RESULTS_ROOT,
     BenchConfig,
@@ -86,6 +89,7 @@ def build_config(
     digest_of_recordings: str | None,
     provider: str,
     model: str,
+    configs: AgentConfigs = AGENT_CONFIGS,
 ) -> BenchConfig:
     return BenchConfig(
         mode=mode,
@@ -100,11 +104,13 @@ def build_config(
         recordings_digest=digest_of_recordings,
         provider=provider,
         model=model,
-        agent_configs={kind.value: asdict(config) for kind, config in AGENT_CONFIGS.items()},
+        agent_configs={kind.value: asdict(config) for kind, config in configs.items()},
         sandbox_config=asdict(SandboxConfig()),
         tool_transport=get_settings().tool_transport,
         percentile_method=PERCENTILE_METHOD,
         execution=executor.execution,
+        system_prompts=system_prompts(configs),
+        agent_digest=agent_digest(configs),
     )
 
 
@@ -179,6 +185,7 @@ def _replay_config(
     latency: LatencyProfile,
     count: int,
     seed: int,
+    configs: AgentConfigs = AGENT_CONFIGS,
 ) -> BenchConfig:
     return build_config(
         taskset,
@@ -190,6 +197,7 @@ def _replay_config(
         digest_of_recordings=recordings_digest(used),
         provider="replay",
         model=", ".join(sorted({recording.model for recording in used.values()})),
+        configs=configs,
     )
 
 
@@ -199,18 +207,20 @@ def _replay_batch(
     used: dict[str, Recording],
     latency: LatencyProfile,
     progress: JobCallback | None = None,
+    extra_rules: Sequence[str] = (),
 ) -> BatchRun:
     """Replay a planned batch in process, or submit it to the fleet as self-contained payloads."""
     if isinstance(executor, FleetExecutor):
         fleet = executor
         return lambda jobs: fleet.run(
-            taskset, jobs, lambda task: replay_payload(task, used[task.id], latency)
+            taskset, jobs, lambda task: replay_payload(task, used[task.id], latency, extra_rules)
         )
     return lambda jobs: executor.run(
         taskset,
         jobs,
         lambda task: ReplayProvider(used[task.id], latency=latency),
         on_result=progress,
+        configs=agent_configs(extra_rules),
     )
 
 
@@ -226,12 +236,17 @@ async def replay_trials(
     out_dir: Path,
     executor: Executor | FleetExecutor | None = None,
     verbose: bool = True,
+    extra_rules: Sequence[str] = (),
 ) -> SummaryRecord:
     """Replay the recordings for N trials, writing each trial record and their summary."""
     active = executor or SequentialExecutor()
     used = _replayable(taskset, recordings, count, seed)
-    config = _replay_config(taskset, active, used, latency=latency, count=count, seed=seed)
-    execute = _replay_batch(active, taskset, used, latency, _progress(count) if verbose else None)
+    configs = agent_configs(extra_rules)
+    config = _replay_config(
+        taskset, active, used, latency=latency, count=count, seed=seed, configs=configs
+    )
+    progress = _progress(count) if verbose else None
+    execute = _replay_batch(active, taskset, used, latency, progress, extra_rules)
     records = []
     for trial in range(1, trials + 1):
         if verbose:
@@ -272,11 +287,13 @@ async def record_trial(
     out_dir: Path,
     recordings_dir: Path | None,
     verbose: bool = True,
+    extra_rules: Sequence[str] = (),
 ) -> TrialRecord:
     """Run one real trial, optionally saving every task's responses as the replay recordings."""
     if recordings_dir is not None and count != len(taskset.tasks):
         raise ValueError("recordings need exactly one run of every task")
     executor = SequentialExecutor()
+    configs = agent_configs(extra_rules)
     config = build_config(
         taskset,
         executor,
@@ -287,6 +304,7 @@ async def record_trial(
         digest_of_recordings=None,
         provider=provider,
         model=model,
+        configs=configs,
     )
     git_sha = capture_environment().git_sha
 
@@ -316,6 +334,7 @@ async def record_trial(
             lambda task: RecordingProvider(inner_for(task), retry_delay=retry_delay),
             stop_check=_daily_cap_reached,
             on_result=_both(keep, _progress(count) if verbose else None),
+            configs=configs,
         ),
         config=config,
     )
@@ -585,6 +604,7 @@ def _replay(
             seed=args.seed,
             out_dir=args.out or RESULTS_ROOT / label,
             executor=executor,
+            extra_rules=args.extra_rule,
         )
     )
 
@@ -659,6 +679,12 @@ def _parser() -> argparse.ArgumentParser:
         "--write-recordings", action="store_true", help="save the responses as the replay set"
     )
     record.add_argument("--out", type=Path, default=None)
+    record.add_argument(
+        "--extra-rule",
+        action="append",
+        default=[],
+        help="a rule to add to the agent's system prompt; repeat for more",
+    )
 
     replay = commands.add_parser("replay", help="replay the recordings through the executor")
     replay.add_argument("--latency", choices=[p.value for p in LatencyProfile], default="zero")
@@ -679,6 +705,12 @@ def _parser() -> argparse.ArgumentParser:
     replay.add_argument("--seed", type=int, default=DEFAULT_SEED)
     replay.add_argument("--recordings", type=Path, default=None)
     replay.add_argument("--out", type=Path, default=None)
+    replay.add_argument(
+        "--extra-rule",
+        action="append",
+        default=[],
+        help="a rule to add to the agent's system prompt, as the recordings were made with",
+    )
 
     summary = commands.add_parser("summarize", help="rebuild a label's summary from its trials")
     summary.add_argument("--label", required=True)
@@ -750,6 +782,7 @@ def main(argv: list[str] | None = None) -> int:
                 model=model,
                 out_dir=args.out or RESULTS_ROOT / label,
                 recordings_dir=RECORDINGS_ROOT / taskset.version if args.write_recordings else None,
+                extra_rules=args.extra_rule,
             )
         )
         if record.interrupted:

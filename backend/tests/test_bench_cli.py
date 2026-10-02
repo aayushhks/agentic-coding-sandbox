@@ -22,6 +22,7 @@ from bench.fleet_executor import FleetExecutor
 from bench.jobs import FailureKind, Outcome
 from bench.records import (
     BenchConfig,
+    SummaryRecord,
     load_trials,
     summarize,
     summary_path,
@@ -135,6 +136,53 @@ async def test_a_recorded_trial_replays_to_the_same_outcomes(tmp_path: Path) -> 
         job.job_id: job.outcome for job in record.jobs
     }
     assert replay_passed(summary)
+
+
+async def test_a_trial_with_an_extra_rule_replays_with_it_and_diverges_without(
+    tmp_path: Path,
+) -> None:
+    rule = "Keep the thought field to one short sentence."
+    record = await record_trial(
+        label="mini-rule",
+        trial=1,
+        taskset=MINI_TASKSET,
+        count=3,
+        seed=1,
+        inner_for=scripted_provider,
+        provider="mock",
+        model="mock-model",
+        out_dir=tmp_path / "records",
+        recordings_dir=tmp_path / "recordings",
+        verbose=False,
+        extra_rules=[rule],
+    )
+    config = record.config
+    assert all(list(c["extra_rules"]) == [rule] for c in config.agent_configs.values())
+    assert config.system_prompts is not None
+    assert all(p.endswith(f"- {rule}") for p in config.system_prompts.values())
+    recordings = load_recordings(tmp_path / "recordings")
+
+    async def replay(label: str, rules: list[str]) -> SummaryRecord:
+        return await replay_trials(
+            label=label,
+            taskset=MINI_TASKSET,
+            recordings=recordings,
+            latency=LatencyProfile.ZERO,
+            trials=1,
+            count=3,
+            seed=1,
+            out_dir=tmp_path / label,
+            verbose=False,
+            extra_rules=rules,
+        )
+
+    same = await replay("with", [rule])
+    assert replay_passed(same)
+    assert same.config.agent_digest == config.agent_digest
+    # without the rule the system prompt differs from the one recorded, so replay refuses it
+    plain = await replay("without", [])
+    assert plain.metrics["counts.failed_harness"].max == 3
+    assert plain.config.agent_digest != config.agent_digest
 
 
 async def test_recording_stops_at_the_daily_cap_and_keeps_finished_tasks(

@@ -36,6 +36,9 @@ class BenchConfig(BaseModel):
     percentile_method: str
     # where jobs ran and under what limits: the execution mode, task image and policy, if any
     execution: dict[str, Any] | None = None
+    # the system prompt each kind of task started from, and a digest of those and the configs
+    system_prompts: dict[str, str] | None = None
+    agent_digest: str | None = None
 
 
 class TrialRecord(BaseModel):

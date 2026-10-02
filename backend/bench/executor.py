@@ -1,8 +1,8 @@
 """Run bench jobs through today's single-process execution path."""
 
 import time
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, replace
 from typing import Any, Protocol
 
 from pydantic import BaseModel
@@ -22,6 +22,8 @@ AGENT_CONFIGS: dict[TaskKind, AgentConfig] = {
     TaskKind.BENCHMARK: AgentConfig(require_verified_finish=True),
     TaskKind.TICKET: AgentConfig(allow_escalation=True, require_verified_finish=True),
 }
+# the agent's configuration for each kind of task
+AgentConfigs = Mapping[TaskKind, AgentConfig]
 REPLAY_DIVERGENCE = "replay_divergence"
 _INFRA_MODES = {FailureMode.PROVIDER_ERROR.value, FailureMode.SANDBOX_ERROR.value}
 
@@ -30,6 +32,14 @@ ProviderFactory = Callable[[BenchTask], LLMProvider]
 StopCheck = Callable[[LLMProvider], str | None]
 JobCallback = Callable[[BenchTask, LLMProvider, JobResult], None]
 Clock = Callable[[], float]
+
+
+def agent_configs(extra_rules: Sequence[str] = ()) -> dict[TaskKind, AgentConfig]:
+    """The bench's agent configs, with the rules an experiment adds to every kind's prompt."""
+    return {
+        kind: replace(config, extra_rules=tuple(extra_rules))
+        for kind, config in AGENT_CONFIGS.items()
+    }
 
 
 @dataclass(slots=True)
@@ -56,6 +66,7 @@ class Executor(Protocol):
         stop_check: StopCheck | None = None,
         on_result: JobCallback | None = None,
         clock: Clock = time.monotonic,
+        configs: AgentConfigs = AGENT_CONFIGS,
     ) -> BatchResult: ...
 
 
@@ -125,10 +136,10 @@ def _retry_wait(provider: LLMProvider) -> float:
 
 
 async def _execute(
-    task: BenchTask, provider: LLMProvider, on_step: StepCallback | None
+    task: BenchTask, provider: LLMProvider, configs: AgentConfigs, on_step: StepCallback | None
 ) -> tuple[AgentRun, Outcome, str | None, bool]:
     """Run one task through today's runner; the bool is the ticket grader's verdict."""
-    config = AGENT_CONFIGS[task.kind]
+    config = configs[task.kind]
     if task.benchmark is not None:
         result = await run_task(task.benchmark, provider, agent_config=config, on_step=on_step)
         outcome, mode = _benchmark_outcome(result)
@@ -169,10 +180,14 @@ class TaskExecution(BaseModel):
 
 
 async def execute_task(
-    task: BenchTask, provider: LLMProvider, *, on_step: StepCallback | None = None
+    task: BenchTask,
+    provider: LLMProvider,
+    *,
+    configs: AgentConfigs = AGENT_CONFIGS,
+    on_step: StepCallback | None = None,
 ) -> TaskExecution:
     """Run one task and classify it; every executor goes through here, so they run tasks alike."""
-    run, outcome, mode, correct = await _execute(task, provider, on_step)
+    run, outcome, mode, correct = await _execute(task, provider, configs, on_step)
     divergence = _divergence(provider)
     if divergence is not None:
         outcome, mode = Outcome.FAILED, REPLAY_DIVERGENCE
@@ -251,6 +266,7 @@ class SequentialExecutor:
         stop_check: StopCheck | None = None,
         on_result: JobCallback | None = None,
         clock: Clock = time.monotonic,
+        configs: AgentConfigs = AGENT_CONFIGS,
     ) -> BatchResult:
         # the whole batch is submitted at once, so every job's clock starts here
         start = clock()
@@ -259,7 +275,7 @@ class SequentialExecutor:
             task = taskset.get(job.task_id)
             provider = provider_for(task)
             claimed = clock() - start
-            execution = await execute_task(task, provider)
+            execution = await execute_task(task, provider, configs=configs)
             finished = clock() - start
             reason = stop_check(provider) if stop_check is not None else None
             if reason is not None:
