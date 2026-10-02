@@ -1,5 +1,6 @@
 """Run bench jobs through today's single-process execution path."""
 
+import difflib
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -12,7 +13,7 @@ from app.benchmark.runner import TaskResult, run_task
 from app.eval.failure import FailureMode, classify_failure
 from app.llm.base import LLMProvider
 from app.tickets.runner import ResolutionOutcome, TicketResolution, resolve_ticket
-from bench.jobs import FailureKind, JobResult, Outcome
+from bench.jobs import FailureKind, JobOutput, JobResult, Outcome
 from bench.replay import RecordedCall, RecordingProvider, ReplayProvider
 from bench.resources import BatchResources, DatabaseCalls
 from bench.taskset import BenchTask, Expectation, Job, TaskKind, TaskSet
@@ -25,6 +26,10 @@ AGENT_CONFIGS: dict[TaskKind, AgentConfig] = {
 # the agent's configuration for each kind of task
 AgentConfigs = Mapping[TaskKind, AgentConfig]
 REPLAY_DIVERGENCE = "replay_divergence"
+# how much of each output a record keeps
+ANSWER_CHARS = 1_000
+DIFF_CHARS = 6_000
+TEST_OUTPUT_CHARS = 1_500
 _INFRA_MODES = {FailureMode.PROVIDER_ERROR.value, FailureMode.SANDBOX_ERROR.value}
 
 ProviderFactory = Callable[[BenchTask], LLMProvider]
@@ -147,20 +152,107 @@ def _distinct(values: Sequence[str | None]) -> list[str]:
     return sorted({value for value in values if value})
 
 
+@dataclass(slots=True)
+class _Ran:
+    run: AgentRun
+    outcome: Outcome
+    mode: str | None
+    # the ticket grader's verdict; a benchmark task's is in its outcome
+    correct: bool
+    # the task's own files, and the workspace as the agent left them
+    before: dict[str, str]
+    after: dict[str, str]
+    tests: dict[str, Any]
+
+
+def _cut(text: str, limit: int) -> str:
+    return text if len(text) <= limit else f"{text[:limit]}\n[cut: {len(text)} characters in all]"
+
+
+def _tail(text: str, limit: int) -> str:
+    return text if len(text) <= limit else f"[cut: {len(text)} characters in all]\n{text[-limit:]}"
+
+
+def _changes(before: dict[str, str], after: dict[str, str]) -> tuple[list[str], str]:
+    """The paths the agent added, changed or removed, and a unified diff of them."""
+    changed = sorted(
+        path for path in before.keys() | after.keys() if before.get(path) != after.get(path)
+    )
+    chunks = []
+    for path in changed:
+        old, new = before.get(path), after.get(path)
+        lines = difflib.unified_diff(
+            [] if old is None else old.splitlines(),
+            [] if new is None else new.splitlines(),
+            "/dev/null" if old is None else f"a/{path}",
+            "/dev/null" if new is None else f"b/{path}",
+            lineterm="",
+        )
+        chunks.append("\n".join(lines) + "\n")
+    return changed, "".join(chunks)
+
+
 async def _execute(
     task: BenchTask, provider: LLMProvider, configs: AgentConfigs, on_step: StepCallback | None
-) -> tuple[AgentRun, Outcome, str | None, bool]:
-    """Run one task through today's runner; the bool is the ticket grader's verdict."""
+) -> _Ran:
+    """Run one task through today's runner, keeping what it left behind and how it was graded."""
     config = configs[task.kind]
     if task.benchmark is not None:
         result = await run_task(task.benchmark, provider, agent_config=config, on_step=on_step)
         outcome, mode = _benchmark_outcome(result)
-        return result.run, outcome, mode, True
+        evaluation = result.evaluation
+        tests = {
+            "passed": evaluation.solved,
+            "exit_code": evaluation.exit_code,
+            "timed_out": evaluation.timed_out,
+            "output": _tail(evaluation.output, TEST_OUTPUT_CHARS),
+        }
+        return _Ran(
+            result.run, outcome, mode, True, task.benchmark.workspace_files, result.files, tests
+        )
     if task.ticket is None:
         raise ValueError(f"task {task.id!r} has no payload to run")
     resolution = await resolve_ticket(task.ticket, provider, agent_config=config, on_step=on_step)
     outcome, mode = ticket_outcome(resolution)
-    return resolution.run, outcome, mode, resolution.correct
+    hidden = resolution.hidden_tests
+    # the hidden tests only run on a ticket the agent finished, so they may not have run at all
+    tests = {
+        "passed": None if hidden is None else hidden.ok,
+        "exit_code": None if hidden is None else hidden.exit_code,
+        "timed_out": None if hidden is None else hidden.timed_out,
+        "output": "" if hidden is None else _tail(hidden.output, TEST_OUTPUT_CHARS),
+        "canaries_intact": resolution.canaries_intact,
+    }
+    return _Ran(
+        resolution.run,
+        outcome,
+        mode,
+        resolution.correct,
+        task.ticket.workspace_files,
+        resolution.files,
+        tests,
+    )
+
+
+def _model_seconds(provider: LLMProvider) -> float:
+    if isinstance(provider, RecordingProvider):
+        return sum(call.latency_seconds for call in provider.calls)
+    if isinstance(provider, ReplayProvider):
+        return provider.waited
+    return 0.0
+
+
+def _output(ran: _Ran, provider: LLMProvider) -> JobOutput:
+    changed, diff = _changes(ran.before, ran.after)
+    return JobOutput(
+        answer=_cut(ran.run.final_answer, ANSWER_CHARS),
+        escalation_reason=_cut(ran.run.escalation_reason, ANSWER_CHARS),
+        files_changed=changed,
+        diff=_cut(diff, DIFF_CHARS),
+        tests=ran.tests,
+        tools=ran.run.tool_counts(),
+        model_seconds=round(_model_seconds(provider), 3),
+    )
 
 
 def step_event(step: AgentStep) -> dict[str, Any]:
@@ -191,6 +283,7 @@ class TaskExecution(BaseModel):
     divergence: str | None
     served_models: list[str] = []
     fingerprints: list[str] = []
+    output: JobOutput | None = None
 
 
 async def execute_task(
@@ -201,7 +294,8 @@ async def execute_task(
     on_step: StepCallback | None = None,
 ) -> TaskExecution:
     """Run one task and classify it; every executor goes through here, so they run tasks alike."""
-    run, outcome, mode, correct = await _execute(task, provider, configs, on_step)
+    ran = await _execute(task, provider, configs, on_step)
+    run, outcome, mode, correct = ran.run, ran.outcome, ran.mode, ran.correct
     divergence = _divergence(provider)
     if divergence is not None:
         outcome, mode = Outcome.FAILED, REPLAY_DIVERGENCE
@@ -220,6 +314,7 @@ async def execute_task(
         divergence=divergence,
         served_models=_distinct([call.served_model for call in _answered(provider)]),
         fingerprints=_distinct([call.fingerprint for call in _answered(provider)]),
+        output=_output(ran, provider),
     )
 
 
@@ -260,6 +355,7 @@ def job_result(
         execution=ran,
         served_models=execution.served_models,
         fingerprints=execution.fingerprints,
+        output=execution.output,
     )
 
 

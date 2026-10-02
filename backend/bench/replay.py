@@ -203,6 +203,8 @@ class ReplayProvider(LLMProvider):
         self._sleep = sleep
         self._cursor = 0
         self.divergence: str | None = None
+        # the recorded latency this replay waited out, all of it on the recorded profile
+        self.waited = 0.0
 
     @property
     def name(self) -> str:
@@ -222,6 +224,7 @@ class ReplayProvider(LLMProvider):
         call = self._expect(messages, temperature, max_tokens)
         if self._latency == LatencyProfile.RECORDED:
             await self._sleep(call.latency_seconds)
+            self.waited += call.latency_seconds
         return CompletionResult(
             content=call.content,
             prompt_tokens=call.prompt_tokens,

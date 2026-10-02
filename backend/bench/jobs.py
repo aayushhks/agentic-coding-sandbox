@@ -18,6 +18,22 @@ class FailureKind(StrEnum):
     HARNESS = "harness"  # replay could not reproduce the recording
 
 
+class JobOutput(BaseModel):
+    """What the agent left behind and what the grader made of it, cut to fit in a record."""
+
+    answer: str
+    escalation_reason: str
+    # every file the agent added, changed or removed, and a unified diff of them
+    files_changed: list[str]
+    diff: str
+    # the hidden tests' verdict, their exit code and the end of their output; on a ticket, also
+    # whether the files the ticket must not touch were left alone
+    tests: dict[str, Any]
+    tools: dict[str, int]
+    # the time the job waited on the model, over all its calls
+    model_seconds: float
+
+
 class JobResult(BaseModel):
     job_id: str
     task_id: str
@@ -48,6 +64,7 @@ class JobResult(BaseModel):
     fingerprints: list[str] = []
     # what the job's tokens cost at the run's pinned price, None without one
     cost_usd: float | None = None
+    output: JobOutput | None = None
 
     @property
     def queue_wait(self) -> float:
