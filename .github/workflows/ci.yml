@@ -83,6 +83,13 @@ jobs:
       - name: bench scale (every recorded task on one and two fleet workers, interleaved, fails on divergence)
         run: uv run python -m bench.cli scale --workers 1 2 --trials 2 --out-root "$RUNNER_TEMP/bench-scale"
 
+      - name: bench compare (the two pools above, failing if anything but the pool differs)
+        run: >-
+          uv run python -m bench.cli compare
+          --baseline "$RUNNER_TEMP/bench-scale/scale-fleet-1w-replay-zero"
+          --candidate "$RUNNER_TEMP/bench-scale/scale-fleet-2w-replay-zero"
+          --expect workers --expect topology
+
   chaos:
     # every fault scenario on every push, each seed its own job; a run fails on any invariant
     # violation, any fault that didn't leave its effects behind, or any fault that never happened
