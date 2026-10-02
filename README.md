@@ -53,6 +53,7 @@ flowchart LR
 | In containers | 78.3 tasks/min on 16 workers (8.90×), the CPUs 93.6% busy; at 4 workers, 2.65 CPU-seconds a job against 0.80 in a worker's own process | the same, each job in a container of its own, 3 trials per pool | [m21/containers](docs/results/bench/m21/containers) |
 | Fault tolerance | **740 injected faults over 260 runs — 450 kills, 150 dropped connections, 110 pauses and hangs, 30 Postgres restarts — and 0 invariant violations** | 26 scenarios × 10 seeds: 230 runs of 30 jobs on 3 worker processes, 20 of 18 jobs on 3 and 10 of 18 jobs on 5, with 1 s leases, 5 attempts per job and a local Postgres, on a virtualized 4-vCPU Intel Xeon @ 2.10 GHz; every scenario also runs in CI on every push | [chaos/m20](docs/results/chaos/m20) |
 | Did a change help | one sentence in the system prompt: tokens per job 6,552 → 3,510 (−46.4%; 95% interval −5,533 to −1,105), every expectation still met; each arm's trial replayed from its recorded responses to the same outcome, tokens and calls on 18 of 18 jobs | qwen3.8-27b on Groq's free tier, the 18-task set on one worker, on the same 2.10 GHz VM; one interleaved round, as the provider's daily token cap stopped the other two | [m22](docs/results/bench/m22) |
+| The real agent through the whole platform | 14 of 18 expectations met on 4 fleet workers; every job ran once and ended in its own publish, and the run replays to the same result job for job. The 4 unmet, and a fifth job solved anyway, were cut short by a provider limit on output tokens that no earlier run had hit: the agent met every expectation the provider let it reach, 13 of 13 | qwen3.8-27b on Groq's free tier, the 18-task set once, 4 fleet workers with each job in its worker's own process and 600 s a job, on a virtualized 4-vCPU Intel Xeon @ 2.80 GHz | [real-fleet](docs/results/bench/real-fleet) |
 | The real model's own limit | 91% of a one-worker batch spent waiting on the provider's 8,000-tokens-a-minute limit | qwen3.8-27b on Groq's free tier, the 18-task set on one worker, on a virtualized 4-vCPU Intel Xeon @ 2.80 GHz | [sequential-real](docs/results/bench/sequential-real-qwen3.8-27b) |
 
 ### Design decisions, and what each gives up
@@ -465,5 +466,10 @@ execution policy model, what bounds throughput): [docs/design.md](docs/design.md
 - **Each milestone's timings come from one VM, and the VM changed between sessions.** The records
   name an Intel Xeon @ 2.80 GHz for M16, M17 and M19 and @ 2.10 GHz for M18 and M20–M22, and the
   same code's sequential replay has measured from 10.8 s to 12.3 s in different sessions, so only
-  comparisons made within one run count. The real-model numbers are four trials of one model on one
-  key, one of them cut short by the provider's daily cap.
+  comparisons made within one run count. The real-model numbers are five trials of one model on one
+  key: four sequential, one of them cut short by the provider's daily cap, and one through the fleet,
+  in which a provider limit on output tokens cut five of 18 jobs short.
+- **A comparison sees only what the records hold.** The provider's limits are in no record, so when
+  they changed between M22's runs and the fleet run, the comparison credited the outcomes that moved
+  to the platform, the only difference it could see; each moved job's own record names the provider's
+  refusal ([failure analysis](docs/failure-analysis.md#the-real-agent-through-the-whole-platform)).
