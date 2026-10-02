@@ -1,0 +1,666 @@
+{
+  "schema_version": 1,
+  "about": "Every number here is computed from the records committed under docs/results by backend/bench/report.py, and a test fails if this file and the records disagree.",
+  "repository": "https://github.com/aayushhks/agentic-coding-sandbox",
+  "headline": [
+    {
+      "id": "scaling",
+      "claim": "Throughput and queue wait at 1, 2 and 4 workers, and what limits them",
+      "value": "89.0 → 177.8 → 336.6 tasks/min at 1, 2, 4 workers (3.76×); median queue wait 24.4 → 11.9 → 6.0 s",
+      "detail": "The bottleneck, measured: the host's CPUs. At 4 workers they were 93.3% busy, 98% of it the workers' own agent loops and sandboxed commands; 8 workers did 0.98× the work of 4, with a runnable task waiting for a CPU 89.1% of the time against 5.5%.",
+      "config": "one virtualized host: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v51, Python 3.13.12; every process — the fleet workers, its api, PostgreSQL 16 and the bench — on that one host, not a cluster; 72 jobs a batch (the 18-task set four times, seed 1), every pool's trials interleaved with the order reversed every other trial; commit f74eb39, clean checkout",
+      "sources": [
+        "docs/results/bench/m21/zero",
+        "docs/results/bench/m21/past-cores",
+        "docs/results/bench/m21/analysis.py"
+      ],
+      "doc": "docs/m21-scaling.md"
+    },
+    {
+      "id": "faults",
+      "claim": "Injected faults, and what the automated invariant checker found",
+      "value": "740 faults over 260 runs, 0 invariant violations",
+      "detail": "450 kills, 150 dropped connections, 110 pauses and hangs, 30 Postgres restarts. After every run the checker reads the database back: exactly one result per job, nothing lost, no stale write, accounting that adds up; 740 of 740 planned faults happened, and every one left the effects it must.",
+      "config": "260 runs: 26 scenarios × 10 seeds; each run 18 jobs on 3 worker processes with 1 s leases, the api and a local PostgreSQL on one host; commit b64c1fd, clean checkout; every scenario also runs in CI on every push",
+      "sources": [
+        "docs/results/chaos/m20",
+        "docs/results/chaos/analysis.py"
+      ],
+      "doc": "docs/m20-fault-injection.md"
+    },
+    {
+      "id": "experiments",
+      "claim": "Did a prompt change help, and by how much: the comparison the platform generates",
+      "value": "tokens per job 6,552 → 3,510 (-46.4%; 95% interval -5,533 to -1,105), every expectation still met",
+      "detail": "One sentence added to the agent's system prompt, run against the real model with and without it. Replayed from its own recorded responses, each arm's trial came out the same job for job: 18 of 18 without the sentence, 18 of 18 with it.",
+      "config": "qwen/qwen3.8-27b on groq, the 18-task set once a trial, seed 1, the two arms interleaved; one round completed before the provider's daily token cap; one virtualized host: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v51, Python 3.13.12; commit fa79733, clean checkout",
+      "sources": [
+        "docs/results/bench/m22",
+        "docs/results/bench/m22/analysis.py"
+      ],
+      "doc": "docs/m22-records.md"
+    }
+  ],
+  "sections": [
+    {
+      "id": "scaling",
+      "title": "Scaling on one host",
+      "config": "one virtualized host: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v51, Python 3.13.12; every process — the fleet workers, its api, PostgreSQL 16 and the bench — on that one host, not a cluster; 72 jobs a batch (the 18-task set four times, seed 1), every pool's trials interleaved with the order reversed every other trial; commit f74eb39, clean checkout",
+      "points": [
+        "The bottleneck, measured: the host's CPUs. At 4 workers they were 93.3% busy, 98% of it the workers' own agent loops and sandboxed commands; 8 workers did 0.98× the work of 4, with a runnable task waiting for a CPU 89.1% of the time against 5.5%.",
+        "At the model's recorded latency the CPUs were 49.1% busy at 16 workers; the loss there was the batch's own tail, 13.6% of the workers' time idle after their last job while the longest jobs finished.",
+        "In containers a job cost 2.65 CPU-seconds at 4 workers against 0.80 in a worker's own process, and 16 workers kept the CPUs 93.6% busy."
+      ],
+      "tables": [
+        {
+          "title": "Jobs at full speed (zero model latency), 72 jobs a batch, 5 trials per pool",
+          "columns": [
+            "workers",
+            "tasks / min",
+            "speedup",
+            "queue wait p50 / p95",
+            "utilization",
+            "host CPU busy",
+            "a task waiting for a CPU"
+          ],
+          "rows": [
+            [
+              "1",
+              "89.0 [87.0–89.5]",
+              "1",
+              "24.41 / 45.32 s",
+              "0.992",
+              "26.9%",
+              "0.2%"
+            ],
+            [
+              "2",
+              "177.8 [171.3–180.0]",
+              "2.00 [1.97–2.01]",
+              "11.95 / 22.25 s",
+              "0.978",
+              "50.9%",
+              "0.4%"
+            ],
+            [
+              "4",
+              "336.6 [331.9–345.6]",
+              "3.76 [3.73–3.97]",
+              "6.03 / 11.60 s",
+              "0.957",
+              "93.3%",
+              "5.4%"
+            ]
+          ]
+        },
+        {
+          "title": "4 against 8 workers at full speed, past the core count, 72 jobs a batch, 5 trials per pool",
+          "columns": [
+            "workers",
+            "tasks / min",
+            "speedup",
+            "queue wait p50 / p95",
+            "utilization",
+            "host CPU busy",
+            "a task waiting for a CPU"
+          ],
+          "rows": [
+            [
+              "4",
+              "331.0 [318.8–345.0]",
+              "1",
+              "6.00 / 11.70 s",
+              "0.961",
+              "93.7%",
+              "5.5%"
+            ],
+            [
+              "8",
+              "328.3 [323.1–333.2]",
+              "0.98 [0.95–1.04]",
+              "5.79 / 11.15 s",
+              "0.948",
+              "96.2%",
+              "89.1%"
+            ]
+          ]
+        },
+        {
+          "title": "Jobs at the model's recorded latency, 72 jobs a batch, 5 trials per pool",
+          "columns": [
+            "workers",
+            "tasks / min",
+            "speedup",
+            "queue wait p50 / p95",
+            "utilization",
+            "host CPU busy",
+            "a task waiting for a CPU"
+          ],
+          "rows": [
+            [
+              "1",
+              "12.0 [11.9–12.0]",
+              "1",
+              "180.44 / 341.39 s",
+              "0.999",
+              "5.6%",
+              "0.1%"
+            ],
+            [
+              "2",
+              "23.8 [23.7–23.9]",
+              "1.99 [1.98–1.99]",
+              "89.53 / 169.17 s",
+              "0.992",
+              "9.0%",
+              "0.1%"
+            ],
+            [
+              "4",
+              "46.9 [46.8–47.1]",
+              "3.92 [3.92–3.92]",
+              "44.27 / 82.42 s",
+              "0.977",
+              "15.5%",
+              "0.1%"
+            ],
+            [
+              "8",
+              "91.8 [91.7–91.9]",
+              "7.66 [7.64–7.69]",
+              "19.98 / 40.32 s",
+              "0.957",
+              "28.7%",
+              "0.5%"
+            ],
+            [
+              "16",
+              "163.1 [162.1–163.8]",
+              "13.64 [13.50–13.67]",
+              "8.94 / 18.20 s",
+              "0.857",
+              "49.1%",
+              "4.1%"
+            ]
+          ]
+        },
+        {
+          "title": "Each job in a container of its own, at recorded latency, 72 jobs a batch, 3 trials per pool",
+          "columns": [
+            "workers",
+            "tasks / min",
+            "speedup",
+            "queue wait p50 / p95",
+            "utilization",
+            "host CPU busy",
+            "a task waiting for a CPU"
+          ],
+          "rows": [
+            [
+              "1",
+              "8.9 [8.8–8.9]",
+              "1",
+              "241.99 / 458.54 s",
+              "0.999",
+              "11.2%",
+              "0.4%"
+            ],
+            [
+              "2",
+              "17.6 [17.6–17.7]",
+              "2.00 [1.97–2.00]",
+              "120.63 / 227.70 s",
+              "0.993",
+              "20.7%",
+              "1.0%"
+            ],
+            [
+              "4",
+              "34.5 [34.5–34.6]",
+              "3.89 [3.87–3.92]",
+              "60.03 / 112.16 s",
+              "0.970",
+              "38.0%",
+              "2.7%"
+            ],
+            [
+              "8",
+              "63.9 [63.0–64.1]",
+              "7.19 [7.10–7.26]",
+              "28.95 / 57.25 s",
+              "0.953",
+              "68.5%",
+              "15.1%"
+            ],
+            [
+              "16",
+              "78.3 [77.7–81.0]",
+              "8.90 [8.74–9.09]",
+              "21.78 / 43.44 s",
+              "0.917",
+              "93.6%",
+              "71.1%"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        "docs/results/bench/m21",
+        "docs/results/bench/m21/analysis.py"
+      ],
+      "doc": "docs/m21-scaling.md"
+    },
+    {
+      "id": "faults",
+      "title": "Fault injection",
+      "config": "260 runs: 26 scenarios × 10 seeds; each run 18 jobs on 3 worker processes with 1 s leases, the api and a local PostgreSQL on one host; commit b64c1fd, clean checkout; every scenario also runs in CI on every push",
+      "points": [
+        "450 kills, 150 dropped connections, 110 pauses and hangs, 30 Postgres restarts. After every run the checker reads the database back: exactly one result per job, nothing lost, no stale write, accounting that adds up; 740 of 740 planned faults happened, and every one left the effects it must.",
+        "There is no scheduler process to restart: workers pull, and Postgres holds all state, so the api is killed mid-request and Postgres is restarted instead."
+      ],
+      "tables": [
+        {
+          "title": "The fault matrix",
+          "columns": [
+            "scenario",
+            "point",
+            "fault",
+            "runs",
+            "faults",
+            "violations"
+          ],
+          "rows": [
+            [
+              "agent-heartbeat-before-kill",
+              "heartbeat.before",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "agent-publish-before-commit-kill",
+              "publish.before_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "api-submit-after-commit-kill",
+              "api.submit.after_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "cancel-before-commit-kill",
+              "cancel.before_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "claim-after-commit-drop",
+              "claim.after_commit",
+              "drop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "claim-after-commit-kill",
+              "claim.after_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "claim-before-commit-drop",
+              "claim.before_commit",
+              "drop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "claim-before-commit-hang",
+              "claim.before_commit",
+              "hang",
+              "10",
+              "10",
+              "0"
+            ],
+            [
+              "claim-before-commit-kill",
+              "claim.before_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "claim-before-kill",
+              "claim.before",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "container-heartbeat-before-kill",
+              "heartbeat.before",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "container-publish-before-commit-kill",
+              "publish.before_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "heartbeat-before-drop",
+              "heartbeat.before",
+              "drop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "heartbeat-before-kill",
+              "heartbeat.before",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "heartbeat-before-stop",
+              "heartbeat.before",
+              "stop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "postgres-restart",
+              "postgres.restart",
+              "restart",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "publish-after-commit-drop",
+              "publish.after_commit",
+              "drop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "publish-after-commit-kill",
+              "publish.after_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "publish-before-commit-drop",
+              "publish.before_commit",
+              "drop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "publish-before-commit-hang",
+              "publish.before_commit",
+              "hang",
+              "10",
+              "10",
+              "0"
+            ],
+            [
+              "publish-before-commit-kill",
+              "publish.before_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "publish-before-commit-stop",
+              "publish.before_commit",
+              "stop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "publish-before-stop",
+              "publish.before",
+              "stop",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "reap-before-commit-kill",
+              "reap.before_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "release-before-commit-kill",
+              "release.before_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ],
+            [
+              "start-after-commit-kill",
+              "start.after_commit",
+              "kill",
+              "10",
+              "30",
+              "0"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        "docs/results/chaos/m20",
+        "docs/results/chaos/analysis.py"
+      ],
+      "doc": "docs/m20-fault-injection.md"
+    },
+    {
+      "id": "experiments",
+      "title": "Reproducible evaluation records",
+      "config": "qwen/qwen3.8-27b on groq, the 18-task set once a trial, seed 1, the two arms interleaved; one round completed before the provider's daily token cap; one virtualized host: Intel(R) Xeon(R) Processor @ 2.10GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v51, Python 3.13.12; commit fa79733, clean checkout",
+      "points": [
+        "One sentence added to the agent's system prompt, run against the real model with and without it. Replayed from its own recorded responses, each arm's trial came out the same job for job: 18 of 18 without the sentence, 18 of 18 with it.",
+        "Expectations met: 100.0% of runs without the change, 100.0% with it, a change of +0.0 points (95% interval +0.0 to +0.0) over 18 paired runs of 18 jobs. 0 met it only with the change and 0 only without (exact McNemar p = 1.000, counting each paired run on its own): no detectable change.",
+        "Tokens per job: 6,552 → 3,510 tokens (-3,041, -46.4%; 95% interval -5,533 to -1,105): better.",
+        "Cost per job at the pinned price: 0.00853 → 0.00436 USD (-0.00417, -48.9%; 95% interval -0.00721 to -0.00179): better.",
+        "Model calls per job: 5.17 → 4.11 calls (-1.06, -20.4%; 95% interval -1.78 to -0.50): better.",
+        "Time waiting on the model per job: 5.17 → 2.69 s (-2.48, -48.0%; 95% interval -3.78 to -1.35): better.",
+        "Service time per job: 57.45 → 28.62 s (-28.83, -50.2%; 95% interval -45.24 to -13.36): better."
+      ],
+      "tables": [
+        {
+          "title": "Over 18 paired jobs, round [1]",
+          "columns": [
+            "measure",
+            "without",
+            "with",
+            "change",
+            "95% interval",
+            "verdict"
+          ],
+          "rows": [
+            [
+              "expectations met",
+              "100.0%",
+              "100.0%",
+              "+0.0 points",
+              "+0.0 to +0.0 points",
+              "no detectable change"
+            ],
+            [
+              "tokens per job",
+              "6,552",
+              "3,510",
+              "-3,041 (-46.4%)",
+              "-5,533 to -1,105",
+              "better"
+            ],
+            [
+              "cost per job at list price",
+              "$0.00853",
+              "$0.00436",
+              "-$0.00417 (-48.9%)",
+              "-$0.00721 to -$0.00179",
+              "better"
+            ],
+            [
+              "model calls per job",
+              "5.17",
+              "4.11",
+              "-1.06 (-20.4%)",
+              "-1.78 to -0.50",
+              "better"
+            ],
+            [
+              "service time per job",
+              "57.45s",
+              "28.62s",
+              "-28.83s (-50.2%)",
+              "-45.24s to -13.36s",
+              "better"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        "docs/results/bench/m22",
+        "docs/results/bench/m22/analysis.py"
+      ],
+      "doc": "docs/m22-records.md"
+    },
+    {
+      "id": "containers",
+      "title": "What a container per job costs",
+      "config": "medians of 100 runs of each, process and container alternating; one virtualized host: Intel(R) Xeon(R) Processor @ 2.80GHz, 4 logical CPUs; commit bbc8f6f, clean checkout",
+      "points": [
+        "Each attempt runs in a locked-down container of its own: CPU, memory, process, scratch and time limits, and no network unless a destination is granted."
+      ],
+      "tables": [
+        {
+          "title": "In the worker's process against in a container",
+          "columns": [
+            "measured",
+            "in process",
+            "in a container"
+          ],
+          "rows": [
+            [
+              "a job that does nothing, its whole service",
+              "0.0022 s",
+              "0.6578 s"
+            ],
+            [
+              "starting Python",
+              "0.0152 s",
+              "0.0172 s"
+            ],
+            [
+              "importing the agent's code",
+              "0.7373 s",
+              "0.8777 s"
+            ],
+            [
+              "a sandboxed `true`",
+              "0.0096 s",
+              "0.0075 s"
+            ],
+            [
+              "a sandboxed `pytest --version`",
+              "0.1768 s",
+              "0.2366 s"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        "docs/results/bench/m19/container-overhead.json"
+      ],
+      "doc": "docs/m19-controlled-execution.md"
+    },
+    {
+      "id": "baseline",
+      "title": "The single-process baseline",
+      "config": "one in-process worker running the 18-task set back to back, seed 1; one virtualized host: Intel(R) Xeon(R) Processor @ 2.80GHz, 4 logical CPUs, 15.72 GiB RAM, Ubuntu 24.04.4 LTS, kernel 6.18.44-fc-v50, Python 3.13.12; commit 578f038, 88f1c53, clean checkout",
+      "points": [
+        "With the real model (qwen/qwen3.8-27b), 91% of the batch went to waiting on the provider's rate limit."
+      ],
+      "tables": [
+        {
+          "title": "The 18-task set, one worker",
+          "columns": [
+            "run",
+            "trials",
+            "batch",
+            "tasks / min",
+            "queue wait p50 / p95",
+            "expectations met"
+          ],
+          "rows": [
+            [
+              "replay, zero latency",
+              "5",
+              "13.44 [12.77–13.61] s",
+              "80.37 [79.35–84.56]",
+              "6.94 / 11.99 s",
+              "18 of 18"
+            ],
+            [
+              "replay, recorded latency",
+              "5",
+              "91.23 [90.60–91.33] s",
+              "11.84 [11.83–11.92]",
+              "50.36 / 82.23 s",
+              "18 of 18"
+            ],
+            [
+              "real model, one trial",
+              "1",
+              "973.02 s",
+              "1.11",
+              "586.02 / 892.19 s",
+              "18 of 18"
+            ]
+          ]
+        }
+      ],
+      "sources": [
+        "docs/results/bench/sequential-replay-zero",
+        "docs/results/bench/sequential-real-qwen3.8-27b"
+      ],
+      "doc": "docs/m16-bench-harness.md"
+    }
+  ]
+}
