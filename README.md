@@ -55,6 +55,7 @@ flowchart TB
 | **Many workers** | heartbeats, fencing (a worker whose lease lapsed can never write), bounded retries with a dead letter, and an invariant checker run after an 8-worker kill-and-pause stress test on every push | [m18](docs/m18-worker-pool.md) · [design](docs/design.md) |
 | **Controlled execution** | each attempt in a locked-down container of its own: CPU, memory, process, scratch and time limits, no network unless a destination is granted through a proxy, and cancellation that releases the lease; every limit tested by a job that tries to break it, on every push | [m19](docs/m19-controlled-execution.md) · [policy model](docs/design.md#controlled-execution-the-policy-model) |
 | **Fault injection** | seeded faults at twelve named points in the job protocol — kills, pauses, hangs and dropped connections, including the api killed mid-request — plus Postgres restarts: 740 faults over 260 runs, zero invariant violations, with the checker and each fault's expected effects checked after every run; every scenario runs in CI on every push | [m20](docs/m20-fault-injection.md) · [design](docs/design.md) |
+| **Scaling** | the task set on 1–16 fleet workers, every process on one 4-vCPU host: 3.8× on 4 workers with jobs at full speed, then flat at the host's CPU ceiling; 13.6× on 16 at the model's latency, bent mostly by the batch's own tail; 8.9× on 16 in containers, whose jobs cost three to four times the CPU. Each bottleneck measured rather than guessed, and Postgres never one | [m21](docs/m21-scaling.md) · [design](docs/design.md#scaling-on-one-host-what-bounds-throughput) |
 
 ## Tech stack
 
@@ -343,6 +344,7 @@ uv run python -m fleet.worker --runner bench.runner:run_job --execution containe
 uv run python -m bench.cli ab --trials 5                            # sequential vs fleet a/b
 uv run python -m bench.cli ab --arms process-container --trials 5  # in process vs containers
 uv run python -m bench.cli replay --executor fleet --workers 4      # replay on a worker pool
+uv run python -m bench.cli scale --workers 1 2 4 --trials 5         # throughput per pool size
 uv run python -m chaos run --scenarios all --seeds 0-2              # every fault scenario
 ```
 
@@ -352,9 +354,10 @@ and the stress test: [docs/m18-worker-pool.md](docs/m18-worker-pool.md). Contain
 egress grants and cancellation, and what they cost:
 [docs/m19-controlled-execution.md](docs/m19-controlled-execution.md). Seeded faults at twelve named
 points in the job protocol plus Postgres restarts, what they found and the matrix of runs:
-[docs/m20-fault-injection.md](docs/m20-fault-injection.md). The design (why Postgres over
-Redis or a broker, the lease and fencing model, what the checker proves and doesn't, the execution
-policy model): [docs/design.md](docs/design.md).
+[docs/m20-fault-injection.md](docs/m20-fault-injection.md). How throughput grows with the pool on
+one host, and what stops it: [docs/m21-scaling.md](docs/m21-scaling.md). The design (why Postgres
+over Redis or a broker, the lease and fencing model, what the checker proves and doesn't, the
+execution policy model, what bounds throughput): [docs/design.md](docs/design.md).
 
 ## Honest limitations
 
@@ -376,6 +379,9 @@ policy model): [docs/design.md](docs/design.md).
   two. Combinations, network partitions that leave a connection hanging, full disks and clock steps
   aren't injected; see
   [m20](docs/m20-fault-injection.md#what-the-checker-proves-and-what-it-doesnt).
+- **Scaling is measured on one host.** The workers, the api and Postgres shared one 4-vCPU VM, so
+  the curves bend at that host's CPUs, and nothing measures a network between hosts; see
+  [m21](docs/m21-scaling.md#honest-notes).
 - **The MCP servers run locally, not on the public internet.** The deployed demo shows their
   recorded results (the report), not a live tool endpoint.
 - **The execution numbers are from one machine.** Replay numbers are medians over several trials
