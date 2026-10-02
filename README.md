@@ -21,6 +21,68 @@ a 15-task benchmark, goes **86.7% → 100%** after two targeted hardening fixes 
 3.3 70B, a model Groq has since retired, so they can't be re-run) — the loop, sandbox, and
 measurement the deployment layer sits on. Full story under [`docs/`](docs/).
 
+## The execution platform
+
+The agent now runs on a platform built for batches of agent tasks. A Postgres job queue serves any
+number of workers, each attempt can run in a locked-down container of its own, faults injected at
+twelve named points of the job protocol and by restarting Postgres are checked by an automated
+invariant checker, throughput has been measured to its bottleneck, and every run is recorded well
+enough to replay it and to say whether a change made things better or worse. Every number below was
+measured, says what it was measured on, and links to its records; the **platform** tab of the [live
+dashboard](https://agentic-coding-sandbox.vercel.app) renders them straight from the committed
+records, and a test fails if the two ever disagree.
+
+```mermaid
+flowchart LR
+  Client["bench or any client"] -- "submit a batch" --> API["fleet api"]
+  API --> PG[("Postgres: jobs, attempts, results")]
+  Workers["workers, any number"] -- "claim with SKIP LOCKED, heartbeat, publish under a fencing token" --> PG
+  Workers --> InProcess["the agent in the worker's process,<br/>commands in its namespace sandbox"]
+  Workers --> Container["or each attempt in a container of its own:<br/>CPU, memory, process, scratch, time limits,<br/>no network unless a destination is granted"]
+  Checker["invariant checker"] -- "reads every run back" --> PG
+  Faults["fault injection: kills, pauses, hangs,<br/>dropped connections, Postgres restarts"] -.-> Workers
+```
+
+### What was measured
+
+| What | Result | Measured on | Records |
+|---|---|---|---|
+| Throughput and queue wait at 1, 2 and 4 workers | **89.0 → 177.8 → 336.6 tasks/min (3.76×)**; median queue wait 24.4 → 11.9 → 6.0 s | one virtualized 4-vCPU Intel Xeon @ 2.10 GHz, 15.72 GiB, with every process — workers, api, Postgres, bench — on that one host, not a cluster; 72-job batches (the 18-task set four times, seed 1) replayed at zero model latency, 5 trials per pool, interleaved | [m21/zero](docs/results/bench/m21/zero) |
+| The bottleneck | **the host's CPUs**: 93.3% busy at 4 workers, 98% of it the agent's own work; 8 workers did 0.98× the work of 4, with a task waiting for a CPU 89.1% of the time | the same host and batches; 4 and 8 workers in a run of their own | [m21/past-cores](docs/results/bench/m21/past-cores) |
+| At the model's latency | 163.1 tasks/min on 16 workers (13.64×), the CPUs 49.1% busy; the loss was the batch's own tail, 13.6% of the workers' time idle after their last job | the same, replayed at the latency the real model took | [m21/recorded](docs/results/bench/m21/recorded) |
+| In containers | 78.3 tasks/min on 16 workers (8.90×), the CPUs 93.6% busy; at 4 workers, 2.65 CPU-seconds a job against 0.80 in a worker's own process | the same, each job in a container of its own, 3 trials per pool | [m21/containers](docs/results/bench/m21/containers) |
+| Fault tolerance | **740 injected faults over 260 runs — 450 kills, 150 dropped connections, 110 pauses and hangs, 30 Postgres restarts — and 0 invariant violations** | 26 scenarios × 10 seeds: 230 runs of 30 jobs on 3 worker processes, 20 of 18 jobs on 3 and 10 of 18 jobs on 5, with 1 s leases, 5 attempts per job and a local Postgres, on a virtualized 4-vCPU Intel Xeon @ 2.10 GHz; every scenario also runs in CI on every push | [chaos/m20](docs/results/chaos/m20) |
+| Did a change help | one sentence in the system prompt: tokens per job 6,552 → 3,510 (−46.4%; 95% interval −5,533 to −1,105), every expectation still met; each arm's trial replayed from its recorded responses to the same outcome, tokens and calls on 18 of 18 jobs | qwen3.8-27b on Groq's free tier, the 18-task set on one worker, on the same 2.10 GHz VM; one interleaved round, as the provider's daily token cap stopped the other two | [m22](docs/results/bench/m22) |
+| The real model's own limit | 91% of a one-worker batch spent waiting on the provider's 8,000-tokens-a-minute limit | qwen3.8-27b on Groq's free tier, the 18-task set on one worker, on a virtualized 4-vCPU Intel Xeon @ 2.80 GHz | [sequential-real](docs/results/bench/sequential-real-qwen3.8-27b) |
+
+### Design decisions, and what each gives up
+
+- **Postgres and `SKIP LOCKED`, not Redis or a message broker.** Taking a job, recording its
+  result and changing its state are atomic in one transactional store, and constraints make a second
+  result for a job impossible. *Gives up* one primary's write throughput — at 337 jobs a minute it
+  used at most 2.6% of one CPU, and past one host it hasn't been measured.
+- **No scheduler process: workers pull.** Postgres is the only state, so any process can die at any
+  moment and everything it was doing is recoverable. *Gives up* push: an idle worker can be half a
+  second from new work, and a one-worker batch's first claim came 0.12 s after its submit.
+- **Leases, heartbeats, and the attempt number as a fencing token**, checked under the row lock
+  against Postgres's clock: a worker whose lease lapsed can never write again, even before anyone
+  takes its job back. *Gives up* recovery time: a dead worker's job waits out its lease.
+- **Bounded retries and a dead letter; an agent's own failure is final.** Infrastructure failures
+  can't loop forever. *Gives up* some healthy jobs under heavy chaos, mostly long ones: they used up
+  their budget through no fault of their own (28 in ten stress runs).
+- **A container per attempt**, with its limits enforced by the runtime and no network unless a
+  destination is granted. *Gives up* CPU: 2.65 CPU-seconds a job against 0.80 in a worker's process,
+  so containers fill one host's CPUs at 16 workers.
+- **Recorded responses replayed**, so benchmarks are deterministic and free and every real run can be
+  checked job for job. *Gives up* experiments on replay: a changed prompt asks questions no recording
+  answered, so it needs the real model and its limits.
+
+The full design — the job lifecycle, the invariants the database enforces, leases and fencing, the
+retry policy, what the checker proves and what it doesn't, the policy model for containers, what
+bounds throughput, what makes runs comparable, and what would change at ten times the scale — is in
+[docs/design.md](docs/design.md). Where the agent and the platform failed, and which is which, is in
+[docs/failure-analysis.md](docs/failure-analysis.md).
+
 ## Architecture
 
 ```mermaid
@@ -57,6 +119,7 @@ flowchart TB
 | **Fault injection** | seeded faults at twelve named points in the job protocol — kills, pauses, hangs and dropped connections, including the api killed mid-request — plus Postgres restarts: 740 faults over 260 runs, zero invariant violations, with the checker and each fault's expected effects checked after every run; every scenario runs in CI on every push | [m20](docs/m20-fault-injection.md) · [design](docs/design.md) |
 | **Scaling** | the task set on 1–16 fleet workers, every process on one 4-vCPU host: 3.8× on 4 workers with jobs at full speed, then flat at the host's CPU ceiling; 13.6× on 16 at the model's latency, bent mostly by the batch's own tail; 8.9× on 16 in containers, whose jobs cost three to four times the CPU. Each bottleneck measured rather than guessed, and Postgres never one | [m21](docs/m21-scaling.md) · [design](docs/design.md#scaling-on-one-host-what-bounds-throughput) |
 | **Experiments** | every run records what it ran with — a digest of the agent's prompts and tools, the model builds that answered, the task set's digest, the price — and what it produced: each job's diff, test verdict, tokens, cost and retries. `bench.cli compare` pairs two runs job by job and says whether a change made things better or worse, with intervals: one prompt sentence cut tokens per job 46% and cost 49% on the real model with every expectation still met, over one round before the provider's daily cap | [m22](docs/m22-records.md) · [design](docs/design.md#evaluation-records-what-makes-two-runs-comparable) |
+| **Failures** | every failure seen with the real agent as the workload, filed as the agent's, the platform's, the harness's, the provider's or the environment's, with how each was found and what was done, including the bugs, the misstatements and every run thrown away | [failure analysis](docs/failure-analysis.md) |
 
 ## Tech stack
 
@@ -399,8 +462,8 @@ execution policy model, what bounds throughput): [docs/design.md](docs/design.md
   [m21](docs/m21-scaling.md#honest-notes).
 - **The MCP servers run locally, not on the public internet.** The deployed demo shows their
   recorded results (the report), not a live tool endpoint.
-- **The execution numbers are from one machine.** Replay numbers are medians over several trials
-  on a shared VM, where the same code's sequential replay has measured from 10.8 s to 12.3 s in
-  different sessions, so only comparisons made within one session count. The real-model numbers are
-  a single trial until trials 2 and 3 are recorded. The fleet runs many workers, but how it scales
-  is not measured yet.
+- **Each milestone's timings come from one VM, and the VM changed between sessions.** The records
+  name an Intel Xeon @ 2.80 GHz for M16, M17 and M19 and @ 2.10 GHz for M18 and M20–M22, and the
+  same code's sequential replay has measured from 10.8 s to 12.3 s in different sessions, so only
+  comparisons made within one run count. The real-model numbers are four trials of one model on one
+  key, one of them cut short by the provider's daily cap.
