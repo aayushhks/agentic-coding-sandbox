@@ -308,6 +308,17 @@ def compare(
     return comparison
 
 
+def changed_leaves(before: Any, after: Any, path: str = "") -> list[tuple[str, Any, Any]]:
+    """Where two config values differ, down to the innermost keys that do."""
+    if isinstance(before, dict) and isinstance(after, dict):
+        leaves = []
+        for key in sorted(before.keys() | after.keys()):
+            inner = f"{path}.{key}" if path else str(key)
+            leaves += changed_leaves(before.get(key), after.get(key), inner)
+        return leaves
+    return [] if before == after else [(path, before, after)]
+
+
 def render(comparison: Comparison) -> str:
     """The comparison as markdown, for a terminal or a document."""
     lines = [
@@ -324,8 +335,10 @@ def render(comparison: Comparison) -> str:
         "",
     ]
     for field, (before, after) in comparison.config_changes.items():
+        # the prompts follow as a diff
         if field != "system_prompts":
-            lines.append(f"- `{field}`: `{before}` → `{after}`")
+            for where, old, new in changed_leaves(before, after, field):
+                lines.append(f"- `{where}`: `{old}` → `{new}`")
     if comparison.unexpected_changes:
         lines.append(f"- **not declared as the change**: {comparison.unexpected_changes}")
     if comparison.prompt_diff:

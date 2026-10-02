@@ -125,6 +125,16 @@ def test_only_the_declared_change_may_differ_between_the_configs() -> None:
     assert undeclared.unexpected_changes == ["system_prompts"]
 
 
+def test_the_report_names_only_the_settings_that_changed() -> None:
+    plain = {"benchmark": {"max_iterations": 15, "extra_rules": []}}
+    ruled = {"benchmark": {"max_iterations": 15, "extra_rules": [RULE]}}
+    baseline = _arm("a", config_overrides={"agent_configs": plain})
+    candidate = _arm("b", config_overrides={"agent_configs": ruled})
+    report = render(compare(baseline, candidate, expect=["agent_configs"], resamples=100))
+    assert f"- `agent_configs.benchmark.extra_rules`: `[]` → `['{RULE}']`" in report
+    assert "max_iterations" not in report
+
+
 def test_only_rounds_both_runs_completed_are_paired() -> None:
     result = compare(_arm("a"), _arm("b", interrupted=frozenset({3})), resamples=100)
     assert result.rounds == [1, 2]
