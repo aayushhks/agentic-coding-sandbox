@@ -51,10 +51,16 @@ deduplication layer on top — the problem a single transactional store avoids.
 **What this gives up:**
 
 - **One primary's write throughput.** Every claim, start, heartbeat and publish is a row write, an
-  index update and WAL. At some rate the primary saturates; the scaling milestone measures where.
+  index update and WAL. At some rate the primary saturates. One 4-vCPU host driving it as hard as it
+  could, at 337 jobs a minute, never brought it close: Postgres used at most 2.6% of one CPU,
+  and a job's store calls took 9–15 ms ([m21](m21-scaling.md)). Where it saturates is past what one
+  host can drive.
 - **Push.** Workers poll, backing off from 50 ms to 500 ms when idle. The one-worker A/B measured the
-  cost: the first claim of a fresh batch landed a median 78 ms after submission. `LISTEN/NOTIFY` could
-  cut this; it is a candidate optimization, to be A/B tested rather than assumed.
+  cost: the first claim of a fresh batch landed a median 78 ms after submission. With workers that
+  were up and idle before the batch arrived, M21 measured a one-worker batch's first claim at a
+  median 0.12 s, and at 4 workers the wait for first claims was about 1% of a 12-second batch's
+  worker time. `LISTEN/NOTIFY` could cut this; it is a candidate optimization, to be A/B tested
+  rather than assumed.
 - **Vacuum pressure** from high-churn updates on a small hot table.
 - **Connection limits:** each worker holds connections, so many workers need pooling.
 
@@ -325,7 +331,40 @@ reads.
 - **What a stopped run already did.** A run that was cancelled, timed out or fenced out still did
   whatever it did through a granted destination before it was stopped.
 
+## Scaling on one host: what bounds throughput
+
+Workers pull, so each worker added is more capacity until something the workers share runs out.
+M21 measured which thing runs out first, with every process on one 4-vCPU host
+([m21](m21-scaling.md)). Throughput is bounded by the first of these, and each was measured:
+
+- **The pool**: N workers each finishing a job every service time, less the time they sit idle. With
+  a whole batch submitted at once, the idle time gathers at the batch's ends: before a worker's
+  first claim, since an idle worker is up to half a poll away, and after its last job, while the
+  slowest jobs finish. Sixteen workers on 72 recorded-latency jobs lost 13.6% of their time after
+  their last job — the jobs' own tail: dealt to 16 workers with no time lost between them, the same
+  jobs in the same order take 26.35 s against the 26.49 s measured.
+- **The host's CPUs**: cores ÷ CPU per job. At full speed a job cost 0.67 CPU-seconds, 98% of it in
+  the worker and the sandboxed commands it ran, so 4 vCPUs keep every CPU busy at about 340–358
+  jobs a minute. Four workers reached 94% of that; eight did no better, with each job twice as slow.
+  At the model's latency a job used about the same CPU but took 5 s, so 16 workers kept the host
+  only 49% busy.
+- **Containers**: a job's own container costs CPU too — a fresh Python interpreter importing the
+  agent's code, the Docker daemons, the runtime's shims and the kernel's setup — 2.6–3.0 CPU-seconds
+  a job against 0.7–0.8 in a worker's process. The same 4 vCPUs are then all busy at 79–94 container
+  jobs a minute, depending on the pool, and 16 workers reached 78, with the host 94% busy. A
+  container per worker rather than per job, or an interpreter kept warm inside it, would cut that;
+  neither is built, and either would need its own A/B.
+- **The model provider**: its token budget ÷ tokens per job. M16's free-tier key allowed 8,000
+  tokens a minute, and a task used 6,045, so about 1.3 tasks a minute at any pool size. A real batch
+  spent 91% of its time waiting on that limit with one worker.
+- **Postgres**: never close. A job's store calls took 9–15 ms of a worker's time wherever the worker
+  had a CPU to run on, and Postgres used at most 2.6% of one CPU in any trial.
+
+On one host, then, the queue doesn't limit throughput; the work the jobs do does. That makes the
+placement rule plain: workers go where the CPUs are — more hosts, each with as many workers as its
+cores keep busy, or as many as wait on the model at once — and one primary serves them all. Where
+that primary would saturate is beyond what one host can drive, and is the ten-times question below.
+
 ## Still to come
 
-- Where scaling stops being linear, measured — M21.
 - What would change at ten times the scale.
