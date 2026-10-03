@@ -1,4 +1,4 @@
-# Agentic Coding Sandbox — an AI agent deployed into a real engineering workflow
+# Agentic Coding Sandbox: an AI agent deployed into a real engineering workflow
 
 [![CI](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/aayushhks/agentic-coding-sandbox/actions/workflows/ci.yml)
 
