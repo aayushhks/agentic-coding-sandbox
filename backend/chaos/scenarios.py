@@ -14,7 +14,10 @@ EFFECTS = {
     "died": "the process the fault hit was killed",
     "survived": "the process the fault hit kept running to the end",
     "claim_undone": "the claim the fault interrupted left no attempt behind",
-    "retried": "the attempt the fault hit ended with its lease lapsed, and a later one finished",
+    "retried": (
+        "the attempt the fault hit ended with its lease lapsed, and a later one finished, "
+        "or the job was dead-lettered there if it was its last"
+    ),
     "same_attempt": "the attempt the fault hit went on to publish the job's result",
     "stands": "the result the attempt published before the fault stands, and nothing ran again",
     "fenced": "the paused worker woke to find its lease gone, and stopped the run",
