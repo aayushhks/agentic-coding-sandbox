@@ -164,6 +164,11 @@ def _retried(fault: dict[str, Any], seen: Evidence) -> str | None:
         return f"job {fault['job']} has no attempt {fault['attempt']} by {fault['process']}"
     if found.ended_by != "lease_expired":
         return f"job {job.id} attempt {found.attempt} ended {found.ended_by}, not by its lease"
+    if found.attempt == job.max_attempts:
+        # the job's last attempt: its budget is spent, so the lapse dead-letters it there
+        if job.state == "dead_lettered" and job.attempt == found.attempt:
+            return None
+        return f"job {job.id} spent its last attempt, yet ended {job.state} at {job.attempt}"
     if job.attempt <= found.attempt or job.state in UNFINISHED_STATES:
         return f"job {job.id} never finished on a later attempt ({job.state}, {job.attempt})"
     return None

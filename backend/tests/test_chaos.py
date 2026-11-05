@@ -1,13 +1,17 @@
 """The chaos harness injects what it plans, and a run whose faults never happened can't pass."""
 
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from chaos.__main__ import summarize
-from chaos.harness import run_scenario
+from chaos.harness import Evidence, _retried, run_scenario
 from chaos.scenarios import BY_NAME
+from fleet.invariants import AttemptRow, JobRow
 
 
 async def test_a_scenario_injects_its_faults_and_leaves_the_effects_it_must(
@@ -63,3 +67,41 @@ def test_the_table_counts_trials_faults_and_violations_per_scenario() -> None:
     assert (table["trials"], table["faults_injected"], table["violations"]) == (3, 9, 1)
     assert table["scenarios"]["claim-before-kill"]["failed_seeds"] == [1]
     assert list(table["scenarios"]) == ["claim-before-kill", "postgres-restart"]
+
+
+def _lapsed(attempt: int, job: JobRow) -> tuple[dict[str, Any], Evidence]:
+    """A worker killed mid-attempt, whose lease then lapsed, and how its job ended."""
+    now = datetime.now(UTC)
+    lapsed = AttemptRow(
+        job_id=job.id,
+        attempt=attempt,
+        worker_id="w1",
+        claimed_at=now,
+        lease_expires_at=now,
+        ended_at=now,
+        ended_by="lease_expired",
+    )
+    seen = SimpleNamespace(jobs={job.id: job}, attempts={(job.id, attempt): lapsed})
+    return {"job": job.id, "attempt": attempt, "process": "w1"}, cast(Evidence, seen)
+
+
+def test_a_kill_on_a_job_s_last_attempt_leaves_it_dead_lettered_there() -> None:
+    # job 15 in CI: its runner crashed on attempts 1-4, and the kill landed on attempt 5 of 5
+    spent = JobRow(id=15, state="dead_lettered", attempt=5, max_attempts=5, result_id=None)
+    assert _retried(*_lapsed(5, spent)) is None
+
+
+def test_a_kill_before_the_last_attempt_still_needs_a_later_one() -> None:
+    stopped = JobRow(id=7, state="dead_lettered", attempt=2, max_attempts=5, result_id=None)
+    assert _retried(*_lapsed(2, stopped)) == (
+        "job 7 never finished on a later attempt (dead_lettered, 2)"
+    )
+    finished = JobRow(id=7, state="succeeded", attempt=3, max_attempts=5, result_id=1)
+    assert _retried(*_lapsed(2, finished)) is None
+
+
+def test_a_last_attempt_the_job_did_not_end_on_is_a_violation() -> None:
+    running = JobRow(id=9, state="running", attempt=5, max_attempts=5, result_id=None)
+    assert _retried(*_lapsed(5, running)) == (
+        "job 9 spent its last attempt, yet ended running at 5"
+    )
