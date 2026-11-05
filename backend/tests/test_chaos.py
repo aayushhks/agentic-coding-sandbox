@@ -105,3 +105,13 @@ def test_a_last_attempt_the_job_did_not_end_on_is_a_violation() -> None:
     assert _retried(*_lapsed(5, running)) == (
         "job 9 spent its last attempt, yet ended running at 5"
     )
+
+
+def test_the_last_attempt_is_the_job_s_own_budget_not_the_harness_default() -> None:
+    three = JobRow(id=4, state="dead_lettered", attempt=3, max_attempts=3, result_id=None)
+    assert _retried(*_lapsed(3, three)) is None
+    # a cancel on the last attempt ends the job cancelled, which no retried fault leaves
+    cancelled = JobRow(id=4, state="cancelled", attempt=3, max_attempts=3, result_id=None)
+    assert _retried(*_lapsed(3, cancelled)) == (
+        "job 4 spent its last attempt, yet ended cancelled at 3"
+    )
