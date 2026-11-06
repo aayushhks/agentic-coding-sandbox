@@ -1,7 +1,7 @@
 name: deploy
 
 # Surfaces the live deployment on GitHub the way hosting integrations do. Vercel builds and serves
-# the static dashboard on every push to main; this records a deployment to the `production`
+# the static dashboard on every push to main; this records a deployment to the `aws-prod`
 # environment and smoke-tests the public site, so the repo's Deployments panel links straight to
 # it — backed by real checks, so it only goes green when the site genuinely responds. It also
 # checks that the original AWS link, which is in already-shared resumes, still redirects there.
@@ -12,14 +12,14 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: production
+  group: aws-prod
   cancel-in-progress: false
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: aws-prod
       url: https://agentic-coding-sandbox.vercel.app
     env:
       BASE_URL: https://agentic-coding-sandbox.vercel.app
